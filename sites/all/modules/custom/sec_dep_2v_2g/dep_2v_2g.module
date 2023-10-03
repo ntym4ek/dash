@@ -53,8 +53,12 @@ function dep_2v_2g_import_processors_alter(&$processors)
 /**
  * ----- Страницы ------------------------------------------------------------------------------------------------------
  */
+
 function dep_2v_2g_current_page()
 {
+  // страница разбита на сектора, загружаемые через ajax,
+  // так как формирование всей страницы целиком занимает продолжительное время
+
   $period = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD);
 
   $time_yesterday = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to'])-1, date('Y', $period['to']));
@@ -63,14 +67,14 @@ function dep_2v_2g_current_page()
     '<p>Сезон к сезону за период с ' . date('d', $period['from']) . '.' . date('m', $period['from']) . ' по ' . date('d', $time_yesterday) . '.' . date('m', $time_yesterday) . '</p>' .
     '</div>';
 
-  $output .= dep_2v_2g_row_1($period);
+  $output .= '<div class="ajax-load" data-func="row_1"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12"><h5 class="chart-title">Суммарная отгрузка (шт/л/кг)</h5></div>';
   $form =      drupal_get_form('dep_2v_2g_td_column_plan_ship_period_to_period_filter_form');
   $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="row_2"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="row_2" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   $output .= '<div class="row">';
   $output .=    '<div class="col-xs-12"><h5 class="chart-title">Отгрузка по номенклатуре (' . DASH_REV_SUFFIX . ')</h5></div>';
@@ -94,6 +98,7 @@ function dep_2v_2g_current_page()
 
   $output .= '<div class="ajax-load" data-func="row_5" data-delay="2000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
+  // план-факт линейные
   $output .= '<div class="row">';
   $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (' . DASH_REV_SUFFIX . ')</h5></div>';
   $form =       drupal_get_form('dep_2v_2g_line_ship_plan_fact_by_month_filter_form');
@@ -101,12 +106,14 @@ function dep_2v_2g_current_page()
   $output .= '</div>';
   $output .= '<div class="ajax-load" data-func="row_6" data-delay="3000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
+  // отгрузка по регионам
   $output .= '<div class="row">';
   $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (' . DASH_REV_SUFFIX . ')</h5></div>';
   $form =       drupal_get_form('dep_2v_2g_ship_plan_region_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
   $output .= '<div class="ajax-load" data-func="row_7" data-delay="4000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
 
   return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '">' . $output . '</div>';
 }

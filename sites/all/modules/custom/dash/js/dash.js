@@ -16,7 +16,7 @@
               $.ajax({
                 url: "/ajax-load?module=" + module + "&func=" + func + "&period_from=" + periodFrom + "&period_to=" + periodTo,
                 success: function (data) {
-                  wrapper.html(data);
+                  // wrapper.html(data);
                   var newNodes = wrapper.html(data);
                   Drupal.attachBehaviors(newNodes);
                 }
