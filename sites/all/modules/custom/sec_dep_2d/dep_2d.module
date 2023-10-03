@@ -1,0 +1,765 @@
+<?php
+
+const DEP_2D_WARNING_1_DAYS = 90; // кол-во оставшихся дней до истечения срока годности (КРАСНЫЙ уровень)
+const DEP_2D_WARNING_2_DAYS = 180; // кол-во оставшихся дней до истечения срока годности (ЖЁЛТЫЙ уровень)
+
+function dep_2d_menu()
+{
+  $items['td/department-2d'] = array(
+    'title' => 'Управление 2Д',
+    'menu_name' => 'main-menu',
+    'weight' => 3,
+    'page callback' => 'dep_2d_remains_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * hook_import_processors_alter
+ */
+function dep_2d_import_processors_alter(&$processors)
+{
+  $path = drupal_get_path('module', 'dep_2d') . '/includes/';
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_storage.*\.json/', 'include' => $path . 'import.dep_2d.inc', 'func' => 'dep_2d_import_storages'];
+  $processors['last_queue'][] = ['mask' => '/^scrum_td_remains.*\.json/', 'include' => $path . 'import.dep_2d.inc', 'func' => 'dep_2d_import_remains'];
+}
+
+function dep_2d_remains_page()
+{
+  $datetime = dep_2d_get_date_data_available();
+
+  $output = '<div class="section-title">' .
+              '<h3>Остатки требующие внимания</h3>' .
+              '<p>На '. date('d.m.Y', $datetime) . '</p>' .
+            '</div>';
+
+  $output .=  '<div class="row">';
+  $data_arr =   dep_2d_column_remains_by_nom($datetime);
+//  $data_arr['#title'] = 'Остатки с истекающим сроком на ' . date('d.m.Y', $datetime) . ' (шт/л/кг)';
+  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $output .=  '</div>';
+
+  $output .= '<div class="section-title">' .
+              '<h3>Остатки с истекающим сроком</h3>' .
+              '<p>На '. date('d.m.Y', $datetime) . '</p>' .
+            '</div>';
+
+  $output .=  '<div class="row">';
+  $output .=    '<div class="col-xs-12">' . dep_2d_tables_remains_by_nom($datetime) . '</div>';
+  $output .=  '</div>';
+
+  $output .= '<div class="section-title">' .
+              '<h3>Остатки просроченной продукции</h3>' .
+              '<p>На '. date('d.m.Y', $datetime) . '</p>' .
+            '</div>';
+
+  $output .=  '<div class="row">';
+  $output .=    '<div class="col-xs-12">' . dep_2d_tables_remains_by_nom_expired($datetime) . '</div>';
+  $output .=  '</div>';
+
+  $output .= '<div class="section-title">' .
+              '<h3>Остатки на складах</h3>' .
+              '<p>На '. date('d.m.Y', $datetime) . '</p>' .
+            '</div>';
+
+  $form =     drupal_get_form('dep_2d_remains_nom_filter_form', $datetime);
+  $output .=  '<div class="row">';
+  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .=  '</div>';
+
+  $output .=  '<div class="row">';
+  $output .=    '<div class="col-xs-12">' . dep_2d_tables_remains_by_warehouse($datetime) . '</div>';
+  $output .=  '</div>';
+
+
+  return $output;
+}
+
+function dep_2d_tables_remains_by_nom($datetime)
+{
+  $result_by_nom = dash_get_remains_by_nom(['date' => $datetime]);
+
+  // сортировка по границам,
+  // так как нужно видеть продукты с предупреждениями
+  $sort = [];
+  foreach ($result_by_nom as $tid => $record) {
+    $key = str_pad(round($record['totals'][DEP_2D_WARNING_1_DAYS]), 10, '0', STR_PAD_LEFT) . str_pad(round($record['totals'][DEP_2D_WARNING_2_DAYS]), 10, '0', STR_PAD_LEFT) . str_pad($tid, 10, '0', STR_PAD_LEFT);
+    $sort[$key] = $tid;
+  }
+  krsort($sort);
+
+
+  $output =  '<div class="tables-set tables-remains">';
+  $output .=  '<div class="row">';
+
+  // отбираем Действующие регистрации
+  $header = [
+    ['data' => 'Номенклатура', 'attributes' => ['class' => ['center']]],
+    ['data' => '< ' . DEP_2D_WARNING_1_DAYS . ' дней', 'attributes' => ['class' => ['center']]],
+    ['data' => '< ' . DEP_2D_WARNING_2_DAYS . ' дней', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Всего', 'attributes' => ['class' => ['center']]],
+  ];
+
+  $rows = [];
+  foreach ($sort as $nom_tid) {
+    $remain = $result_by_nom[$nom_tid];
+    if ($remain['totals'][DEP_2D_WARNING_1_DAYS] || $remain['totals'][DEP_2D_WARNING_2_DAYS] || !$remain['totals']['expired']) {
+      $row = [
+        'data' => [
+          $remain['name'],
+          ['data' => $remain['totals'][DEP_2D_WARNING_1_DAYS] ?: '', 'attributes' => ['class' => ['right']]],
+          ['data' => $remain['totals'][DEP_2D_WARNING_2_DAYS] ?: '', 'attributes' => ['class' => ['right']]],
+          ['data' => $remain['totals']['total'], 'attributes' => ['class' => ['right']]],
+        ],
+        'attributes' => ['data-id' => $nom_tid]
+      ];
+      if ($remain['totals'][DEP_2D_WARNING_2_DAYS]) $row['attributes']['class'] = ['orange'];
+      if ($remain['totals'][DEP_2D_WARNING_1_DAYS]) $row['attributes']['class'] = ['red'];
+
+      $rows[] = $row;
+    }
+  }
+  $output .= theme('table_li', [
+    'caption' => 'Номенклатура',
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table-base', 'col-xs-12', 'col-lg-6']]
+  ]);
+
+  // отбираем Продления
+  $header = [
+    ['data' => 'Склад', 'attributes' => ['class' => ['center']]],
+    ['data' => '< ' . DEP_2D_WARNING_1_DAYS . ' дней', 'attributes' => ['class' => ['center']]],
+    ['data' => '< ' . DEP_2D_WARNING_2_DAYS . ' дней', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Всего', 'attributes' => ['class' => ['center']]],
+  ];
+
+  $rows = [];
+  foreach ($sort as $nom_tid) {
+    $remain = $result_by_nom[$nom_tid];
+    if ($remain['totals'][DEP_2D_WARNING_1_DAYS] || $remain['totals'][DEP_2D_WARNING_2_DAYS] || !$remain['totals']['expired']) {
+      foreach ($remain['warehouses'] as $warehouse) {
+        $row = [
+          'data' => [
+            $warehouse['name'],
+            ['data' => $warehouse['totals'][DEP_2D_WARNING_1_DAYS] ?: '', 'attributes' => ['class' => ['right']]],
+            ['data' => $warehouse['totals'][DEP_2D_WARNING_2_DAYS] ?: '', 'attributes' => ['class' => ['right']]],
+            ['data' => $warehouse['totals']['total'], 'attributes' => ['class' => ['right']]],
+          ],
+          'attributes' => ['data-base-id' => $nom_tid, 'class' => ['initially-hidden']]
+        ];
+
+        $rows[] = $row;
+      }
+    }
+  }
+  $output .= theme('table_li', [
+    'caption' => 'Склады',
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
+  ]);
+
+  $output .=   '</div>';
+  $output .= '</div>';
+
+  return  $output;
+}
+
+function dep_2d_tables_remains_by_nom_expired($datetime)
+{
+  $result_by_nom = dash_get_remains_by_nom(['date' => $datetime]);
+
+  // сортировка по границам,
+  // так как нужно видеть продукты с предупреждениями
+  $sort = [];
+  foreach ($result_by_nom as $tid => $record) {
+    $key = str_pad(round($record['totals']['expired']), 10, '0', STR_PAD_LEFT) . str_pad($tid, 10, '0', STR_PAD_LEFT);
+    $sort[$key] = $tid;
+  }
+  krsort($sort);
+
+  $output =  '<div class="tables-set tables-expired">';
+  $output .=  '<div class="row">';
+
+  // отбираем Действующие регистрации
+  $header = [
+    ['data' => 'Номенклатура', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Просрок', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Сумма', 'attributes' => ['class' => ['center']]],
+  ];
+
+  $rows = [];
+  foreach ($sort as $nom_tid) {
+    $remain = $result_by_nom[$nom_tid];
+    if ($remain['totals']['expired']) {
+      $amount = ((float)$remain['price']) ? number_format($remain['totals']['expired']*$remain['price'], 0, ',', ' ') : '';
+      $row = [
+        'data' => [
+          $remain['name'],
+          ['data' => $remain['totals']['expired'], 'attributes' => ['class' => ['right']]],
+          ['data' => $amount, 'attributes' => ['class' => ['right']]],
+        ],
+        'attributes' => ['data-id' => $nom_tid]
+      ];
+
+      $rows[] = $row;
+    }
+  }
+  $output .= theme('table_li', [
+    'caption' => 'Номенклатура',
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table-base', 'col-xs-12', 'col-lg-6']]
+  ]);
+
+  // отбираем Продления
+  $header = [
+    ['data' => 'Склад', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Просрок', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Сумма', 'attributes' => ['class' => ['center']]],
+  ];
+
+  $rows = [];
+  foreach ($sort as $nom_tid) {
+    $remain = $result_by_nom[$nom_tid];
+    if ($remain['totals']['expired']) {
+      foreach ($remain['warehouses'] as $warehouse) {
+        if ($warehouse['totals']['expired']) {
+          $amount = ((float)$remain['price']) ? number_format($warehouse['totals']['expired'] * $remain['price'], 0, ',', ' ') : '';
+          $row = [
+            'data' => [
+              $warehouse['name'],
+              ['data' => $warehouse['totals']['expired'], 'attributes' => ['class' => ['right']]],
+              ['data' => $amount, 'attributes' => ['class' => ['right']]],
+            ],
+            'attributes' => ['data-base-id' => $nom_tid, 'class' => ['initially-hidden']]
+          ];
+
+          $rows[] = $row;
+        }
+      }
+    }
+  }
+  $output .= theme('table_li', [
+    'caption' => 'Склады',
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
+  ]);
+
+  $output .=   '</div>';
+  $output .= '</div>';
+
+  return  $output;
+}
+
+function dep_2d_tables_remains_by_warehouse($datetime, $nom_filter_tid = null)
+{
+  $result_by_wh = dash_get_remains_by_warehouse(['date' => $datetime, 'nom_tid' => $nom_filter_tid]);
+
+  // сортировка имени,
+  // так как нужно видеть продукты с предупреждениями
+  $sort_w = [];
+  foreach ($result_by_wh as $tid => $record) {
+    $key = $record['name'];
+    $sort_w[$key] = $tid;
+  }
+  ksort($sort_w);
+
+  $output =  '<div id="tables-remains-by-warehouse" class="tables-set tables-remains-by-warehouse">';
+  $output .=  '<div class="row">';
+
+  // отбираем по складам
+  $header = [];
+  $header[] = ['data' => 'Склад', 'attributes' => ['class' => ['center']]];
+  if ($nom_filter_tid) $header[] = ['data' => 'Остаток', 'attributes' => ['class' => ['center', 'col-total']]];
+  $header[] = ['data' => 'Сумма', 'attributes' => ['class' => ['center', 'col-amount']]];
+
+  $rows = []; $total_amount = $total_qty = 0;
+  foreach ($sort_w as $tid_w) {
+    $remain = $result_by_wh[$tid_w];
+    $amount = number_format($remain['totals']['amount'], 0, ',', ' ');
+    $row = [
+      'data' => [],
+      'attributes' => ['data-id' => $tid_w]
+    ];
+    $row['data'][] = $remain['name'];
+    if ($nom_filter_tid) $row['data'][] = ['data' => $remain['totals']['total'], 'attributes' => ['class' => ['right', 'col-total']]];
+    $row['data'][] = ['data' => $amount, 'attributes' => ['class' => ['right', 'col-amount']]];
+
+    $rows[] = $row;
+
+    if ($nom_filter_tid) $total_qty += $remain['totals']['total'];
+    $total_amount += $remain['totals']['amount'];
+  }
+
+  // выводим подытог
+  $total_amount_txt = number_format($total_amount, 0, ',', ' ');
+  $subheader = [];
+  $subheader[] = ['data' => 'Итого'];
+  if ($nom_filter_tid) $subheader[] = ['data' => $total_qty, 'attributes' => ['class' => ['right', 'col-total']]];
+  $subheader[] = ['data' => $total_amount_txt, 'attributes' => ['class' => ['right', 'col-amount']]];
+
+  $output .= theme('table_li', [
+    'caption' => 'Склады',
+    'header' => $header,
+    'subheader' => $subheader,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table-base', 'col-xs-12', 'col-lg-6']]
+  ]);
+
+  // отбираем по номенклатуре
+  $header = [
+    ['data' => 'Номенклатура', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Остаток', 'attributes' => ['class' => ['center', 'col-total']]],
+    ['data' => 'Сумма', 'attributes' => ['class' => ['center', 'col-amount']]],
+  ];
+
+  $rows = [];
+  foreach ($sort_w as $tid_w) {
+    $remain = $result_by_wh[$tid_w];
+
+    $sort_n = [];
+    foreach ($remain['noms'] as $tid => $record) {
+      $key = $record['name'];
+      $sort_n[$key] = $tid;
+    }
+    ksort($sort_n);
+
+    foreach ($sort_n as $tid_n) {
+      $nom = $remain['noms'][$tid_n];
+      $amount = number_format($nom['totals']['amount'], 0, ',', ' ');
+      $row = [
+        'data' => [
+          $nom['name'],
+          ['data' => $nom['totals']['total'], 'attributes' => ['class' => ['right', 'col-total']]],
+          ['data' => $amount, 'attributes' => ['class' => ['right', 'col-amount']]],
+        ],
+        'attributes' => ['data-base-id' => $tid_w, 'class' => ['initially-hidden']]
+      ];
+
+      $rows[] = $row;
+    }
+  }
+  $output .= theme('table_li', [
+    'caption' => 'Номенклатура',
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
+  ]);
+
+  $output .=   '</div>';
+  $output .= '</div>';
+
+  return  $output;
+}
+
+/**
+ * График остатков по номенклатуре
+ * @param $datetime - дата среза
+ * @param $options
+ * @return array
+ */
+function dep_2d_column_remains_by_nom($datetime, $options = [])
+{
+  $output = ['#markup' => 'На дату нет остатков с истекающим сроком годности'];
+
+  $result_by_nom = dash_get_remains_by_nom(['date' => $datetime]);
+
+  // сортировка по границам,
+  // так как нужно видеть продукты с предупреждениями
+  $sort = [];
+  foreach ($result_by_nom as $tid => $record) {
+    $key = str_pad($record['totals'][DEP_2D_WARNING_1_DAYS], 10, '0', STR_PAD_LEFT) . str_pad($record['totals'][DEP_2D_WARNING_2_DAYS], 10, '0', STR_PAD_LEFT) . str_pad($tid, 10, '0', STR_PAD_LEFT);
+    $sort[$key] = $tid;
+  }
+  krsort($sort);
+
+  $chart = array(
+    '#type' => 'chart',
+    '#chart_type' => 'column',
+    '#colors' => [DASH_COLOR_RED, DASH_COLOR_ORANGE, '#ccc'],
+    '#height' => '500',
+    'xaxis' => [
+      '#type' => 'chart_xaxis',
+      '#raw_options' => [
+        'textStyle' => ['fontName' => '<global-font-name>'],
+      ]
+    ],
+    'yaxis' => [
+      '#type' => 'chart_yaxis',
+      '#min' => 0,
+    ],
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+      'legend' => ['position' => 'top', 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
+      'chartArea' => [
+        'height' => '80%',
+        'width' => '95%',
+        'left' => 70,
+      ],
+      'bar' => ['width' => "60", 'groupWidth' => '85%'],
+      'isStacked' => 'true',
+      'tooltip' => ['isHtml' => true],
+    ],
+    'total1' => [
+      '#type' => 'chart_data',
+      '#title' => 'Менее ' . DEP_2D_WARNING_1_DAYS . ' дней',
+      '#data' => [],
+    ],
+    'total2' => [
+      '#type' => 'chart_data',
+      '#title' => 'Менее ' . DEP_2D_WARNING_2_DAYS . ' дней',
+      '#data' => [],
+    ],
+//    'total' => [
+//      '#type' => 'chart_data',
+//      '#title' => 'Весь остаток',
+//      '#data' => [],
+//    ],
+  );
+
+//  $index = 0;
+  $max = 0;
+  foreach ($sort as $tid) {
+    $record = $result_by_nom[$tid];
+    if ($record['totals'][DEP_2D_WARNING_1_DAYS] || $record['totals'][DEP_2D_WARNING_2_DAYS]) {
+      $has_data = true;
+
+      $chart['xaxis']['#labels'][] = $record['name'];
+      $qty_t = (float)$record['totals']['total'];
+      $qty_t1 = (float)$record['totals'][DEP_2D_WARNING_1_DAYS];
+      $qty_t2 = (float)$record['totals'][DEP_2D_WARNING_2_DAYS];
+
+//      $max = max($qty_t, $qty_t1, $qty_t2, $max);
+      $max = max($qty_t1, $qty_t2, $max);
+
+      $chart['total1']['#data'][] = $qty_t1;
+      $chart['total2']['#data'][] = $qty_t2;
+//      $chart['total']['#data'][] = max($qty_t - $qty_t1 - $qty_t2, 0);
+
+      $delta_t1 = $delta_t2 = '';
+      if ($qty_t) {
+        $delta_t1 = $qty_t1 ? (number_format(($qty_t1 / $qty_t * 100), 0, null, ' ') . '%') : '';
+        $delta_t2 = $qty_t2 ? (number_format(($qty_t2 / $qty_t * 100), 0, null, ' ') . '%') : '';
+      }
+
+      $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+        '<div><div style="display:inline-block; width: 180px;">Всего:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_t, 0, ',', ' ') . '</b></div></div>' .
+        '<div><div style="display:inline-block; width: 180px;">Менее ' . DEP_2D_WARNING_2_DAYS . ' дней:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_t2, 0, ',', ' ') . '</b></div></div>' .
+        '<div><div style="display:inline-block; width: 180px;">Менее ' . DEP_2D_WARNING_1_DAYS . ' дней:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_t1, 0, ',', ' ') . '</b></div></div>' .
+        '</div>';
+      $chart['total1'][] = array(
+        '#type' => 'chart_data_item',
+        '#title' => $tooltip,
+//        '#raw_options' => [
+//          'annotation' => $delta_t1 ?: null,
+//        ],
+      );
+      $chart['total2'][] = array(
+        '#type' => 'chart_data_item',
+        '#title' => $tooltip,
+//        '#raw_options' => [
+//          'annotation' => $delta_t2 ?: null,
+//        ],
+      );
+//      $chart['total'][] = array(
+//        '#type' => 'chart_data_item',
+//        '#title' => $tooltip,
+//      );
+//      $index++;
+    }
+  }
+
+  $chart['yaxis']['#max'] = $max*1.1;
+  $width = 80*count($chart['total1']['#data']) + 150;
+  $chart['#width'] = min($width, 1288);
+
+  if (!empty($has_data)) {
+    $output = $chart;
+  }
+
+  return $output;
+}
+
+/**
+ * ----- Выборка данных ------------------------------------------------------------------------------------------------
+ */
+function dash_get_remains_by_nom($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_remains', 'r');
+
+    $dbr->innerJoin('field_data_field_nomenklatura_td', 'fn', 'fn.entity_id = r.id');
+    $dbr->condition('fn.bundle', 'remains');
+    $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklatura_td_tid');
+    $dbr->fields('t', ['tid', 'name']);
+
+    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+    $dbr->condition('frd.bundle', 'remains');
+    if (!empty($conditions['date'])) {
+      $dbr->condition('frd.field_date_value', $conditions['date']);
+    } else {
+      $dbr->addField('frd', 'field_date_value', 'date');
+    }
+
+    $dbr->innerJoin('field_data_field_date_expiration', 'frde', 'frde.entity_id = r.id');
+    $dbr->condition('frde.bundle', 'remains');
+    $dbr->addField('frde', 'field_date_expiration_value', 'date_expiration');
+
+    $dbr->innerJoin('field_data_field_warehouse_td', 'fwt', 'fwt.entity_id = r.id');
+    $dbr->condition('fwt.bundle', 'remains');
+    $dbr->innerJoin('taxonomy_term_data', 'tw', 'tw.tid = fwt.field_warehouse_td_tid');
+    $dbr->addField('tw', 'tid', 'w_tid');
+    $dbr->addField('tw', 'name', 'w_name');
+
+    $dbr->innerJoin('field_data_field_quantity_td', 'fq', 'fq.entity_id = r.id');
+    $dbr->condition('fq.bundle', 'remains');
+    $dbr->addField('fq', 'field_quantity_td_value', 'qty');
+
+    $dbr->innerJoin('field_data_field_price', 'fp', 'fp.entity_id = r.id');
+    $dbr->condition('fp.bundle', 'remains');
+    $dbr->addField('fp', 'field_price_value', 'price');
+
+    $result = $dbr->execute()->fetchAll();
+  }
+
+
+  // массив по-номенклатурно с разделением на склады и количества
+  $result_by_nom = [];
+  // получить дату актуальности остатков
+  $date_remains_actual = dep_2d_date_remains_actual();
+  foreach($result as $item) {
+    // остаток считаем по 1 июля отчётного года
+    if ($item->date_expiration && $item->date_expiration < $date_remains_actual) {
+      // создаём элемент
+      if (empty($result_by_nom[$item->tid])) {
+        $result_by_nom[$item->tid] = ['name' => $item->name, 'price' => $item->price];
+      }
+      // создаём элемент
+      if (empty($result_by_nom[$item->tid]['warehouses'][$item->w_tid])) {
+        $result_by_nom[$item->tid]['warehouses'][$item->w_tid] = [
+          'name' => $item->w_name,
+          'totals' => [DEP_2D_WARNING_1_DAYS => 0, DEP_2D_WARNING_2_DAYS => 0, 'expired' => 0, 'total' => 0]
+        ];
+      }
+      // суммируем партии с истекающими сроками
+
+      if ($item->date_expiration - $conditions['date'] <= 0) {
+        $result_by_nom[$item->tid]['warehouses'][$item->w_tid]['totals']['expired'] += $item->qty;
+      }
+      elseif ($item->date_expiration - $conditions['date'] < DEP_2D_WARNING_1_DAYS * 60 * 60 * 24) {
+//      if ($item->date_expiration - $conditions['date'] < DEP_2D_WARNING_1_DAYS * 60 * 60 * 24) {
+        $result_by_nom[$item->tid]['warehouses'][$item->w_tid]['totals'][DEP_2D_WARNING_1_DAYS] += $item->qty;
+      }
+      elseif ($item->date_expiration - $conditions['date'] < DEP_2D_WARNING_2_DAYS * 60 * 60 * 24) {
+        $result_by_nom[$item->tid]['warehouses'][$item->w_tid]['totals'][DEP_2D_WARNING_2_DAYS] += $item->qty;
+      }
+      // суммируем все партии на складе
+      $result_by_nom[$item->tid]['warehouses'][$item->w_tid]['totals']['total'] += $item->qty;
+    }
+  }
+
+  // подсчёт остатков по складам и номенклатуре
+  foreach ($result_by_nom as $nom_tid => $nom) {
+    foreach ($nom['warehouses'] as $w_key => $warehouse) {
+      foreach ($warehouse['totals'] as $t_key => $qty) {
+        if (empty($result_by_nom[$nom_tid]['totals'][$t_key]))  $result_by_nom[$nom_tid]['totals'][$t_key] = 0;
+        $result_by_nom[$nom_tid]['totals'][$t_key] += $qty;
+      }
+    }
+  }
+
+  return $result_by_nom;
+}
+
+function dash_get_remains_by_warehouse($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_remains', 'r');
+
+    $dbr->innerJoin('field_data_field_nomenklatura_td', 'fn', 'fn.entity_id = r.id');
+    $dbr->condition('fn.bundle', 'remains');
+    if (!empty($conditions['nom_tid'])) {
+      $dbr->condition('fn.field_nomenklatura_td_tid', $conditions['nom_tid']);
+    }
+    $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklatura_td_tid');
+    $dbr->fields('t', ['tid', 'name']);
+
+    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+    $dbr->condition('frd.bundle', 'remains');
+    if (!empty($conditions['date'])) {
+      $dbr->condition('frd.field_date_value', $conditions['date']);
+    } else {
+      $dbr->addField('frd', 'field_date_value', 'date');
+    }
+
+    $dbr->innerJoin('field_data_field_date_expiration', 'frde', 'frde.entity_id = r.id');
+    $dbr->condition('frde.bundle', 'remains');
+    $dbr->addField('frde', 'field_date_expiration_value', 'date_expiration');
+
+    $dbr->innerJoin('field_data_field_warehouse_td', 'fwt', 'fwt.entity_id = r.id');
+    $dbr->condition('fwt.bundle', 'remains');
+    $dbr->innerJoin('taxonomy_term_data', 'tw', 'tw.tid = fwt.field_warehouse_td_tid');
+    $dbr->addField('tw', 'tid', 'w_tid');
+    $dbr->addField('tw', 'name', 'w_name');
+
+    $dbr->innerJoin('field_data_field_quantity_td', 'fq', 'fq.entity_id = r.id');
+    $dbr->condition('fq.bundle', 'remains');
+    $dbr->addField('fq', 'field_quantity_td_value', 'qty');
+
+    $dbr->innerJoin('field_data_field_price', 'fp', 'fp.entity_id = r.id');
+    $dbr->condition('fp.bundle', 'remains');
+    $dbr->addField('fp', 'field_price_value', 'price');
+
+    $result = $dbr->execute()->fetchAll();
+  }
+
+
+  // массив по-номенклатурно с разделением на склады и количества
+  $result_by_wh = [];
+  // получить дату актуальности остатков
+  foreach($result as $item) {
+    // создаём элемент
+    if (empty($result_by_wh[$item->w_tid])) {
+      $result_by_wh[$item->w_tid] = ['name' => $item->w_name];
+    }
+    // создаём элемент
+    if (empty($result_by_wh[$item->w_tid]['noms'][$item->tid])) {
+      $result_by_wh[$item->w_tid]['noms'][$item->tid] = [
+        'name' => $item->name,
+        'price' => $item->price,
+        'totals' => [DEP_2D_WARNING_1_DAYS => 0, DEP_2D_WARNING_2_DAYS => 0, 'expired' => 0, 'total' => 0, 'amount' => 0]
+      ];
+    }
+    // суммируем партии с истекающими сроками
+
+    if ($item->date_expiration - $conditions['date'] <= 0) {
+      $result_by_wh[$item->w_tid]['noms'][$item->tid]['totals']['expired'] += $item->qty;
+    }
+    elseif ($item->date_expiration - $conditions['date'] < DEP_2D_WARNING_1_DAYS * 60 * 60 * 24) {
+      $result_by_wh[$item->w_tid]['noms'][$item->tid]['totals'][DEP_2D_WARNING_1_DAYS] += $item->qty;
+    }
+    elseif ($item->date_expiration - $conditions['date'] < DEP_2D_WARNING_2_DAYS * 60 * 60 * 24) {
+      $result_by_wh[$item->w_tid]['noms'][$item->tid]['totals'][DEP_2D_WARNING_2_DAYS] += $item->qty;
+    }
+    // суммируем все партии на складе
+    $result_by_wh[$item->w_tid]['noms'][$item->tid]['totals']['total'] += $item->qty;
+    $result_by_wh[$item->w_tid]['noms'][$item->tid]['totals']['amount'] += $item->qty*$item->price;
+  }
+
+  // подсчёт остатков по складам и номенклатуре
+  foreach ($result_by_wh as $w_tid => $wh) {
+    foreach ($wh['noms'] as $n_key => $nom) {
+      foreach ($nom['totals'] as $t_key => $qty) {
+        if (empty($result_by_wh[$w_tid]['totals'][$t_key]))  $result_by_wh[$w_tid]['totals'][$t_key] = 0;
+        $result_by_wh[$w_tid]['totals'][$t_key] += $qty;
+      }
+    }
+  }
+
+  return $result_by_wh;
+}
+
+/**
+ * Вернуть дату актуальности остатков - 1 июля следующего отчётного периода.
+ * Это +21 месяц к текущему периоду
+ */
+function dep_2d_date_remains_actual()
+{
+  $period = dash_get_period_time_bounds(10);
+
+  return gmmktime(0,0,0, date('n', $period['from'])+21, 1, date('Y', $period['from']));
+}
+
+/**
+ * ----- Формы --------------------------------------------------------------------------------------------------------
+ */
+function dep_2d_remains_nom_filter_form($form, $form_state, $datetime)
+{
+  $dbr = db_select('eck_remains', 'r');
+  $dbr->innerJoin('field_data_field_nomenklatura_td', 'fn', 'fn.entity_id = r.id');
+  $dbr->condition('fn.bundle', 'remains');
+  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklatura_td_tid');
+  $dbr->fields('t', ['tid', 'name']);
+  $dbr->orderBy('name');
+
+  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+  $dbr->condition('frd.bundle', 'remains');
+  $dbr->condition('frd.field_date_value', $datetime);
+
+  $noms = $dbr->execute()->fetchAllAssoc('tid');
+
+  $options = [null => '- Весь список -'];
+  foreach ($noms as $item) {
+    $options[$item->tid] = $item->name;
+  }
+
+  $form['#attributes'] = ['class' => ['dep_2d-remains-nom-filter-form']];
+  $form['nom'] = [
+    '#title' => 'Номенклатура',
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => empty($_GET['nom']) || empty($options[$_GET['nom']]) ? 0 : $_GET['nom'],
+    '#ajax' => [
+      'wrapper' => 'tables-remains-by-warehouse',
+      'callback' => 'dep_2d_remains_nom_filter_form_ajax_callback',
+    ],
+  ];
+
+  return $form;
+}
+function dep_2d_remains_nom_filter_form_submit($form, &$form_state)
+{
+  $form_state['redirect'] = [
+    'remains', [
+      'query' => ['nom' => $form_state['values']['nom']],
+      'fragment' => 'dep_2d-remains-nom-filter-form'
+    ]
+  ];
+}
+function dep_2d_remains_nom_filter_form_ajax_callback($form, $form_state)
+{
+  $datetime = dep_2d_get_date_data_available();
+
+  return dep_2d_tables_remains_by_warehouse($datetime, $form_state['values']['nom']);
+}
+
+/**
+ * Возвращает последнюю дату, на которую есть данные по остаткам
+ * @return false|int
+ */
+function dep_2d_get_date_data_available()
+{
+//  $shift = 0;
+//  $datetime = null;
+//  while(!$datetime) {
+//    $dt = gmmktime(0, 0, 0, date('n'), date('d') - $shift, date('Y'));
+//
+//    $dbr = db_select('eck_remains', 'r');
+//    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+//    $dbr->condition('frd.bundle', 'remains');
+//    $dbr->condition('frd.field_date_value', $dt);
+//    if ($dbr->execute()->fetchCol()) {
+//      $datetime = $dt;
+//    }
+//  }
+
+  $dbr = db_select('field_data_field_date', 'frd');
+  $dbr->condition('frd.bundle', 'remains');
+  $dbr->addExpression('MAX(frd.field_date_value)');
+  $result = $dbr->execute()->fetchCol();
+
+  return $result ? current($result) : null;
+}

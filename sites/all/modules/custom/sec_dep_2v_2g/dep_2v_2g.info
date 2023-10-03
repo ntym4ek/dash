@@ -1,0 +1,4 @@
+name = Раздел 'Департамент 2В и 2Г'
+description = ""
+package = Custom
+core = 7.x

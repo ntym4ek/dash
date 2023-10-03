@@ -1,0 +1,2 @@
+<?
+  print render($page['content']);

@@ -1,0 +1,386 @@
+@import "variables"; // продублировано из styles.scss, чтобы переменные не подсвечивались
+
+// общие для всех проектов стили
+//@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;400;600;700&display=swap');
+
+html {
+  height: 100%;
+  font-size: 12px;
+  @media #{$smartphone} { font-size: 14px; }
+  @media #{$tablet}     { font-size: 15px; }
+  @media #{$laptop}     { font-size: 16px; }
+  @media #{$desktop}    { font-size: 16px; }
+}
+
+* {
+  box-sizing: border-box;
+  outline: 0 !important;
+}
+
+body {
+  font-family: ubuntu, Helvetica,Arial, sans-serif;
+  color: $text-color; line-height: 1.43;
+  background-color: $bkg-page;
+  min-height: 100%;
+  position: relative;
+}
+
+h1, .h1 { font-size: $font-size-h1; margin: 2rem 0 1rem; }
+h2, .h2 { font-size: $font-size-h2; margin: 2rem 0 1rem; }
+h3, .h3 { font-size: $font-size-h3; margin: 2rem 0 1rem; }
+h4, .h4 { font-size: $font-size-h4; margin: 1rem 0; }
+h5, .h5 { font-size: $font-size-h5; margin: 1rem 0; }
+h6, .h6 { font-size: $font-size-h6; margin: 1rem 0; }
+
+.container {
+  padding: 0 $gutter;
+  width: 100%;
+  @media #{$tablet} {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 $gutter;
+  }
+}
+
+
+// --- Шапка ----------------------------------------------------------------
+.header {
+  display: flex; align-items: center;
+  background: $bkg-header;
+  box-shadow: 0 4px 20px 0 rgba(0,0,0,.5);
+  padding: 0.8rem 0;
+  .branding {
+    text-align: center;
+    line-height: 1;
+    a { display: inline-block; }
+    img {
+      display: block;
+      height: $header-content-height; // высота пересекается с кнопкой мобильного меню
+    }
+  }
+  .menu {
+    .primary-menu {
+      display: flex; justify-content: start;
+    }
+    .secondary-menu {
+      display: flex; justify-content: end;
+    }
+  }
+  @media #{$tablet} {
+    .branding {
+      text-align: left;
+      img { height: calc(#{$header-content-height} + 1rem); }
+    }
+  }
+}
+
+// --- Меню -----------------------------------------------------------------
+ul.menu {
+  list-style: none;
+  padding: 0;
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  li, li.leaf {
+    margin: 0; padding: 0;
+    list-style: none;
+  }
+  li.expanded > a { cursor: default; } // пункты с подменю не имеют ссылок
+}
+
+.header {
+  ul.menu {
+    display: flex; justify-content: space-between;
+    a {
+      display: inline-block;
+      text-decoration: none;
+      padding: $gutter/2 $gutter;
+    }
+    > li {
+      display: inline-block;
+      position: relative;
+      &:hover > .sub-menu { visibility: visible; opacity: 1; }
+      > a {
+        color: #fff;
+        &.active-trail { color: $brand-light-blue; }
+      }
+    }
+    .sub-menu {
+      box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+      visibility: hidden; opacity: 0;
+      position: absolute; z-index: 1;
+      background-color: #f1f1f1;
+      min-width: 200px;
+      padding: $gutter/2 0;
+      transition: all 200ms;
+      a {
+        color: $text-color;
+        width: 100%;
+        transition: all 200ms;
+        &:hover { background: $text-muted; }
+      }
+      > li {
+        display: block;
+      }
+    }
+  }
+}
+
+.main {
+  .messages {
+    margin: 1em 0;
+  }
+
+  // место под футер
+  padding-bottom: $footer-height;
+}
+
+.footer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: $footer-height;
+  background: $bkg-header;
+  color: #eee;
+  padding: 1rem 0;
+  .container {
+    height: 100%;
+  }
+  .branding {
+    img { height: 50px; }
+  }
+  .rights {
+    font-size: 1.1rem; text-align: right;
+  }
+}
+
+// --- Мобильная навигация -------------------------------------------------------------
+.page-wrapper {
+  overflow: hidden;
+  > .mobile-menu-label {
+    background: $bkg-header; border-radius: 2px;
+    display: block;
+    color: #fff;
+    width: 60px;
+    position: fixed; top: 0; left: 0; z-index: 10;
+    transition: all 200ms ease-in;
+    overflow: hidden;
+    .label {
+      display: flex; justify-content: center; align-items: center;
+
+      // анимированная иконка
+      width: 60px; height: $header-content-height;
+      transition-duration: 0.2s;
+      .icon,
+      .icon:before,
+      .icon:after {
+        background-color: #fff;
+        border-radius: 5px;
+        transition-duration: 0.2s;
+        position: absolute; top: 30px;
+        width: 30px; height: 4px;
+      }
+      .icon {
+        top: 30px;
+        &:before { content: ""; top: -10px; }
+        &:after { content: ""; top: 10px; }
+      }
+    }
+    padding: 0.8rem 0;
+
+    @media #{$tablet} {
+      display: none;
+    }
+  }
+
+  .page {
+    min-height: 100vh; // при открытом меню подвал не прижимается к низу страницы
+    transition: all 200ms ease-in;
+  }
+  .navigation {
+    background: $mobile-menu-bkg;
+    position: fixed; bottom: 0; left: 0; z-index: 11;
+    width: $mobile-menu-width; height: 100%;
+    margin: 0 0 0 (-$mobile-menu-width); padding: 0 0 4em 0;
+    transition: all 200ms ease-in;
+    display: flex; flex-direction: column; flex-wrap: nowrap;
+    .logo {
+      display:flex; flex-direction: column; align-items: center;
+      color: #fff; font-size: 1.5rem;
+      padding: 3rem 0;
+      img {
+        max-width: 60px;
+        padding-bottom: 1rem;
+      }
+    }
+    .mobile-menu {
+      display: flex; flex-direction: column; justify-content: space-between;
+      height: 100%;
+    }
+    ul.menu {
+      overflow: hidden;
+      li, li.leaf {
+        display: list-item;
+        > a {
+          color:#fff; font-size: 14px; text-decoration: none; text-transform: uppercase; word-spacing: 1.5px;
+          display: block;
+          padding: 1rem;
+        }
+        &:not(:last-child) a { border-bottom: 1px solid #bbb; }
+      }
+      li.leaf {
+        > a {
+          &:hover,
+          &.active {
+            background: lighten($mobile-menu-bkg, 10%);
+          }
+        }
+      }
+      .sub-menu {
+        padding-left: 2rem;
+      }
+    }
+    @media #{$tablet} {
+      display: none;
+    }
+  }
+
+  input[type="checkbox"]{
+    display: none;
+  }
+  input[type="checkbox"]:checked ~ .navigation {
+    margin: 0;
+  }
+  input[type="checkbox"]:checked ~ .mobile-menu-label {
+    left: calc(#{$mobile-menu-width} * 0.99);
+
+    // анимация иконки
+    .label .icon {
+      transition: 0.5s;
+      &:before{
+        transform: rotateZ(-45deg) scaleX(0.75) translate(-10px, -3px);
+      }
+      &:after{
+        transform: rotateZ(45deg) scaleX(0.75) translate(-10px, 3px);
+      }
+    }
+  }
+  input[type="checkbox"]:checked ~ .page {
+    transform: translate3d($mobile-menu-width, 0, 0);
+  }
+}
+
+
+// --- Формы ---------------------------------------------------------------
+.user-auth-form-wrapper {
+  max-width: 450px;
+  margin: 0 auto;
+  display: flex; flex-wrap: wrap;
+  .form-actions { margin-top: $gutter*2; }
+  .recovery-link { color: $text-muted; font-size: $font-size-small; }
+  > h1,
+  > form {
+    width: 100%
+  }
+  @media #{$tablet} {
+    padding-top: 120px;
+  }
+}
+
+// --- Таблицы --------------------------------------------------------------
+.table-li-responsive {
+  font-size: .9em;
+  ul { padding: 0; }
+  li {
+    border-radius: 3px;
+    display: block;
+    padding: 8px 0; margin-bottom: 5px;
+  }
+  .table-header {
+    color: #efefef; text-transform: uppercase; letter-spacing: 0.03em;
+    display: none;
+    > .col { background-color: #95A5A6; }
+  }
+  .table-subheader {
+    font-weight: 700;
+    > .col { background-color: #dbdbdb; }
+  }
+  .table-row {
+    transition: all .2s;
+    background-color: #ffffff;
+    &:hover {
+      box-shadow: 0 .5em .5em -.4em rgba(0,0,0,0.2);
+      transform: scale3d(1.01, 1.01, 1);
+    }
+    &.red { background: $warn-red; }
+    &.orange { background: $warn-orange; }
+    &.green { background: $warn-green; }
+  }
+  .col {
+    display: flex;
+    flex-basis: 100%; align-items: center;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding: 3px 8px;
+    &.center { text-align: center; }
+    &.right { text-align: right; }
+    &.empty { display: none; }
+    &:before {
+      color: $text-light;
+      padding-right: 10px;
+      content: attr(data-label);
+      flex: 0 0 35%;
+      text-align: right;
+    }
+  }
+
+
+  @media #{$tablet} {
+    .table-header { display: flex; }
+    .table-row {
+      background: none;
+      &.red,
+      &.orange,
+      &.green { background: none; }
+      > .col { background: #ffffff; }
+      &.red > .col { background: $warn-red; }
+      &.orange > .col { background: $warn-orange; }
+      &.green > .col { background: $warn-green; }
+    }
+    li {
+      display: flex;
+      padding: 0;
+    }
+    .col {
+      display: block;
+      padding: 8px 10px;
+      &.empty { display: block; }
+      &:before {
+        flex-basis: 0; padding: 0;
+        content: '';
+      }
+      margin-right: 2px;
+    }
+    .col-1 { flex: 0 0 22%; }
+    .col-2 { flex: 0 0 20%; }
+    .col-3 { flex: 0 0 33%; }
+    .col-4 { flex: 0 0 25%; }
+  }
+}
+
+
+// --- Закладки -------------------------------------------------------------
+ul.tabs.primary {
+  margin-top: 2em;
+  li {
+    a {
+      color: $text-color;
+      padding: 0.5em 1em;
+      line-height: 2em;
+    }
+    &.active a {
+      background: $bkg-page;
+      border-bottom: 1px solid $bkg-page;
+    }
+  }
+}
+

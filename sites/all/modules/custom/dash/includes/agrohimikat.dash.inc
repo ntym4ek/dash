@@ -1,0 +1,448 @@
+<?php
+
+function dash_report_ah_current_tab()
+{
+  $period = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_AH);
+  $time_today = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
+  $time_yesterday = gmmktime(0, 0, 0, date('n'), date('j')-1, date('Y'));
+
+  $output = '<div class="section-title">' .
+    '<h3>Отгрузка</h3>' .
+    '<p>Год к году за период с '. date('d', $period['from']) . '.' . date('m', $period['from']) . ' по ' . date('d', $time_yesterday) . '.' . date('m', $time_yesterday) . '</p>' .
+    '</div>';
+
+  $output .= '<div class="row">';
+  $data_arr =   dash_column_revenue_period_to_period('ah', $period['from'], $time_today);
+  $data_arr['#title'] = 'Суммарная отгрузка за период (' . DASH_REV_SUFFIX . ')';
+  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
+
+  $data_arr =   dash_pie_revenue_year('ah', $period['from'], $time_today);
+  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
+
+  $data_arr =   dash_column_revenue_period_to_period('ah', $period['from'], $time_today, ['Производство СЗР', 'Собственная продукция (производство СЗР)']);
+  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
+
+  $data_arr =   dash_column_revenue_period_to_period('ah', $period['from'], $time_today, ['Производство смолы']);
+  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
+  $output .= '</div>';
+
+  $output .=  '<div class="section-title">' .
+    '<h3>Производство</h3>' .
+    '<p></p>' .
+    '</div>';
+
+  $output .= '<h4>Пестициды</h4>';
+  $form = drupal_get_form('dash_clients_filter_form', 'Пестициды');
+  $output .= '<div>' . drupal_render($form) . '</div>';
+
+  $output .= '<div class="row">';
+  $data_arr =   dash_line_prod_plan_fact_current_month_by_day('Пестициды', empty($_GET['client']) ? null : $_GET['client']);
+  $output .=    '<div id="clients-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $output .= '</div>';
+
+  $output .= '<h4>Смолы</h4>';
+  $output .= '<div class="row">';
+  $data_arr =   dash_line_prod_plan_fact_current_month_by_day('Смолы');
+  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $output .= '</div>';
+
+  return '<div class="charts">' . $output . '</div>';
+}
+
+function dash_report_ah_previous_tab()
+{
+  $period = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_AH, -1);
+
+  $output = '<div class="section-title">' .
+    '<h3>Отгрузка</h3>' .
+    '<p>' . DASH_HISTORY_START_YEAR_AH . '-' . date('Y', $period['from']) . '</p>' .
+    '</div>';
+
+  $output .= '<div class="row">';
+  $data_arr =   dash_column_revenue_period_to_period('ah', $period['from'], $period['to']);
+  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
+
+  $data_arr =   dash_pie_revenue_year('ah', $period['from'], $period['to']);
+  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
+
+  // отгрузка по основным видам продукции
+  $data_arr =   dash_column_revenue_by_types('ah', $period['from'], $period['to']);
+  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $output .= '</div>';
+
+  // производство (текущий сезон, с октября)
+  $period = dash_get_period_time_bounds(10);
+  // последний полный месяц
+  $time_current_month = gmmktime(0, 0, 0, date('n'), 1, date('Y'));
+
+  $output .=  '<div class="section-title">' .
+    '<h3>Производство</h3>' .
+    '<p>' . _month_label_ru(date('n', $period['from'])) . ' - ' . _month_label_ru(date('n', $time_current_month-1)) . '</p>' .
+    '</div>';
+
+  // вывести набор графиков по типам продукции
+  $dbr = db_select('field_data_field_nom_type', 'fnt');
+  $dbr->addField('fnt', 'field_nom_type_value', 'type');
+  $dbr->condition('fnt.field_nom_type_value', 'Прочее', '<>');
+  $dbr->distinct();
+  $types = $dbr->execute()->fetchCol();
+  foreach ($types as $type) {
+    $output .= '<h4>' . $type . '</h4>';
+
+    // производство период к периоду с октября по последний полный месяц
+    $output .= '<div class="row">';
+    $data_arr =   dash_column_prod_by_type_period_to_period($type, $period['from'], $time_current_month);
+    $output .=    '<div class="col-xs-12 col-lg-4">' . drupal_render($data_arr) . '</div>';
+
+    $data_arr =   dash_pie_prod_clients($type, $period['from'], $time_current_month);
+    $output .=    '<div class="col-xs-12 col-lg-4">' . drupal_render($data_arr) . '</div>';
+
+    $data_arr =   dash_lines_prod_plan_fact($type, $period['from'], $time_current_month);
+    // если в отчёте >4 месяцев, то вывести в отдельной строке
+    $class = count($data_arr["fact"]["#data"]) > 4 ? ' col-lg-12' : ' col-lg-4';
+    $output .=    '<div class="col-xs-12' . $class . '">' . drupal_render($data_arr) . '</div>';
+    $output .= '</div>';
+  }
+
+  return '<div class="charts">' . $output . '</div>';
+}
+
+function dash_clients_filter_form($form, $form_state, $type)
+{
+  $month_start = gmmktime(0, 0, 0, date('n'), 1, date('Y'));
+  $month_next_start = gmmktime(0, 0, 0, date('n')+1, 1, date('Y'));
+
+  $dbr = db_select('eck_plan', 'p');
+  $dbr->innerJoin('field_data_field_nomenklatura', 'fn', 'fn.entity_id = p.id');
+  $dbr->innerJoin('field_data_field_nom_type', 'fnt', 'fnt.entity_id = fn.field_nomenklatura_tid');
+  $dbr->condition('fnt.field_nom_type_value', $type);
+  $dbr->innerJoin('field_data_field_is_fact', 'ff', 'ff.entity_id = p.id');
+  $dbr->condition('ff.field_is_fact_value', DASH_TYPE_PLAN);
+  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
+  $dbr->condition('frd.field_date_value', $month_start, '>=');
+  $dbr->condition('frd.field_date_value', $month_next_start, '<');
+  $dbr->innerJoin('field_data_field_nom_client', 'fnc', 'fnc.entity_id = fn.field_nomenklatura_tid');
+  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fnc.field_nom_client_tid');
+  $dbr->fields('t', ['tid', 'name']);
+  $result = $dbr->execute()->fetchAllAssoc('tid');
+
+  $clients = ['0' => 'Все'];
+  foreach ($result as $item) {
+    $clients[$item->tid] = $item->name;
+  }
+
+  $form['#attributes'] = ['class' => ['dash-filter-form']];
+  $form['client'] = [
+    '#title' => 'Заказчик',
+    '#type' => 'select',
+    '#options' => $clients,
+    '#default_value' => empty($_GET['client']) || empty($clients[$_GET['client']]) ? 0 : $_GET['client'],
+    '#ajax' => [
+      'wrapper' => 'clients-target',
+      'callback' => 'dash_clients_filter_form_ajax_callback',
+    ],
+  ];
+
+  return $form;
+}
+function dash_clients_filter_form_submit($form, &$form_state)
+{
+  $form_state['redirect'] = [
+    'dashboard/current', [
+      'query' => ['client' => $form_state['values']['client']],
+      'fragment' => 'dash-clients-filter-form'
+    ]
+  ];
+}
+function dash_clients_filter_form_ajax_callback($form, $form_state)
+{
+  $data_arr = dash_line_prod_plan_fact_current_month_by_day('Пестициды', $form_state['values']['client']);
+  return '<div id="clients-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+}
+
+function dash_line_prod_plan_fact_current_month_by_day($type, $client = null)
+{
+  $data = [];
+  $month_start = gmmktime(0, 0, 0, date('n'), 1, date('Y'));
+
+  $total = $total_f = 0;
+  for($d = 1; $d <= date('t', $month_start); $d++) {
+    $day_start = gmmktime(0, 0, 0, date('n', $month_start), $d, date('Y', $month_start));
+    $day_next_start = gmmktime(0, 0, 0, date('n', $month_start), $d+1, date('Y', $month_start));
+
+    $dbr = db_select('eck_plan', 'p');
+    $dbr->innerJoin('field_data_field_nomenklatura', 'fn', 'fn.entity_id = p.id');
+    $dbr->innerJoin('field_data_field_nom_type', 'fnt', 'fnt.entity_id = fn.field_nomenklatura_tid');
+    $dbr->condition('fnt.field_nom_type_value', $type);
+    if ($client) {
+      $dbr->innerJoin('field_data_field_nom_client', 'fnc', 'fnc.entity_id = fn.field_nomenklatura_tid');
+      $dbr->condition('fnc.field_nom_client_tid', $client);
+    }
+    $dbr->innerJoin('field_data_field_is_fact', 'ff', 'ff.entity_id = p.id');
+    $dbr->condition('ff.bundle', 'plan');
+    $dbr->innerJoin('field_data_field_output', 'fo', 'fo.entity_id = p.id');
+    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
+    $dbr->condition('frd.bundle', 'plan');
+    $dbr->condition('frd.field_date_value', $day_start, '>=');
+    $dbr->condition('frd.field_date_value', $day_next_start, '<');
+    $dbr->addExpression('SUM(fo.field_output_value)', 'output');
+
+    $dbr_f = clone($dbr);
+    $dbr->condition('ff.field_is_fact_value', DASH_TYPE_PLAN);
+    $dbr_f->condition('ff.field_is_fact_value', DASH_TYPE_FACT);
+
+    $amount = (int)$dbr->execute()->fetchField();
+    $amount_f = (int)$dbr_f->execute()->fetchField();
+    $total += $amount;
+    $total_f += $amount_f;
+
+    $data[date('d', $day_start)] = [$total/1000, $total_f/1000];
+  }
+
+  $chart = array(
+    '#type' => 'chart',
+    '#chart_type' => 'line',
+    '#chart_id' => 'dash_prod_plan_fact_lines',
+    '#title' => 'Выполнение плана на ' . _month_label_ru(date('n', $month_start)) . ' (тыс. ед.)',
+    '#height' => '350',
+    '#legend_position' => 'bottom',
+    '#colors' => ['#aaa', DASH_COLOR_RED],
+    'xaxis' => ['#type' => 'chart_xaxis'],
+    'yaxis' => [
+      '#type' => 'chart_yaxis',
+      '#min' => 0,
+    ],
+    'plan' => [
+      '#type' => 'chart_data',
+      '#title' => 'План'
+    ],
+    'fact' => [
+      '#type' => 'chart_data',
+      '#title' => 'Факт'
+    ],
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'crosshair' => ['trigger' => 'both'],
+      'chartArea' => [
+        'width' => '85%',
+        'left' => 50,
+      ],
+    ],
+  );
+
+
+  // факт выводим по текущее число включительно
+  foreach ($data as $day => $datum) {
+    $chart['xaxis']['#labels'][] = $day;
+    $chart['plan']['#data'][] = $datum[0];
+    $chart['fact']['#data'][] = $day <= date('j') ? $datum[1] : null;
+  }
+
+  $example['chart'] = $chart;
+
+  return $example;
+}
+function dash_lines_prod_plan_fact($type, $time_from, $time_to)
+{
+  $data = [];
+
+  // список месяцев, за которые выводим график
+  $time_months_list = [];
+  $time_month_start = $time_from;
+  while($time_month_start < $time_to) {
+    $time_months_list[] = $time_month_start;
+    $time_month_start = gmmktime(0, 0, 0, date('n', $time_month_start)+1, 1, date('Y', $time_month_start));
+  }
+
+  foreach($time_months_list as $time_month_start) {
+    $time_month_end = gmmktime(0, 0, 0, date('n', $time_month_start)+1, 1, date('Y', $time_month_start));
+    $dbr = db_select('eck_plan', 'p');
+    $dbr->condition('p.type', 'plan');
+    $dbr->innerJoin('field_data_field_nomenklatura', 'fn', 'fn.entity_id = p.id');
+    $dbr->innerJoin('field_data_field_nom_type', 'fnt', 'fnt.entity_id = fn.field_nomenklatura_tid');
+    $dbr->condition('fnt.field_nom_type_value', $type);
+    $dbr->innerJoin('field_data_field_is_fact', 'ff', 'ff.entity_id = p.id');
+    $dbr->condition('ff.bundle', 'plan');
+    $dbr->innerJoin('field_data_field_output', 'fo', 'fo.entity_id = p.id');
+    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
+    $dbr->condition('frd.bundle', 'plan');
+    $dbr->condition('frd.field_date_value', $time_month_start, '>=');
+    $dbr->condition('frd.field_date_value', $time_month_end, '<');
+    $dbr->addExpression('SUM(fo.field_output_value)', 'output');
+
+    $dbr_f = clone($dbr);
+    $dbr->condition('ff.field_is_fact_value', DASH_TYPE_PLAN);
+    $dbr_f->condition('ff.field_is_fact_value', DASH_TYPE_FACT);
+
+    $amount = (int)$dbr->execute()->fetchField();
+    $amount_f = (int)$dbr_f->execute()->fetchField();
+
+    $data[_month_label_ru(date('n', $time_month_start))] = [$amount/1000, $amount_f/1000];
+  }
+
+  $chart = array(
+    '#type' => 'chart',
+    '#chart_type' => 'line',
+    '#chart_id' => 'dash_prod_plan_fact_lines',
+    '#title' => 'Выполнение плана (тыс. ед.)',
+    '#colors' => ['#aaa', DASH_COLOR_RED],
+    '#height' => '350',
+//    '#width' => (string)(150*count($time_months_list)),
+    '#legend_position' => 'bottom',
+    'xaxis' => ['#type' => 'chart_xaxis'],
+    'yaxis' => [
+      '#type' => 'chart_yaxis',
+      '#min' => 0,
+    ],
+    'plan' => [
+      '#type' => 'chart_data',
+      '#title' => 'План'
+    ],
+    'fact' => [
+      '#type' => 'chart_data',
+      '#title' => 'Факт'
+    ],
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'chartArea' => [
+        'width' => '85%',
+        'left' => 50,
+      ],
+    ],
+  );
+
+  foreach ($data as $label => $datum) {
+    $chart['xaxis']['#labels'][] = $label;
+    $chart['plan']['#data'][] = $datum[0];
+    $chart['fact']['#data'][] = $datum[1];
+  }
+
+  return $chart;
+}
+
+function dash_pie_prod_clients($type, $time_from, $time_to)
+{
+  $dbr = db_select('eck_plan', 'p');
+  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
+  $dbr->condition('frd.entity_type', 'plan');
+  $dbr->condition('frd.field_date_value', $time_from, '>=');
+  $dbr->condition('frd.field_date_value', $time_to, '<');
+  $dbr->innerJoin('field_data_field_nomenklatura', 'fn', 'fn.entity_id = p.id');
+  $dbr->innerJoin('field_data_field_nom_type', 'fnt', 'fnt.entity_id = fn.field_nomenklatura_tid');
+  $dbr->condition('fnt.field_nom_type_value', $type);
+  $dbr->innerJoin('field_data_field_is_fact', 'ff', 'ff.entity_id = p.id');
+  $dbr->condition('ff.bundle', 'plan');
+  $dbr->condition('ff.field_is_fact_value', DASH_TYPE_FACT);
+  $dbr->innerJoin('field_data_field_nom_client', 'fnc', 'fnc.entity_id = fn.field_nomenklatura_tid');
+  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fnc.field_nom_client_tid');
+  $dbr->addField('t', 'name');
+  $dbr->groupBy('t.name');
+  $dbr->innerJoin('field_data_field_output', 'fo', 'fo.entity_id = p.id');
+  $dbr->addExpression('SUM(fo.field_output_value)', 'output');
+  $result = $dbr->execute()->fetchAllAssoc('name');
+
+  $names = [];
+  $names_data = [];
+  foreach($result as $item) {
+    $names[] = $item->name;
+    $names_data[$item->output/1000] =  $item->name;
+  }
+
+  krsort($names_data);
+
+  $chart = array(
+    '#type' => 'chart',
+    '#title' => 'Заказчики',
+    '#chart_type' => 'pie',
+    '#legend_position' => 'right',
+    '#legend_font_size' => '11px',
+    '#data_labels' => TRUE,
+    '#tooltips' => TRUE,
+    '#height' => '350',
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'pieHole' => 0.5,
+      'chartArea' => [
+        'width' => '85%',
+      ],
+    ],
+  );
+  $chart['pie_data1'] = array(
+    '#type' => 'chart_data',
+    '#title' => 'Продукция',
+    '#labels' => array_values($names_data),
+    '#data' => array_keys($names_data),
+  );
+
+  return $chart;
+}
+
+function dash_column_prod_by_type_period_to_period($type, $time_from, $time_to)
+{
+  $amounts = [];
+  $years_shift = date('Y', $time_from) - DASH_HISTORY_START_YEAR_AH;
+  $years_shift = abs($years_shift)+1 > DASH_HISTORY_LENGTH ? DASH_HISTORY_LENGTH : $years_shift;
+  do {
+    $time_start = gmmktime(0, 0, 0, date('n', $time_from) - 12 * $years_shift, date('j', $time_from), date('Y', $time_from));
+    $time_end = gmmktime(0, 0, 0, date('n', $time_to) - 12 * $years_shift, date('j', $time_to), date('Y', $time_to));
+
+    $dbr = db_select('eck_plan', 'p');
+    $dbr->condition('p.type', 'plan');
+    $dbr->innerJoin('field_data_field_nomenklatura', 'fn', 'fn.entity_id = p.id');
+    $dbr->innerJoin('field_data_field_nom_type', 'fnt', 'fnt.entity_id = fn.field_nomenklatura_tid');
+    $dbr->condition('fnt.field_nom_type_value', $type);
+    $dbr->innerJoin('field_data_field_is_fact', 'ff', 'ff.entity_id = p.id');
+    $dbr->condition('ff.bundle', 'plan');
+    $dbr->condition('ff.field_is_fact_value', DASH_TYPE_FACT);
+    $dbr->innerJoin('field_data_field_output', 'fo', 'fo.entity_id = p.id');
+    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
+    $dbr->addExpression('SUM(fo.field_output_value)', 'output');
+    $dbr->condition('frd.entity_type', 'plan');
+    $dbr->condition('frd.field_date_value', $time_start, '>=');
+    $dbr->condition('frd.field_date_value', $time_end, '<');
+    $amounts[date('Y', $time_start)] = (int)$dbr->execute()->fetchField();
+
+    $years_shift--;
+  } while ($years_shift >= 0);
+
+  $chart = array(
+    '#type' => 'chart',
+    '#chart_id' => 'dash_column_prod_by_type',
+    '#chart_type' => 'column',
+    '#title' => 'Выпуск (' . DASH_PROD_SUFFIX . ')',
+    '#height' => '350',
+//    '#width' => (string)(count($amounts)*130),
+    '#data_labels' => TRUE,
+    '#legend_position' => 'bottom',
+    'yaxis' => [
+      '#type' => 'chart_yaxis',
+      '#min' => 0,
+    ],
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'chartArea' => [
+        'width' => '85%',
+        'left' => 50,
+      ],
+    ],
+  );
+
+  $amount_prev = null;
+  foreach ($amounts as $year => $amount) {
+    $chart[$year] = array(
+      '#type' => 'chart_data',
+      '#title' => (string)$year,
+      '#data' => [$amount/1000],
+    );
+    $delta = !empty($amount_prev) ? (($amount > $amount_prev ? '+' : '') . number_format(($amount / $amount_prev * 100) - 100, 0, null, ' ') . '%') : '';
+    $chart[$year][0] = array(
+      '#type' => 'chart_data_item',
+      '#raw_options' => [
+        'annotation' => number_format($amount / 1000, 0, '', ' ') . ($delta ? ' (' . $delta . ')' : ''),
+      ],
+    );
+    $amount_prev = $amount;
+  }
+
+  return $chart;
+}

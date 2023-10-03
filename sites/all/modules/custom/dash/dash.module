@@ -1,0 +1,710 @@
+<?php
+
+define ('DASH_REV_DIVIDER', 1000000);       // делитель для единиц выручки
+define ('DASH_REV_SUFFIX', 'млн');          // суффикс (ед. изм.) для отгрузки
+define ('DASH_PROD_SUFFIX', 'тыс. ед.');    // суффикс (ед. изм.) для производства
+
+define ('DASH_TYPE_PLAN', 0);               // тип План
+define ('DASH_TYPE_FACT', 1);               // тип Факт
+define ('DASH_TYPE_DEAL', 2);               // тип Неоплаченный контракт
+
+define ('DASH_COLOR_BLUE', '#2B94C9');
+define ('DASH_COLOR_LIGHT_BLUE', '#89BDDF');
+define ('DASH_COLOR_AQUA', '#2DAD9E');
+define ('DASH_COLOR_GLOW_GREEN', '#A6B727');
+define ('DASH_COLOR_LIGHT_GREEN', '#a6c96a');
+define ('DASH_COLOR_RED', '#DF5327');
+define ('DASH_COLOR_DARK_RED', '#c42525');
+define ('DASH_COLOR_ORANGE', '#F69200');
+define ('DASH_COLOR_LIGHT_ORANGE', '#f28f43');
+define ('DASH_COLOR_PURPLE', '#CD5B8F');
+
+define ('DASH_HISTORY_LENGTH', 5);            // максимальное количество лет истории
+define ('DASH_HISTORY_START_YEAR_TD', 2020);  // начало истории сезонов ТД, год
+define ('DASH_PERIOD_START_MONTH_TD', 10);    // начало сезона, месяц
+const DASH_TD_NOM_ID_LIST_TO_EXCLUDE = [      // ТД, часть номенклатуры не нужно отражать в отчётах
+  11743,                                          // 2 Этилгексиловый эфир 2,4-Д кислоты(ТД КЧХК)
+  193930,                                         // 2,4-Д 2-этилгексиловый эфир техн. Китай (ТД КЧХК)
+  194367,194370,194371,194366,11745,11747,11746,  // этикетки
+];
+
+// Агрохимикат
+define ('DASH_HISTORY_START_YEAR_AH', 2020);  // год начала статистики
+define ('DASH_PERIOD_START_MONTH_AH', 1);     // месяц, с которого начинается период отчётности
+
+date_default_timezone_set('UTC');
+
+/**
+ * Implementation of hook_menu().
+ */
+function dash_menu()
+{
+  $items['ah'] = array(
+    'title' => 'Агрохимикат',
+    'menu_name' => 'main-menu',
+    'page callback' => 'dash_report_ah_current_tab',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID]],
+    'file' => 'includes/agrohimikat.dash.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['ah/current'] = array(
+    'title' => 'Текущий период',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+  );
+  $items['ah/previous'] = array(
+    'title' => 'Предыдущий период',
+    'page callback' => 'dash_report_ah_previous_tab',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID]],
+    'file' => 'includes/agrohimikat.dash.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+
+  $items['td'] = array(
+    'title' => 'Торговый Дом',
+    'menu_name' => 'main-menu',
+    'page callback' => '<front>',
+    'expanded' => true,
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+  );
+
+
+  return $items;
+}
+
+/** Вернуть начальное и конечное (не включительно) время Unix
+ * 12-и месячного периода начиная с месяца $month_start
+ * и смещением $year_shift лет от текущего периода.
+ * $year_shift = 0 - текущий период
+ */
+function dash_get_period_time_bounds($month_start, $year_shift = 0)
+{
+  // получить начало текущего периода
+  $time_month_start = gmmktime(0, 0, 0, $month_start, 1, date('Y'));
+  $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
+
+  // применить смещение
+  $year_start = $year_start + $year_shift;
+
+  return [
+    'from' => gmmktime(0, 0, 0, $month_start, 1, $year_start),
+    'to' => gmmktime(0, 0, 0, $month_start+12, 1, $year_start),
+  ];
+}
+
+function dash_get_page_time_bounds($month_start)
+{
+  if ($_GET['q'] == 'td/department-2v-2g/closed') {
+    $bounds = dash_get_period_time_bounds($month_start, -1);
+  } else {
+    $bounds = dash_get_period_time_bounds($month_start);
+    $bounds['to'] = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
+  }
+
+  return $bounds;
+}
+
+function dash_chart_definition_alter(&$element, $chart)
+{
+  if (isset($element["options"]["series"])) {
+    foreach ($element["options"]["series"] as &$el) {
+      $el["_format"]["format"] = '#,###';
+    }
+  }
+  if (isset($element["options"]["vAxes"][0])) {
+    $element["options"]["vAxes"][0]["format"] = 'decimal';
+  }
+}
+
+function _month_label_ru($month_index, $roditelniy = false)
+{
+  $months = $roditelniy ? explode('|', 'января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря') : explode('|', 'Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь');
+
+  return $months[$month_index-1];
+}
+
+/**
+* ----- универсальные для AH и TD графики ------------------------------------------------------------------------------
+*/
+
+/**
+ * Сравнение выручки период к периоду
+ * Внутри года суммируются данные за заданный период включительно
+ * @param $time_from -начало периода, обязательно текущего
+ * @param $time_to - конец периода, обязательно текущего
+ */
+function dash_column_revenue_period_to_period($company, $time_from, $time_to, $revenue_type = null)
+{
+  $data = [];
+
+  // собрать данные периодов с DASH_YEAR_HISTORY_START года
+  $years_shift = date('Y', $time_from) - ($company  == 'td' ? DASH_HISTORY_START_YEAR_TD : DASH_HISTORY_START_YEAR_AH);
+  $years_shift = abs($years_shift)+1 > DASH_HISTORY_LENGTH ? DASH_HISTORY_LENGTH : $years_shift;
+  do {
+    $time_start = gmmktime(0, 0, 0,  date('n', $time_from)-12*$years_shift, date('j', $time_from), date('Y', $time_from));
+    $time_end = gmmktime(0, 0, 0,  date('n', $time_to)-12*$years_shift, date('j', $time_to), date('Y', $time_to));
+
+    $dbr = db_select('eck_revenue', 'r');
+    $dbr->innerJoin('field_data_field_amount', 'fra', 'fra.entity_id = r.id');
+    $dbr->condition('fra.bundle', 'revenue');
+    $dbr->innerJoin('field_data_field_company', 'fc', 'fc.entity_id = r.id');
+    $dbr->condition('fc.field_company_value', $company);
+    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+    $dbr->condition('frd.bundle', 'revenue');
+    $dbr->condition('frd.field_date_value', $time_start, '>=');
+    $dbr->condition('frd.field_date_value', $time_end, '<');
+    $dbr->addExpression('SUM(fra.field_amount_value)', 'amount');
+    $dbr->innerJoin('field_data_field_revenue_type', 'frt', 'frt.entity_id = r.id');
+    $dbr->condition('frt.field_revenue_type_value', 'Прочая реализация', '!=');
+    if ($revenue_type) {
+//      $dbr->innerJoin('field_data_field_revenue_type', 'frt', 'frt.entity_id = r.id');
+      $dbr->condition('frt.field_revenue_type_value', $revenue_type, 'IN');
+    }
+    $data[date('Y', $time_start)] = [
+      'time_start' => $time_start,
+      'time_end' => $time_end,
+      'amount' => $dbr->execute()->fetchField() / DASH_REV_DIVIDER
+    ];
+
+    $years_shift--;
+  } while ($years_shift >= 0);
+
+  if ($revenue_type) {
+    $title = 'Отгрузка по категории "' . $revenue_type[0] . '" (' . DASH_REV_SUFFIX . ')';
+    $colors = [DASH_COLOR_RED, DASH_COLOR_PURPLE, DASH_COLOR_ORANGE, DASH_COLOR_DARK_RED, DASH_COLOR_AQUA, DASH_COLOR_GLOW_GREEN,  DASH_COLOR_BLUE];
+  } else {
+    $title = 'Суммарная отгрузка по данным бухгалтерии (' . DASH_REV_SUFFIX . ')';
+    $colors = [];
+  }
+
+  $chart = array(
+    '#type' => 'chart',
+    '#chart_type' => 'column',
+    '#title' => $title,
+    '#height' => '350',
+    '#data_labels' => TRUE,
+    '#legend_position' => 'bottom',
+    'yaxis' => [
+      '#type' => 'chart_yaxis',
+      '#min' => 0,
+    ],
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'chartArea' => [
+        'width' => '85%',
+        'left' => 50,
+      ],
+    ],
+  );
+
+  if ($colors) $chart += ['#colors' => $colors];
+
+  $year_prev = $delta = null;
+  foreach ($data as $year => $item) {
+    $chart[$year] = [
+      '#type' => 'chart_data',
+      '#title' => (string)(date('Y', $time_from) == date('Y', $time_to-1) ? $year : date('Y', $item['time_start']) . '-' . date('y', $item['time_end'])),
+      '#data' => [$item['amount']],
+    ];
+    if ($year_prev && $data[$year_prev]) {
+      $delta = ($item['amount'] > $data[$year_prev]['amount'] ? '+' : '') . number_format(($item['amount']/$data[$year_prev]['amount']*100)-100, 0, null, ' ') . '%';
+    }
+    $chart[$year][0] = [
+      '#type' => 'chart_data_item',
+      '#raw_options' => [
+        'annotation' => number_format($item['amount'], 0, '', ' ') . ($delta ? ' (' . $delta . ')' : ''),
+      ],
+    ];
+    $year_prev = $year;
+  }
+
+  return $chart;
+}
+
+function dash_pie_revenue_year($company, $time_from, $time_to)
+{
+  $dbr = db_select('eck_revenue', 'r');
+  $dbr->innerJoin('field_data_field_company', 'fc', 'fc.entity_id = r.id');
+  $dbr->condition('fc.field_company_value', $company);
+  $dbr->innerJoin('field_data_field_revenue_type', 'frt', 'frt.entity_id = r.id');
+  $dbr->addField('frt', 'field_revenue_type_value', 'type');
+  $dbr->innerJoin('field_data_field_amount', 'fra', 'fra.entity_id = r.id');
+  $dbr->condition('fra.bundle', 'revenue');
+  $dbr->groupBy('frt.field_revenue_type_value');
+  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+  $dbr->condition('frd.bundle', 'revenue');
+  $dbr->condition('frd.field_date_value', $time_from, '>=');
+  $dbr->condition('frd.field_date_value', $time_to, '<');
+  $dbr->addExpression('SUM(fra.field_amount_value)', 'amount');
+  $results = $dbr->execute()->fetchAll();
+
+  $total = 0;
+  $rev_by_types = [];
+  $types_to_unite = dash_get_types_to_merge();
+  foreach($results as $item) {
+    $total += $item->amount;
+    $type = $types_to_unite[$item->type] ?? $item->type;
+    if (!isset($rev_by_types[$type])) $rev_by_types[$type] = 0;
+    $rev_by_types[$type] += $item->amount;
+  }
+  $total = $total/DASH_REV_DIVIDER;
+
+  $types = [];
+  $types_data = [];
+  $other = 0;
+  foreach($rev_by_types as $type => $amount) {
+    // выводим значения больше 4% от общей суммы
+    $amount = $amount/DASH_REV_DIVIDER;
+    if ($amount/$total*100 > 4 || $type == 'Услуги хранения') {
+      $types[$amount] = $type;
+      $types_data[$amount] = $amount;
+    } else {
+      $other += $amount;
+    }
+  }
+  if ($other) {
+    $types[$other] = 'Прочее';
+    $types_data[$other] = $other;
+  }
+
+  krsort($types);
+  krsort($types_data);
+
+  $period = '';
+  if (date('Y', $time_to) != date('Y')) {
+    $period = (date('Y', $time_from) == date('Y', $time_to - 1) ? date('Y', $time_from) : date('Y', $time_from) . '-' . date('y', $time_to)) . ' года ';
+  }
+
+  $chart = array(
+    '#type' => 'chart',
+    '#title' => 'Структура отгрузки за сезон ' . $period . 'по данным бухгалтерии (' . DASH_REV_SUFFIX . ')',
+//    '#title_position' => 'center',
+    '#chart_type' => 'pie',
+    '#legend_position' => 'right',
+    '#legend_title_font_size' => '10px',
+    '#data_labels' => TRUE,
+    '#tooltips' => TRUE,
+    '#height' => '350',
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'legend' => ['textStyle' => ['fontSize' => '14', 'fontName' => '<global-font-name>']],
+      'chartArea' => ['width' => '85%'],
+    ],
+  );
+  $chart['pie_data'] = array(
+    '#type' => 'chart_data',
+    '#title' => 'Продукция',
+    '#labels' => array_values($types),
+    '#data' => array_values($types_data),
+  );
+
+  return $chart;
+}
+
+function dash_column_revenue_by_types($company, $time_from, $time_to)
+{
+  $types_to_unite = dash_get_types_to_merge();
+
+  // получаем возможные типы продукции
+  $dbr = db_select('eck_revenue', 'r');
+  $dbr->innerJoin('field_data_field_revenue_type', 'frt', 'frt.entity_id = r.id');
+  $dbr->addField('frt', 'field_revenue_type_value');
+  $dbr->innerJoin('field_data_field_company', 'fc', 'fc.entity_id = r.id');
+  $dbr->condition('fc.field_company_value', $company);
+  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+  $dbr->condition('frd.bundle', 'revenue');
+  $dbr->distinct();
+  $types = $dbr->execute()->fetchCol();
+
+  // собираем по типам за все сезоны
+  $rev_by_types = [];
+  foreach($types as $type) {
+    // собрать данные периодов с DASH_YEAR_HISTORY_START года (именно этот график для ТД берём с 2021, так как в 1с не получается разделить продукцию 2020 года)
+    $amounts = [];
+    $years_shift = date('Y', $time_from) - ($company == 'td' ? 2021 : DASH_HISTORY_START_YEAR_AH);
+    $years_shift = abs($years_shift)+1 > DASH_HISTORY_LENGTH ? DASH_HISTORY_LENGTH : $years_shift;
+    do {
+      $time_start = gmmktime(0, 0, 0,  date('n', $time_from)-12*$years_shift, date('j', $time_from), date('Y', $time_from));
+      $time_end = gmmktime(0, 0, 0,  date('n', $time_to)-12*$years_shift, date('j', $time_to), date('Y', $time_to));
+
+      $dbr = db_select('eck_revenue', 'r');
+      $dbr->innerJoin('field_data_field_revenue_type', 'frt', 'frt.entity_id = r.id');
+      $dbr->condition('frt.field_revenue_type_value', $type);
+      $dbr->innerJoin('field_data_field_company', 'fc', 'fc.entity_id = r.id');
+      $dbr->condition('fc.field_company_value', $company);
+      $dbr->innerJoin('field_data_field_amount', 'fra', 'fra.entity_id = r.id');
+      $dbr->condition('fra.bundle', 'revenue');
+      $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+      $dbr->condition('frd.bundle', 'revenue');
+      $dbr->condition('frd.field_date_value', $time_start, '>=');
+      $dbr->condition('frd.field_date_value', $time_end, '<');
+      $dbr->addExpression('SUM(fra.field_amount_value)', 'amount');
+      $amounts[date('Y', $time_start)] = $dbr->execute()->fetchField()/DASH_REV_DIVIDER;
+
+      $years_shift--;
+    } while ($years_shift >= 0);
+
+    // если какие-то группы нужно объединить, определяем целевой тип
+    $type = isset($types_to_unite[$type]) ? $types_to_unite[$type] : $type;
+
+    foreach($amounts as $year => $amount) {
+      if (!isset($rev_by_types[$type])) $rev_by_types[$type] = [];
+      if (!isset($rev_by_types[$type][$year])) $rev_by_types[$type][$year] = 0;
+      $rev_by_types[$type][$year] += $amount;
+    }
+  }
+
+  // подготовить массив и отсортировать по выручке последнего отчётного периода
+  $rev_by_amount = [];
+  foreach($rev_by_types as $type => $amounts) {
+    $amount_curr = $amounts[date('Y', $time_from)];
+
+    $rev_by_amount[$amount_curr] = [
+      'type' => $type,
+      'amounts' => $amounts
+    ];
+  }
+  krsort($rev_by_amount);
+
+  $total = 0;
+  foreach($rev_by_amount as $amount => $item) {
+    $total += $amount;
+  }
+  foreach($rev_by_amount as $amount => $item) {
+    // выводим значения больше 4% от общей суммы
+    if ($total && $amount/$total*100 <= 4) {
+      unset($rev_by_amount[$amount]);
+    }
+  }
+
+  $chart = array(
+    '#type' => 'chart',
+    '#chart_type' => 'column',
+    '#title' => 'Отгрузка по основным видам продукции (' . DASH_REV_SUFFIX . ')',
+    '#legend_position' => 'bottom',
+    '#height' => '400',
+    'xaxis' => [
+      '#type' => 'chart_xaxis',
+      '#labels' => [],
+    ],
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'bar' => ['groupWidth' => "61%"],
+      'legend' => [ 'position' => 'bottom', 'textStyle' => ['fontSize' => '13', 'fontName' => '<global-font-name>'] ],
+      'chartArea' => [
+        'width' => '85%',
+        'left' => 50,
+      ],
+    ],
+  );
+
+  foreach($rev_by_amount as $rt) {
+    $chart['xaxis']['#labels'][] = $rt['type'];
+  }
+
+  $year_prev = 0;
+  $i = 0;
+  foreach($rev_by_amount as &$rt) {
+    ksort($rt['amounts']);
+
+    foreach($rt['amounts'] as $year => $amount) {
+
+      if (!isset($chart[$year])) {
+        $chart[$year] = array(
+          '#type' => 'chart_data',
+          '#title' => (string)$year,
+          '#data' => [],
+        );
+      }
+      $delta = empty($rt['amounts'][$year_prev]) ? '' : ($rt['amounts'][$year] > $rt['amounts'][$year_prev] ? '+' : '') . number_format(($rt['amounts'][$year]/$rt['amounts'][$year_prev]*100)-100, 0, null, ' ') . '%';
+      $year_prev = $year;
+
+      $chart[$year]['#data'][] = $rt['amounts'][$year];
+      $chart[$year][$i] = array(
+        '#type' => 'chart_data_item',
+        '#raw_options' => [
+          'annotation' => number_format($rt['amounts'][$year], 0, '', ' ') . ($delta ? ' (' . $delta . ')' : ''),
+        ],
+      );
+    }
+    $i++;
+    $year_prev = 0;
+  }
+
+  return $chart;
+}
+
+
+/**
+ * ----- Выборка данных ------------------------------------------------------------------------------------------------
+ */
+function dash_get_ship_plan_fact_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_plan', 'p');
+    $dbr->condition('p.type', 'plan_ship');
+
+    $dbr->innerJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
+    $dbr->condition('frt.bundle', 'plan_ship');
+    $dbr->condition('frt.field_record_type_td_value', $conditions['type']);
+
+    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
+    $dbr->condition('frd.bundle', 'plan_ship');
+
+    $dbr->leftJoin('field_data_field_quantity_td', 'fq', 'fq.entity_id = p.id');
+    $dbr->condition('fq.bundle', 'plan_ship');
+    $dbr->addField('fq', 'field_quantity_td_value', 'qty');
+
+    $dbr->leftJoin('field_data_field_amount', 'fa', 'fa.entity_id = p.id');
+    $dbr->condition('fa.bundle', 'plan_ship');
+    $dbr->addField('fa', 'field_amount_value', 'amount');
+
+    $dbr->leftJoin('field_data_field_net_cost', 'fnc', 'fnc.entity_id = p.id');
+    $dbr->condition('fnc.bundle', 'plan_ship');
+    $dbr->addField('fnc', 'field_net_cost_value', 'net_cost');
+
+    $dbr->innerJoin('field_data_field_nomenklatura_td', 'fn', 'fn.entity_id = p.id');
+    $dbr->condition('fn.bundle', 'plan_ship');
+    $dbr->condition('fn.field_nomenklatura_td_tid', DASH_TD_NOM_ID_LIST_TO_EXCLUDE, 'NOT IN');
+    $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklatura_td_tid');
+    $dbr->fields('t', ['tid', 'name']);
+
+    $dbr->leftJoin('field_data_field_nom_nds', 'fnds', 'fnds.entity_id = fn.field_nomenklatura_td_tid');
+    $dbr->addField('fnds', 'field_nom_nds_value', 'nds');
+
+    if (!empty($conditions['regions'])) {
+      $dbr->leftJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
+      $dbr->condition('fct.bundle', 'plan_ship');
+      $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
+      $dbr->condition('fr.field_region_tid', $conditions['regions'], 'IN');
+    }
+
+    $dbr->condition('frd.field_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('frd.field_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('frd', 'field_date_value', 'date');
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+function dash_get_revenue_plan_fact_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_plan', 'p');
+    $dbr->condition('p.type', 'plan_revenue');
+
+    $dbr->innerJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
+    $dbr->condition('frt.bundle', 'plan_revenue');
+    $dbr->condition('frt.field_record_type_td_value', $conditions['type']);
+
+    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
+    $dbr->condition('frd.bundle', 'plan_revenue');
+
+    $dbr->innerJoin('field_data_field_amount', 'fa', 'fa.entity_id = p.id');
+    $dbr->condition('fa.bundle', 'plan_revenue');
+    $dbr->addField('fa', 'field_amount_value', 'amount');
+
+    $dbr->condition('frd.field_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('frd.field_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('frd', 'field_date_value', 'date');
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+/**
+ * ----- Вспомогательные функции ---------------------------------------------------------------------------------------
+ */
+function dash_get_types_to_merge()
+{
+  return [
+    'Продукция Интер Групп' => 'Собственная регистрация',
+    'Собственная продукция' => 'Собственная регистрация',
+    'Продукция' => 'Заёмная регистрация',
+    'Семена' => 'Товары',
+    'Товар' => 'Товары',
+  ];
+}
+
+/**
+ * Возвращает список месяцев (unix начало и конец) для Периода на входе
+ * @param $period
+ * @return array
+ */
+function dash_get_months_list($period)
+{
+  // список месяцев, за которые выводим график
+  $time_months_list = [];
+  $time_month_start = $period['from'];
+  while($time_month_start < $period['to']) {
+    $time_month_end = gmmktime(0, 0, 0, date('n', $time_month_start)+1, 1, date('Y', $time_month_start));
+    $time_months_list[] = [
+      'start' => $time_month_start,
+      'end' => $time_month_end,
+    ];
+    $time_month_start = $time_month_end;
+  }
+
+  return $time_months_list;
+}
+
+/**
+ * Возвращает список недель (unix начало и конец) для Периода на входе
+ * @param $period
+ * @return array
+ */
+function dash_get_weeks_list($period)
+{
+  $time_weeks_list = [];
+
+  // начальная неделя + 2 дня (начало нашей недели в среду)
+  $week_num = date('W', $period['from']);
+  $year = date('Y', $period['from']);
+  $week_start =  gmmktime(0,0,0,1,1, $year) + $week_num * 7 * 86400 - date('N', gmmktime(0,0,0,1,1,$year)) * 86400 + 3*86400;
+
+  // далее список +7 дней
+  while($week_start < $period['to']) {
+    $week_end =  $week_start + 7 * 86400;
+    if ($week_start < $period['from']) $week_start = $period['from'];
+    if ($week_end > $period['to']) $week_end = $period['to'];
+
+    $time_weeks_list[] = [
+      'start' => $week_start,
+      'end' => $week_end,
+    ];
+    $week_start = $week_end;
+  }
+
+  return $time_weeks_list;
+}
+
+/**
+ * Возвращает потомков термина на входе
+ * @param $parent_tid
+ * @return array
+ */
+function dash_get_term_siblings($parent_tid)
+{
+  $result = [$parent_tid];
+
+  if ($parent_term = taxonomy_term_load($parent_tid)) {
+    foreach (taxonomy_get_tree($parent_term->vid, $parent_tid) as $terms) {
+      $result[] = $terms->tid;
+    }
+  }
+
+  return $result;
+}
+
+/**
+ * Ищет и возвращает запись по 1с ID из справочника $vid.
+ * Создаёт и возвращает пустую новую, если запись не найдена.
+ * @param $voc - vid словаря или его наименование
+ * @param $record_1c_id
+ * @return false|int|mixed
+ */
+function dash_get_term_by_1c_id($voc, $record_1c_id)
+{
+  $vid = is_numeric($voc) ? $voc : taxonomy_vocabulary_machine_name_load($voc)->vid;
+
+  if ($vid && $record_1c_id) {
+    $query = new EntityFieldQuery();
+    $terms = $query
+      ->entityCondition('entity_type', 'taxonomy_term')
+      ->propertyCondition('vid', $vid)
+      ->fieldCondition('field_1c_id', 'value', $record_1c_id)
+      ->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+    } else {
+      $term = (object)array(
+        'vid' => $vid,
+        'name' => '',
+        'field_1c_id' => ['und' => [0 => ['value' => $record_1c_id]]],
+      );
+      taxonomy_term_save($term);
+    }
+    $entities = entity_load('taxonomy_term', [$term->tid]);
+  }
+  return empty($entities) ? 0: current($entities);
+}
+
+/**
+ * Удалить Остатки за период
+ * @param $date_start
+ * @param $date_end
+ * @return void
+ */
+function dash_remains_period_delete($date_start, $date_end)
+{
+  if ($date_start && $date_end) {
+    $efquery = new EntityFieldQuery();
+    $efquery
+      ->entityCondition('entity_type', 'remains')
+      ->entityCondition('bundle', 'remains')
+      ->fieldCondition('field_date', 'value', $date_start, '>=')
+      ->fieldCondition('field_date', 'value', $date_end, '<');
+
+    $result = $efquery->execute();
+    if ($result) {
+      entity_delete_multiple('remains', array_keys($result['remains']));
+    }
+  }
+
+}
+
+function dash_get_registration_by_1c_id($reg_1c_id)
+{
+  if ($reg_1c_id) {
+    $query = new EntityFieldQuery();
+    $regs = $query
+      ->entityCondition('entity_type', 'registration')
+      ->fieldCondition('field_1c_id', 'value', $reg_1c_id)
+      ->execute();
+    if ($regs) {
+      $reg = current($regs['registration']);
+    } else {
+      $reg = entity_create('registration', [
+        'type' => 'registration',
+        'field_1c_id' => ['und' => [0 => ['value' => $reg_1c_id]]],
+      ]);
+      entity_save('registration', $reg);
+    }
+    $entities = entity_load('registration', [$reg->id]);
+  }
+  return empty($entities) ? 0: current($entities);
+}
+
+function dash_get_no_data_chart($title = null)
+{
+  return [
+    '#type' => 'chart',
+    '#title' => $title ?? '',
+    '#chart_type' => 'pie',
+    '#height' => '200',
+    '#width' => '400',
+    'pie_data' => [
+      '#type' => 'chart_data',
+      '#title' => 'Продукция',
+      '#labels' => [],
+      '#data' => []
+    ],
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+    ],
+  ];
+}

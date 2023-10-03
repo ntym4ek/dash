@@ -1,0 +1,201 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function ext_admin_menu()
+{
+//  $items['admin/config/system/website'] = array(
+//    'title' => 'Site configuration',
+//    'description' => 'Настройки сайта и дополнительный функционал для админа',
+//    'page callback' => 'drupal_get_form',
+//    'page arguments' => array('ext_admin_settings_form'),
+//    'access arguments' => array('access manager settings'),
+//    'weight' => -100,
+//  );
+//  $items['admin/config/system/website/settings'] = array(
+//    'title' => 'Site configuration',
+//    'page callback' => 'drupal_get_form',
+//    'page arguments' => array('ext_admin_settings_form'),
+//    'access arguments' => array('access manager settings'),
+//    'type' => MENU_DEFAULT_LOCAL_TASK,
+//  );
+
+  $items['admin/config/custom'] = array(
+    'title' => 'Custom',
+    'position' => 'right',
+    'weight' => -100,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/config/custom/settings'] = array(
+    'title' => 'Настройки',
+    'weight' => 0,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ext_admin_settings_form'),
+    'access arguments' => array('access manager settings'),
+  );
+  $items['admin/config/custom/migration'] = array(
+    'title' => 'Перенос данных',
+    'weight' => 1,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ext_admin_migration_form'),
+    'access arguments' => array('access manager settings'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_cron_queue_info().
+ */
+function ext_admin_cron_queue_info()
+{
+  $queues['database_processing_queue'] = array(
+    'worker callback' => 'ext_admin_database_process_record',
+  );
+  $queues['database_processing_queue_2'] = array(
+    'worker callback' => 'ext_admin_database_process_record_2',
+  );
+
+  return $queues;
+}
+
+function ext_admin_settings_form($form, &$form_state)
+{
+  /** - Настройки содержимого ------------------------------------------------------------------------------------- */
+  $form['import'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Настройки импорта',
+    '#collapsible' => TRUE,
+    '#collapsed' => false,
+  );
+  $form['import']['admin_import_enabled'] = [
+    '#type' => 'checkbox',
+    '#title' => 'включить импорт',
+    '#default_value' => variable_get('admin_import_enabled', false),
+  ];
+
+  /** - Функции --------------------------------------------------------------------------------------------------- */
+  $form['processing'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Функции',
+    '#collapsible' => TRUE,
+    '#collapsed' => true,
+  );
+  $form['processing']['database'] = [
+    '#type' => 'button',
+    '#name' => 'database',
+    '#value' => 'Запустить обработку БД',
+    '#limit_validation_errors' => [],
+  ];
+
+  return system_settings_form($form);
+}
+
+function ext_admin_migration_form($form, &$form_state)
+{
+  $function = '';
+//  $function = 'ext_admin_queue_database_processing';
+//  $function = 'ext_admin_queue_database_processing_2';
+
+  $form['message'] = array(
+    '#markup' => ($function ? '<p>Будет запущена функция ' . $function . '</p>' : '<p>Функция для запуска не задана</p>'),
+  );
+  $form['control'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'контрольная галка',
+    '#description' => 'установить перед запуском',
+    '#default_value' => false,
+  );
+  $form['function'] = array(
+    '#type' => 'hidden',
+    '#value' => $function,
+  );
+  $form['run'] = [
+    '#type' => 'submit',
+    '#value' => 'Пуск!',
+  ];
+
+  return $form;
+}
+function ext_admin_migration_form_validate($form, &$form_state)
+{
+  if (!$form_state['values']['function']) {
+    form_set_error('','Нужно задать функцию, которая будет запущена');
+    return false;
+  }
+  if (!function_exists($form_state['values']['function'])) {
+    form_set_error('', 'Заданная функция ' . $form_state['values']['function'] . ' не существует');
+    return false;
+  }
+  if (!$form_state['values']['control']) {
+    form_set_error('control', 'Нужно установить контроль');
+    return false;
+  }
+}
+function ext_admin_migration_form_submit($form, &$form_state)
+{
+  $function = $form_state['values']['function'];
+  if ($function()) {
+    drupal_set_message('Запуск выполнен успешно');
+  } else {
+    drupal_set_message('Неуспешный пуск', 'warning');
+  }
+}
+
+function ext_admin_queue_database_processing()
+{
+  // получить записи с незаполненным полем и поставить в очередь
+  $dbr = db_select('taxonomy_term_data', 't');
+  $dbr->condition('t.vid', taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid);
+  $dbr->leftjoin('field_data_field_1c_id', 'fid', 'fid.entity_id = t.tid');
+  $dbr->isNull('fid.field_1c_id_value');
+  $dbr->addField('t', 'tid');
+  if ($terms = $dbr->execute()->fetchAllAssoc('tid')) {
+
+//    $queue = DrupalQueue::get('database_processing_queue');
+//
+//    foreach($terms as $term) {
+//      $queue->createItem($term);
+//    }
+  }
+
+}
+
+function ext_admin_database_process_record($record_id)
+{
+  // обработать запись базы данных
+  $plan_wr = entity_metadata_wrapper('plan', $record_id);
+  $plan_wr->field_record_type_td = (integer)$plan_wr->field_is_fact->value();
+  $plan_wr->save();
+}
+
+function ext_admin_queue_database_processing_2()
+{
+  // получить записи с незаполненным полем и поставить в очередь
+  $q = db_select('eck_plan', 'p');
+  $q->fields('p', array('id'))
+    ->condition('p.type', 'plan_revenue')
+    ->leftJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
+  $q->isNull('frt.field_record_type_td_value');
+
+  if ($items = $q->execute()->fetchCol()) {
+    $queue = DrupalQueue::get('database_processing_queue_2');
+
+    foreach($items as $item) {
+      $queue->createItem($item);
+    }
+  }
+
+}
+
+function ext_admin_database_process_record_2($record_id)
+{
+  // обработать запись базы данных
+  $plan_wr = entity_metadata_wrapper('plan', $record_id);
+  $plan_wr->field_record_type_td = (integer)$plan_wr->field_is_fact->value();
+  $plan_wr->save();
+}

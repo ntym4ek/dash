@@ -1,0 +1,46 @@
+// colors
+//
+$text-color:      #333;
+$text-light:      #999;
+$text-muted:      #ccc;
+
+$bkg-page:        #efefef;
+$bkg-header:      #343a40;
+
+$brand-blue:        #213A6E;
+$brand-light-blue:  #4195cb;
+$brand-red:         #CC1335;
+$brand-orange:      #aa8536;
+$brand-green:       #36AA3D;
+
+$brand-green-hover: darken($brand-green, 15%);
+$brand-blue-hover:  lighten($brand-blue, 15%);
+
+
+$warn-red:        rgba(247, 51, 51, .12);
+$warn-orange:     rgba(247, 201, 51,.38);
+$warn-green:      rgba(51, 247, 51, .12);
+
+
+// шрифт
+//
+$font-size-h1:     2.6rem;
+$font-size-h2:     2.15rem;
+$font-size-h3:     1.7rem;
+$font-size-h4:     1.25rem;
+$font-size-h5:     1rem;
+$font-size-h6:     .85rem;
+
+$font-size-large:  1.25rem;
+$font-size-small:  .8rem;
+
+
+// footer
+//
+$footer-height:     80px;
+
+// menu
+//
+$mobile-menu-width: 65%;
+$mobile-menu-bkg:  $brand-blue;
+$header-content-height: 3rem;

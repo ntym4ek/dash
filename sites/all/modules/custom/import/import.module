@@ -1,0 +1,755 @@
+<?php
+
+
+/**
+ * Implements hook_cron()
+ */
+function import_cron()
+{
+  // поставить заявки в очередь на импорт
+  if (variable_get('admin_import_enabled', false)) {
+    import_queue_incoming_exchange_files();
+  }
+}
+
+/**
+ * Implements hook_cron_queue_info().
+ */
+function import_cron_queue_info()
+{
+  $queues['incoming_exchange_queue'] = array(
+    'worker callback' => 'import_process_incoming_exchange_file',
+  );
+
+  return $queues;
+}
+
+function import_queue_incoming_exchange_files()
+{
+  $directory = 'private://exchange/';
+  $queue_path = $directory . 'import_queue';
+
+  // формат массива обработчиков импорта
+  $processors = [
+    // первая очередь импорта данных, необходимых для второй очереди
+    'first_queue' => [
+      [
+        'mask'    => '/^scrum_td_region.*\.json/',    // маска поиска файла
+        'include' => 'file.inc',                      // файл с функцией импорта
+        'func'    => 'import_import_regions'          // название функции импорта
+      ],
+    ],
+    // вторая очередь
+    'last_queue' => [],
+  ];
+
+  $processors = [
+    'first_queue' => [
+      ['mask' => '/^scrum_td_region.*\.json/',        'func' => 'import_import_regions'],         // -- Справочник Регионов
+      ['mask' => '/^scrum_td_clients.*\.json/',       'func' => 'import_import_clients_td'],      // -- Справочник Клиентов ТД
+      ['mask' => '/^scrum_dav.*\.json/',              'func' => 'import_import_clients_ah'],      // -- Справочник Клиентов АХ (давальцев)
+      ['mask' => '/^scrum_nom.*\.json/',              'func' => 'import_import_nomenklatura'],    // -- Справочник Номенклатуры АХ
+      ['mask' => '/^scrum_td_nom.*\.json/',           'func' => 'import_import_nomenklatura_td'], // -- Справочник Номенклатуры ТД
+    ],
+    // вторая очередь
+    'last_queue' => [
+      ['mask' => '/^scrum_plan.*\.json/',             'func' => 'import_import_production_plan'], // -- План производства
+      ['mask' => '/^scrum_td_payplan.*\.json/',       'func' => 'import_import_pay_plan_td'],     // -- План выручки ТД
+      ['mask' => '/^scrum_td_shipplan.*\.json/',      'func' => 'import_import_ship_plan_td'],    // -- План отгрузки ТД
+      ['mask' => '/^scrum_revenue.*\.json/',          'func' => 'import_import_revenue'],         // -- Выручка
+    ],
+  ];
+
+  // дать возможность модулям добавить свой импорт
+  drupal_alter('import_processors', $processors);
+
+  $ie_queue = DrupalQueue::get('incoming_exchange_queue');
+
+//  $ie_queue->deleteQueue();
+
+  // получить список файлов по шаблону и добавить в очередь
+  foreach($processors as $queue) {
+    foreach($queue as $processor) {
+      if ($files = file_scan_directory($directory, $processor['mask'], ['recurse' => false], 0)) {
+        foreach($files as $file) {
+          // перемещаем обнаруженные файлы в папку очереди, чтобы не обнаружить при следующем запуске крона
+          if (file_prepare_directory($queue_path, FILE_CREATE_DIRECTORY)) {
+            if ($new_uri = file_unmanaged_move($file->uri, $queue_path . '/' . $file->filename)) {
+              $file->uri = $new_uri;
+              $ie_queue->createItem(['file' => $file, 'processor' => $processor]);
+  //            watchdog('import', 'Файл @file поставлен в очередь на импорт.', ['@file' => $file->uri], WATCHDOG_INFO);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function import_process_incoming_exchange_file($options)
+{
+  $directory = 'private://exchange/';
+
+  // импортировать
+  $array = drupal_json_decode(file_get_contents($options['file']->uri));
+
+  if (!empty($options['processor']['include'])) require_once $options['processor']['include'];
+
+  if (call_user_func($options['processor']['func'], $array)) {
+    $path = $directory . 'success/' . date('Y') . '/' . date('m') . '/' . date('d');
+  } else {
+    $path = $directory . 'fail/' . date('Y') . '/' . date('m') . '/' . date('d');
+  }
+  file_prepare_directory($path, FILE_CREATE_DIRECTORY);
+  file_unmanaged_move($options['file']->uri, $path . '/' . $options['file']->filename);
+}
+
+/**
+ * -- функции импорта справочников
+ */
+function import_import_regions($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+
+    foreach ($array['load'] as $region) {
+      if ($region['id'] && $region['name']) {
+
+        $term = import_get_region_by_1c_id($region['id']);
+        $parent_term = empty($region['parent_id']) ? 0 : import_get_region_by_1c_id($region['parent_id']);
+
+        $term_wr = entity_metadata_wrapper('taxonomy_term', $term);
+        $term_wr->field_1c_id = $region['id'];
+        $term_wr->parent = [$parent_term->tid ?? 0];
+        $term_wr->name = $region['name'];
+        $term_wr->save();
+      }
+    }
+
+    // drupal_set_message('Регионы импортированы.');
+    watchdog('import', 'Регионы импортированы.', [], WATCHDOG_INFO);
+    return true;
+  } else {
+    // drupal_set_message('Импорт регионов не выполнен.', 'warning');
+    watchdog('import', 'Импорт регионов не выполнен.', [], WATCHDOG_ERROR);
+    return false;
+  }
+}
+
+function import_import_clients_td($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $vid = taxonomy_vocabulary_machine_name_load('clients_td')->vid;
+
+    $new_records = [];
+    foreach ($array['load'] as $client) {
+      if ($client['id'] && $client['name']) {
+
+        if ($term = import_get_client_by_1c_id('td', $client['id'])) {
+          $client_wr = entity_metadata_wrapper('taxonomy_term', $term);
+          $client_wr->name = $client['name'];
+          $client_wr->field_status = 1;
+          if ($region_tid = import_get_region_by_1c_id($client['region_id'])) {
+            $client_wr->field_region = $region_tid;
+          } else {
+            watchdog('import', 'Не найден регион ' . $client['region_id'] . ' при импорте клиентов ТД', [], WATCHDOG_ERROR);
+          }
+          $client_wr->save();
+
+          $new_records[] = $client_wr->getIdentifier();
+        }
+      }
+    }
+
+    // если полное обновление справочника, то запомнить отсутствующие записи и сделать их неактивными
+    if ($array['reload']) {
+      $dbr = db_select('taxonomy_term_data', 't');
+      $dbr->condition('t.vid', $vid);
+      $dbr->addField('t', 'tid');
+      $terms_old = $dbr->execute()->fetchAllAssoc('tid');
+
+      foreach ($terms_old as $tid => $term_old) {
+        if (!in_array($tid, $new_records)) {
+          $term_wr = entity_metadata_wrapper('taxonomy_term', $tid);
+          $term_wr->field_status = 0;
+          $term_wr->save();
+        }
+      }
+    }
+
+    // drupal_set_message('Клиенты ТД импортированы.');
+    watchdog('import', 'Клиенты ТД импортированы.', [], WATCHDOG_INFO);
+    return true;
+  } else {
+    // drupal_set_message('Импорт клиентов ТД не выполнен.', 'warning');
+    watchdog('import', 'Импорт клиентов ТД не выполнен.', [], WATCHDOG_ERROR);
+    return false;
+  }
+}
+
+function import_import_clients_ah($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
+
+    $new_records = [];
+    foreach ($array['load'] as $key => $client) {
+      if ($client['dav_id'] && $client['dav_name']) {
+
+        if ($term = import_get_client_by_1c_id('ah', $client['dav_id'])) {
+          $client_wr = entity_metadata_wrapper('taxonomy_term', $term);
+          $client_wr->name = $client['dav_name'];
+          $client_wr->field_status = 1;
+          $client_wr->save();
+
+          $new_records[] = $client_wr->getIdentifier();
+        }
+      }
+    }
+
+    // если полное обновление справочника, то запомнить отсутствующие записи и сделать их неактивными
+    if ($array['reload']) {
+      $dbr = db_select('taxonomy_term_data', 't');
+      $dbr->condition('t.vid', $vid);
+      $dbr->addField('t', 'tid');
+      $terms_old = $dbr->execute()->fetchAllAssoc('tid');
+
+      foreach ($terms_old as $tid => $term_old) {
+        if (!in_array($tid, $new_records)) {
+          $term_wr = entity_metadata_wrapper('taxonomy_term', $tid);
+          $term_wr->field_status = 0;
+          $term_wr->save();
+        }
+      }
+    }
+
+    // drupal_set_message('Давальцы импортированы.');
+    watchdog('import', 'Давальцы импортированы.', [], WATCHDOG_INFO);
+    return true;
+  } else {
+    // drupal_set_message('Импорт давальцев не выполнен.', 'warning');
+    watchdog('import', 'Импорт давальцев не выполнен.', [], WATCHDOG_ERROR);
+    return false;
+  }
+}
+
+function import_import_nomenklatura($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
+
+    $new_records = [];
+    foreach($array['load'] as $nom) {
+      if ($nom['name'] && $nom['art'] && $nom['dav_id']) {
+        // найти пользователя
+        $client = import_get_client_by_1c_id('ah', $nom['dav_id']);
+        if (isset($client->tid)) {
+          // проверить наличие записи Номенклатуры
+          if ($term = import_get_nomenklatura_by_1c_artikul('ah', $nom['art'])) {
+            // обновить значения полей
+            $term_wr = entity_metadata_wrapper('taxonomy_term', $term);
+            $term_wr->name = $nom['name'];
+            if (isset($nom['ei'])) $term_wr->field_nom_unit = $nom['ei'];
+            $term_wr->field_nom_type = $nom['vid'];
+            $term_wr->field_nom_client = $client->tid;
+            $term_wr->field_status = 1;
+            $term_wr->save();
+
+            $new_records[] = $term_wr->getIdentifier();
+          }
+        } else {
+          // drupal_set_message('Не найден давалец с ID: ' . $nom['dav_id'], 'error');
+          watchdog('import', 'Импорт номенклатуры не выполнен. Не найден давалец с ID: ' . $nom['dav_id'], [], WATCHDOG_ERROR);
+          return false;
+        }
+      }
+    }
+
+    // если полное обновление справочника, то запомнить отсутствующие записи и сделать их неактивными для клиента
+    if ($array['reload']) {
+      $dbr = db_select('taxonomy_term_data', 't');
+      $dbr->condition('t.vid', $vid);
+      $dbr->addField('t', 'tid');
+      $noms_old = $dbr->execute()->fetchAllAssoc('tid');
+
+      foreach ($noms_old as $n_tid => $nom_old) {
+        if (!in_array($n_tid, $new_records)) {
+          $term_wr = entity_metadata_wrapper('taxonomy_term', $n_tid);
+          $term_wr->field_status = 0;
+          $term_wr->save();
+        }
+      }
+    }
+
+    // drupal_set_message('Номенклатура импортирована.');
+    watchdog('import', 'Номенклатура импортирована.', [], WATCHDOG_INFO);
+    return true;
+  } else {
+    // drupal_set_message('Импорт номенклатуры не выполнен.', 'warning');
+    watchdog('import', 'Импорт номенклатуры не выполнен.', [], WATCHDOG_ERROR);
+    return false;
+  }
+}
+
+function import_import_nomenklatura_td($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $new_records = [];
+    foreach($array['load'] as $nom) {
+      if ($nom['id'] && $nom['name'] && $nom['art']) {
+        // проверить наличие записи Номенклатуры по артикулу (тк не у всех прописан ID)
+        $term = import_get_nomenklatura_by_1c_artikul('td', $nom['art']);
+        // если нет по артикулу, искать по ID или создать
+        if (!$term) {
+          $term = dash_get_term_by_1c_id('nomenklatura_td', $nom['id']);
+        }
+
+        if ($term) {
+          // обновить значения полей
+          $term_wr = entity_metadata_wrapper('taxonomy_term', $term);
+          $term_wr->name = $nom['name'];
+          $term_wr->field_1c_id = trim($nom['id']);
+          $term_wr->field_nom_artikul = trim($nom['art']);
+          if (isset($nom['ei']))  $term_wr->field_nom_unit = trim($nom['ei']);
+          if (isset($nom['nds'])) $term_wr->field_nom_nds = trim($nom['nds']);
+          $term_wr->field_status = 1;
+          $term_wr->save();
+
+          $new_records[] = $term_wr->getIdentifier();
+        }
+      }
+    }
+
+    // если полное обновление справочника, то запомнить отсутствующие записи и сделать их неактивными для клиента
+    if ($array['reload']) {
+      $vid = taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid;
+      $dbr = db_select('taxonomy_term_data', 't');
+      $dbr->condition('t.vid', $vid);
+      $dbr->addField('t', 'tid');
+      $noms_old = $dbr->execute()->fetchAllAssoc('tid');
+
+      foreach ($noms_old as $n_tid => $nom_old) {
+        if (!in_array($n_tid, $new_records)) {
+          $term_wr = entity_metadata_wrapper('taxonomy_term', $n_tid);
+          $term_wr->field_status = 0;
+          $term_wr->save();
+        }
+      }
+    }
+
+    // drupal_set_message('Номенклатура ТД импортирована.');
+    watchdog('import', 'Номенклатура ТД импортирована.', [], WATCHDOG_INFO);
+    return true;
+  } else {
+    // drupal_set_message('Импорт номенклатуры ТД не выполнен.', 'warning');
+    watchdog('import', 'Импорт номенклатуры ТД не выполнен.', [], WATCHDOG_ERROR);
+    return false;
+  }
+}
+
+
+
+/**
+ * -- функции импорта данных
+ */
+function import_import_production_plan($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $month_arr = explode('.', $array['month']);
+    $month_start = gmmktime(0, 0, 0, $month_arr[1], 1, $month_arr[2]);
+    $is_fact = !empty($array['fact']) ? 1 : 0;
+    $plan_import_time = time();
+
+    // подготовка Плана на месяц
+    $plan = [];
+    foreach ($array['load'] as $plan_item) {
+      $nom = import_get_nomenklatura_by_1c_artikul('ah', $plan_item['artikul_1c']);
+      if (isset($nom->tid)) {
+        $date_arr = explode('.', $plan_item['date']);
+        $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
+
+        $plan[] = [
+          'date' => $date_start,
+          'nom' => $nom->tid,
+          'output' => $plan_item['output'],
+          'is_fact' => $is_fact
+        ];
+      } else {
+        watchdog('import', 'Ошибка при импорте плана. Не найдена номенклатура ' . $plan_item['artikul_1c'], [], WATCHDOG_WARNING);
+      }
+    }
+
+    if ($plan) {
+      // удалить старый план на месяц
+      import_plan_ah_month_delete($month_start, $is_fact);
+
+      // создание Плана на месяц
+      foreach ($plan as $date => $plan_item) {
+        $plan = entity_create('plan', [
+          'type' => 'plan',
+          'created' => $plan_import_time,
+        ]);
+        entity_save('plan', $plan);
+
+        $plan_wr = entity_metadata_wrapper('plan', $plan);
+        $plan_wr->field_date = $plan_item['date'];
+        $plan_wr->field_nomenklatura = $plan_item['nom'];
+        $plan_wr->field_output = $plan_item['output'];
+        $plan_wr->field_is_fact = $plan_item['is_fact'];
+        $plan_wr->save();
+      }
+
+      watchdog('import', 'План импортирован.', [], WATCHDOG_INFO);
+      // drupal_set_message('План импортирован.');
+      return $plan;
+    }
+  } else {
+    watchdog('import', 'Импорт плана не выполнен.', [], WATCHDOG_ERROR);
+    return false;
+  }
+}
+
+function import_import_pay_plan_td($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $month_arr = explode('.', $array['month']);
+    $month_start = gmmktime(0, 0, 0, $month_arr[1], 1, $month_arr[2]);
+    $record_type = $array['fact'];
+    $plan_import_time = time();
+
+    // подготовка Плана на месяц
+    $plan = [];
+    foreach ($array['load'] as $plan_item) {
+//      $client = import_get_client_by_id('td', $plan_item['clients_id']);
+      $date_arr = explode('.', $plan_item['date']);
+      $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
+
+      $plan[] = [
+        'record_type' => $record_type,
+        'date' => $date_start,
+        'client' => null, // план выручки с 17.02.2023 выгружается без привязки к клиенту
+        'amount' => $plan_item['amount'],
+      ];
+    }
+
+    if ($plan) {
+      // удалить старый план на месяц
+      import_payplan_td_month_delete($month_start, $record_type);
+
+      // создание Плана на месяц
+      foreach ($plan as $date => $plan_item) {
+        $plan = entity_create('plan', [
+          'type' => 'plan_revenue',
+          'created' => $plan_import_time,
+        ]);
+        entity_save('plan', $plan);
+
+        $plan_wr = entity_metadata_wrapper('plan', $plan);
+        $plan_wr->field_record_type_td = $plan_item['record_type'];
+        $plan_wr->field_date = $plan_item['date'];
+//        $plan_wr->field_client_td = $plan_item['client']; // план выручки с 17.02.2023 выгружается без привязки к клиенту
+        $plan_wr->field_amount = $plan_item['amount'];
+        $plan_wr->save();
+      }
+
+      watchdog('import', 'План выручки ТД импортирован.', [], WATCHDOG_INFO);
+      // drupal_set_message('План выручки ТД импортирован.');
+      return $plan;
+    }
+  } else {
+    watchdog('import', 'Импорт плана выручки ТД не выполнен.', [], WATCHDOG_ERROR);
+    return false;
+  }
+}
+
+function import_import_revenue($array)
+{
+  if (is_array($array) && $array['company'] && !empty($array['load'])) {
+    $month_arr = explode('.', $array['month']);
+    $month_start = gmmktime(0, 0, 0, $month_arr[1], 1, $month_arr[2]);
+    $rev_import_time = time();
+
+    // подготовка Выручки
+    $revenue = [];
+    foreach ($array['load'] as $rev_item) {
+      $date_arr = explode('.', $rev_item['date']);
+      $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
+
+      $revenue[] = [
+        'date' => $date_start,
+        'type' => $rev_item['type_revenue'],
+        'amount' => $rev_item['sum'],
+      ];
+    }
+
+    if ($revenue) {
+      // удалить старую Выручку за месяц
+      import_revenue_month_delete($array['company'], $month_start);
+
+      // создание Выручки на месяц
+      foreach ($revenue as $date => $rev_item) {
+        $revenue = entity_create('revenue', [
+          'type' => 'revenue',
+          'created' => $rev_import_time,
+        ]);
+        entity_save('revenue', $revenue);
+
+        $revenue_wr = entity_metadata_wrapper('revenue', $revenue);
+        $revenue_wr->field_date = $rev_item['date'];
+        $revenue_wr->field_revenue_type = $rev_item['type'];
+        $revenue_wr->field_amount = $rev_item['amount'];
+        $revenue_wr->field_company = $array['company'];
+        $revenue_wr->save();
+      }
+
+      watchdog('import', 'Выручка импортирована.', [], WATCHDOG_INFO);
+      // drupal_set_message('Выручка импортирована.');
+      return $revenue;
+    }
+  } else {
+    watchdog('import', 'Импорт выручки не выполнен.', [], WATCHDOG_ERROR);
+    return false;
+  }
+}
+
+function import_import_ship_plan_td($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $record_type = $array['fact'];
+    $plan_import_time = REQUEST_TIME;
+
+    // подготовка Плана на месяц
+    $plan = [];
+    foreach ($array['load'] as $load_item) {
+      $client = import_get_client_by_1c_id('td', $load_item['clients_id']);
+      if (isset($client->tid)) {
+        $nom = import_get_nomenklatura_by_1c_artikul('td', $load_item['artikul_1c']);
+        if (isset($nom->tid)) {
+          $date_arr = explode('.', $load_item['date']);
+          $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
+
+          $plan[] = [
+            'record_type' => $record_type,
+            'date' => $date_start,
+            'client' => $client->tid,
+            'nom' => $nom->tid,
+            'qty' => $load_item['quantity'] ?? 0,
+            'amount' => $load_item['amount'] ?? 0,
+            'net_cost' => $load_item['net_amount'] ?? 0,
+          ];
+        } else {
+          watchdog('import', 'Ошибка при импорте плана отгрузки ТД. Не найдена номенклатура (' . $load_item['artikul_1c'] . ')', [], WATCHDOG_WARNING);
+        }
+      } else {
+        watchdog('import', 'Ошибка при импорте плана отгрузки ТД. Не найден клиент (' . $load_item['clients_id'] . ')', [], WATCHDOG_WARNING);
+      }
+    }
+
+    if ($plan) {
+      // удалить старый план на месяц
+      // для Неоплаченных контрактов месяц не задан, тк это срез на момент импорта
+      $month_start = null;
+      if (isset($array['month'])) {
+        $month_arr = explode('.', $array['month']);
+        $month_start = gmmktime(0, 0, 0, $month_arr[1], 1, $month_arr[2]);
+      }
+      import_shipplan_td_month_delete($month_start, $record_type);
+
+      // создание Плана на месяц
+      foreach ($plan as $plan_item) {
+        $plan = entity_create('plan', [
+          'type' => 'plan_ship',
+          'created' => $plan_import_time,
+        ]);
+        entity_save('plan', $plan);
+
+        $plan_wr = entity_metadata_wrapper('plan', $plan);
+        $plan_wr->field_record_type_td = $plan_item['record_type'];
+        $plan_wr->field_date = $plan_item['date'];
+        $plan_wr->field_client_td = $plan_item['client'];
+        $plan_wr->field_nomenklatura_td = $plan_item['nom'];
+        $plan_wr->field_quantity_td = $plan_item['qty'];
+        $plan_wr->field_amount = $plan_item['amount'];
+        $plan_wr->field_net_cost = $plan_item['net_cost'];
+        $plan_wr->save();
+      }
+
+      watchdog('import', 'План отгрузки ТД импортирован.', [], WATCHDOG_INFO);
+//      drupal_set_message('План отгрузки ТД импортирован.');
+      return $plan;
+    }
+  } else {
+    watchdog('import', 'Импорт плана отгрузки ТД не выполнен.', [], WATCHDOG_ERROR);
+    return false;
+  }
+}
+
+
+
+
+/**
+ * -- вспомогательные функции
+ */
+function import_plan_ah_month_delete($month_start, $is_fact)
+{
+  if ($month_start) {
+    $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
+
+    $efquery = new EntityFieldQuery();
+    $efquery
+      ->entityCondition('entity_type', 'plan')
+      ->entityCondition('bundle', 'plan')
+      ->fieldCondition('field_date', 'value', $month_start, '>=')
+      ->fieldCondition('field_date', 'value', $next_month_start, '<')
+      ->fieldCondition('field_is_fact', 'value', $is_fact);
+
+    $result = $efquery->execute();
+    if ($result) {
+      entity_delete_multiple('plan', array_keys($result['plan']));
+    }
+  }
+}
+
+function import_payplan_td_month_delete($month_start, $record_type)
+{
+  if ($month_start) {
+    $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
+
+    $efquery = new EntityFieldQuery();
+    $efquery
+      ->entityCondition('entity_type', 'plan')
+      ->entityCondition('bundle', 'plan_revenue')
+      ->fieldCondition('field_date', 'value', $month_start, '>=')
+      ->fieldCondition('field_date', 'value', $next_month_start, '<')
+      ->fieldCondition('field_record_type_td', 'value', $record_type);
+
+    $result = $efquery->execute();
+    if ($result) {
+      entity_delete_multiple('plan', array_keys($result['plan']));
+    }
+  }
+}
+
+function import_shipplan_td_month_delete($month_start, $record_type)
+{
+  if ($month_start || $record_type == 2) {
+    $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
+
+    $efquery = new EntityFieldQuery();
+    $efquery
+      ->entityCondition('entity_type', 'plan')
+      ->entityCondition('bundle', 'plan_ship')
+      ->fieldCondition('field_record_type_td', 'value', $record_type);
+
+    if ($record_type != 2) {
+      $efquery
+        ->fieldCondition('field_date', 'value', $month_start, '>=')
+        ->fieldCondition('field_date', 'value', $next_month_start, '<');
+    }
+
+    $result = $efquery->execute();
+    if ($result) {
+      entity_delete_multiple('plan', array_keys($result['plan']));
+    }
+  }
+}
+
+function import_revenue_month_delete($company, $month_start)
+{
+  if ($month_start) {
+    $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
+
+    $efquery = new EntityFieldQuery();
+    $efquery
+      ->entityCondition('entity_type', 'revenue')
+      ->entityCondition('bundle', 'revenue')
+      ->fieldCondition('field_date', 'value', $month_start, '>=')
+      ->fieldCondition('field_date', 'value', $next_month_start, '<')
+      ->fieldCondition('field_company', 'value', $company);
+
+    $result = $efquery->execute();
+    if ($result) {
+      entity_delete_multiple('revenue', array_keys($result['revenue']));
+    }
+  }
+}
+
+function import_get_nomenklatura_by_1c_artikul($company, $artikul)
+{
+  $vid = null;
+  if ($company == 'ah') {
+    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
+  } elseif ($company == 'td') {
+    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid;
+  }
+  if ($vid && $artikul) {
+    $query = new EntityFieldQuery();
+    $terms = $query
+      ->entityCondition('entity_type', 'taxonomy_term')
+      ->propertyCondition('vid', $vid)
+      ->fieldCondition('field_nom_artikul', 'value', $artikul)
+      ->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+      $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+    }
+  }
+  return empty($entities) ? 0 : current($entities);
+}
+
+function import_get_client_by_1c_id($company, $client_id)
+{
+  $vid = null;
+  if ($company == 'ah') {
+    $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
+  } elseif ($company == 'td') {
+    $vid = taxonomy_vocabulary_machine_name_load('clients_td')->vid;
+  }
+  if ($vid && $client_id) {
+    $query = new EntityFieldQuery();
+    $terms = $query
+      ->entityCondition('entity_type', 'taxonomy_term')
+      ->propertyCondition('vid', $vid)
+      ->fieldCondition('field_client_id', 'value', $client_id)
+      ->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+    } else {
+      $term = (object)array(
+        'vid' => $vid,
+        'name' => '',
+        'field_client_id' => ['und' => [0 => ['value' => $client_id]]],
+      );
+      taxonomy_term_save($term);
+    }
+    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+  }
+  return empty($entities) ? 0: current($entities);
+}
+
+function import_get_region_by_1c_id($region_1c_id)
+{
+  if ($region_1c_id) {
+    $vid = taxonomy_vocabulary_machine_name_load('regions')->vid;
+    $query = new EntityFieldQuery();
+    $terms = $query
+      ->entityCondition('entity_type', 'taxonomy_term')
+      ->propertyCondition('vid', $vid)
+      ->fieldCondition('field_1c_id', 'value', $region_1c_id)
+      ->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+    } else {
+      $term = (object)array(
+        'vid' => $vid,
+        'name' => '',
+        'field_1c_id' => ['und' => [0 => ['value' => $region_1c_id]]],
+      );
+      taxonomy_term_save($term);
+    }
+    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+  }
+  return empty($entities) ? 0: current($entities);
+}
+
+
+

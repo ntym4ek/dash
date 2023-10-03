@@ -1,0 +1,211 @@
+<?php
+
+define('ADMIN_RID', 3);
+define('TRADE_HOUSE_USER_RID', 4);
+define('AGROHIMIKAT_USER_RID', 5);
+define('DEP_7_USER_RID', 6);
+
+
+/**
+ * Implements hook_init().
+ */
+//function ext_user_init()
+//{
+//  if (user_is_logged_in()) {
+//    if ((arg(0) == "user" && !arg(1)) || (arg(0) == "user" && is_numeric(arg(1)) && arg(2) != 'edit' && !user_has_role(ROLE_ADMIN))) {
+//      drupal_goto('user/' . $GLOBALS['user']->uid . '/edit/main');
+//    }
+//    if ((arg(0) == "card" && !arg(1))) {
+//      drupal_goto('card/' . $GLOBALS['user']->uid);
+//    }
+//  }
+//}
+
+//function ext_user_permission()
+//{
+//  return [
+//    'access trade_house stats' => [
+//      'title' => t('Access Trade House Stats'),
+//      'description' => t('Access Trade House Stats'),
+//    ],
+//    'access agrohimikat stats' => [
+//      'title' => t('Access Agrohimikat Stats'),
+//      'description' => t('Access Agrohimikat Stats'),
+//    ]
+//  ];
+//}
+
+/**
+ * hook_module_implements_alter
+ * change hook execution order
+ */
+function ext_user_module_implements_alter(&$implementations, $hook)
+{
+  // Name of the hook.
+  if (in_array($hook, ['form_alter', 'translated_menu_link_alter'])) {
+    // ext_user - last
+    $module = 'ext_user';
+    if (isset($implementations[$module])) {
+      $group = $implementations[$module];
+      unset($implementations[$module]);
+      $implementations[$module] = $group;
+    }
+  }
+}
+
+function ext_user_preprocess_menu_link(&$vars)
+{
+  if ($vars["element"]["#href"] == 'user' && user_is_logged_in()) {
+    // сменить Аккаунт на Имя пользователя
+    $vars["element"]["#title"] = $GLOBALS['user']->name;
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function ext_user_form_user_profile_form_alter(&$form, &$form_state)
+{
+  // в профиле оставляем только смену пароля
+  if (!user_has_role(ADMIN_RID)) {
+    $form["actions"]["submit"]['#attributes']['class'] = ['btn', 'btn-brand'];
+    $form["actions"]["submit"]['#value'] = 'Сохранить';
+
+    if ($form["#user_category"] == 'account') {
+      $form['#prefix'] =  '<div class="user-auth-form-wrapper">';
+      $form['#prefix'] .= '<h1>Смена пароля</h1>';
+      $form['#suffix'] = '</div>';
+      if (isset($form["account"]["pass"])) {
+        $form["account"]["current_pass"]["#title"] = 'Старый пароль';
+        $form["account"]["current_pass"]["#description"] = 'Для смены сначала введите текущий пароль';
+        $form["account"]["pass"]["#title"] = 'Новый пароль';
+        $form["account"]["pass"]["#description"] = '';
+        $form["account"]["pass"]["#type"] = 'password';
+      }
+      $form["locale"]["#access"] = false;
+      $form["mimemail"]["#access"] = false;
+      $form["timezone"]["#access"] = false;
+      $form["account"]["mail"]["#access"] = false;
+    }
+    $form["#submit"][] = 'ext_user_user_profile_form_submit';
+  }
+}
+
+function ext_user_user_profile_form_submit ($form, &$form_state)
+{
+  // после смены пароля редирект на главную
+  $form_state['redirect'] = '<front>';
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function ext_user_form_user_pass_alter(&$form, &$form_state)
+{
+  if (!user_has_role(ADMIN_RID)) {
+    $form['#prefix'] = '<div class="user-auth-form-wrapper">' .
+      '<h1>' . t('Password recovery') . '</h1>';
+    $form['#suffix'] = '</div>';
+    $form["mail"]["#markup"] = t('The recovery link will be sent to E-Mail above.');
+    $form["actions"]["submit"]['#value'] = t('Send me link');
+    $form["actions"]["submit"]['#attributes']['class'] = ['btn', 'btn-brand', 'btn-wide'];
+
+    array_unshift($form['#submit'], 'ext_user_user_pass_submit');
+  }
+}
+
+function ext_user_user_pass_submit($form, $form_state)
+{
+  // запишем фразу с переводом
+  variable_set('user_password_reset_text', t(variable_get('user_password_reset_text')));
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function ext_user_form_user_login_alter(&$form, &$form_state)
+{
+  $form['#prefix'] =  '<div class="user-auth-form-wrapper">';
+  $form['#prefix'] .= '<h1>' . t('Log in') . '</h1>';
+  $form['#suffix'] = '</div>';
+
+  $form['name']['#title'] = t('E-Mail');
+  $form['name']['#element_validate'][] = 'ext_user_login_name_validate';
+  $form["pass"]["#title"] = t('Password');
+  unset($form['name']['#description']);
+  $form['pass']['#description'] = t('<a href="/user/password">Recover password</a>');
+  $form["actions"]["submit"]['#value'] = t('Log in');
+  $form["actions"]["submit"]['#attributes']['class'] = ['btn', 'btn-brand', 'btn-wide'];
+}
+
+/**
+ * Form element validation handler for the user login form.
+ * Allows users to authenticate by username OR email.
+ */
+function ext_user_login_name_validate($form, &$form_state)
+{
+  $user = ext_user_user_load_by_login($form_state['values']['name']);
+  if ($user->uid) {
+    $form_state['values']['name'] = $user->name;
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/**
+ * Загрузить пользователя по указанному логину
+ */
+function ext_user_user_load_by_login($login)
+{
+  // Try loading by email.
+  if ($user = user_load_by_mail($login)) {
+    return $user;
+  }
+
+  // Try loading by username.
+  if ($user = user_load_by_name($login)) {
+    return $user;
+  }
+  return user_load(0);
+}
+
+
+function ext_user_process_page(&$vars)
+{
+  if (arg(0) == 'user') {
+    $vars['title'] = '';
+    if (arg(2) == 'edit') {
+
+    }
+    if (isset($vars["tabs"])) {
+      unset($vars["tabs"]);
+    }
+  }
+}
+
+/**
+ * Implements hook_mail_alter
+ */
+function ext_user_mail_alter(&$message)
+{
+  if (strpos($_SERVER['HTTP_HOST'], '.local') !== FALSE) {
+    $message['send'] = false;
+    watchdog('mailer', 'Эмуляция отправки E-Mail.<br />Почта: %mail<br />Тема: %subject<br />Текст: %body', ['%mail' => $message['to'], '%subject' => $message['subject'], '%body' => var_export($message['body'], true)], WATCHDOG_DEBUG);
+  } else {
+    watchdog('mailer', 'Отправка E-Mail.<br />Почта: %mail <br />Тема: %subject<br />Текст: %body', ['%mail' => $message['to'], '%subject' => $message['subject'], '%body' => var_export($message['body'], true)], WATCHDOG_DEBUG);
+  }
+}
+
+/**
+ * Определить наличие роли у текущего пользователя
+ * @param $rids
+ * @return bool
+ */
+function ext_user_has_roles($rids)
+{
+  $account = $GLOBALS['user'];
+  $account_rids = array_keys($account->roles);
+
+  return (bool)array_intersect($rids, $account_rids);
+}

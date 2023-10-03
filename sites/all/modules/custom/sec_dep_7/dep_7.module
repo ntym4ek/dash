@@ -1,0 +1,401 @@
+<?php
+
+define('DEP_7_REG_DAYS_TO_RED_ALERT', 365 * 4);
+define('DEP_7_REG_DAYS_TO_ORANGE_ALERT', 365 * 5);
+define('DEP_7_REG_DAYS_CROSS_TO_ORANGE_ALERT', 180);
+
+/**
+ * Implementation of hook_menu().
+ */
+function dep_7_menu()
+{
+  $items['td/department-7'] = array(
+    'title' => 'Регистрации',
+    'menu_name' => 'main-menu',
+    'weight' => 9,
+    'page callback' => 'dep_7_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_7_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_menu_alter().
+ */
+function dep_7_menu_alter(&$items)
+{
+  // выводить меню, если есть роль к Управлению 7
+  $items['td']['access arguments'][0][] = DEP_7_USER_RID;
+}
+
+/**
+ * hook_import_processors_alter
+ */
+function dep_7_import_processors_alter(&$processors)
+{
+  $path = drupal_get_path('module', 'dep_7') . '/includes/';
+  $processors['first_queue'][] =  ['mask' => '/^scrum_td_cultures.*\.json/',      'include' => $path . 'import.dep_7.inc', 'func' => 'dep_7_import_cultures'];
+  $processors['last_queue'][] =   ['mask' => '/^scrum_td_registrations.*\.json/', 'include' => $path . 'import.dep_7.inc', 'func' => 'dep_7_import_registrations'];
+}
+
+function dep_7_preprocess_page(&$vars)
+{
+  if ($_GET['q'] == 'td/department-7') {
+    drupal_set_title('Регистрации');
+  }
+}
+
+function dep_7_page()
+{
+  $output = '';
+
+  $form = drupal_get_form('dep_7_reg_nom_filter_form');
+  $output .= '<div class="row">';
+  $output .= '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .= '</div>';
+
+  $output .= '<div id="tables-wrapper">' . dep_7_reg_get_tables_output() . '</div>';
+
+  return $output;
+}
+
+function dep_7_reg_get_tables_output($filter_nom_id = null)
+{
+  $output = '<div class="tables-set">';
+  $output .= '<div class="row">';
+
+  // готовим массив всех регистраций
+  $regs_arr = [];
+  $regs_id = dep_7_get_registrations_ids();
+  $sort_date_start = $sort_date_end = [];
+  foreach ($regs_id as $reg_id) {
+    $reg_info = dep_7_get_registration_info($reg_id);
+    $regs_arr[$reg_id] = $reg_info;
+    $key_start = $reg_info['period']['from']['raw'] . '_' . $reg_id; // чтобы не накладывались регистрации с одинаковой датой
+    $key_end = $reg_info['period']['to']['raw'] . '_' . $reg_id; // чтобы не накладывались регистрации с одинаковой датой
+    $sort_date_start[$key_start] = $reg_id;
+    $sort_date_end[$key_end] = $reg_id;
+  }
+  ksort($sort_date_start);
+  ksort($sort_date_end);
+
+  // отбираем Действующие регистрации
+  $header = [
+    ['data' => 'Номенклатура', 'attributes' => ['class' => ['center']]],
+    ['data' => 'До', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Культуры', 'attributes' => ['class' => ['center']]],
+    ['data' => '', 'attributes' => ['class' => ['center'], 'data-label' => 'Предупреждение']],
+  ];
+
+  $rows = [];
+  $base_reg_id_by_nom_filter = null;
+  foreach ($sort_date_end as $reg_id) {
+    $reg_info = $regs_arr[$reg_id];
+
+    if ($reg_info['type'] == 'base' && $reg_info['status']) {
+
+      // если задана Ном в фильтре
+      if ($filter_nom_id && !isset($reg_info['noms']['list'][$filter_nom_id])) {
+        continue;
+      }
+      // собрать список Ном для последующего вывода потомков, если Ном выбрана из действующих
+      $base_reg_id_by_nom_filter = $reg_id;
+
+      $row = [
+        'data' => [
+          dep_7_clean_nomlist($reg_info['noms']['string']),
+          ['data' => $reg_info['period']['to']['formatted'], 'attributes' => ['class' => ['center']]],
+          $reg_info['cultures']['string'],
+          ['data' => $reg_info['warning']['text'], 'attributes' => ['class' => ['center', ($reg_info['warning']['level'] ?: '')]]],
+        ],
+        'attributes' => ['data-id' => $reg_id, 'class' => [$reg_info['type']]]
+      ];
+      if ($reg_info['warning']['level']) $row['attributes']['class'] = [$reg_info['warning']['level']];
+
+      $rows[] = $row;
+    }
+  }
+  $output .= theme('table_li', [
+    'caption' => 'Действующие регистрации',
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table-base', 'col-xs-12', 'col-lg-6']]
+  ]);
+
+  // отбираем Продления
+  $header = [
+    ['data' => 'Номенклатура', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Период', 'attributes' => ['class' => ['center']]],
+    ['data' => 'Культуры', 'attributes' => ['class' => ['center']]],
+  ];
+
+  $rows = [];
+  foreach ($sort_date_start as $reg_id) {
+    $reg_info = $regs_arr[$reg_id];
+    if ($reg_info['type'] == 'ext' || ($reg_info['type'] == 'base' && !$reg_info['status'])) {
+
+      if ($filter_nom_id && !isset($reg_info['noms']['list'][$filter_nom_id]) && (!$base_reg_id_by_nom_filter || $reg_info['base_reg_id'] != $base_reg_id_by_nom_filter)) {
+        continue;
+      }
+
+      $row = [
+        'data' => [
+          dep_7_clean_nomlist($reg_info['noms']['string']),
+          ['data' => $reg_info['period']['from']['formatted'] . ' - ' . $reg_info['period']['to']['formatted'], 'attributes' => ['class' => ['center']]],
+          $reg_info['cultures']['string'],
+        ],
+        'attributes' => ['data-id' => $reg_id, 'class' => [$reg_info['type']]]
+      ];
+
+      if ($reg_info['base_reg_id']) $row['attributes']['data-base-id'] = $reg_info['base_reg_id'];
+      $rows[] = $row;
+    }
+  }
+  $output .= theme('table_li', [
+    'caption' => 'Продления/Новые регистрации',
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
+  ]);
+
+  $rows = [];
+  foreach ($sort_date_end as $reg_id) {
+    $reg_info = $regs_arr[$reg_id];
+    if ($reg_info['type'] == 'add') {
+
+      if ($filter_nom_id && !isset($reg_info['noms']['list'][$filter_nom_id]) && (!$base_reg_id_by_nom_filter || $reg_info['base_reg_id'] != $base_reg_id_by_nom_filter)) {
+        continue;
+      }
+
+      $row = [
+        'data' => [
+          dep_7_clean_nomlist($reg_info['noms']['string']),
+          ['data' => $reg_info['period']['from']['formatted'] . ' - ' . $reg_info['period']['to']['formatted'], 'attributes' => ['class' => ['center']]],
+          $reg_info['cultures']['string'],
+        ],
+        'attributes' => ['data-id' => $reg_id, 'class' => [$reg_info['type']]]
+      ];
+
+      if ($reg_info['base_reg_id']) $row['attributes']['data-base-id'] = $reg_info['base_reg_id'];
+      $rows[] = $row;
+    }
+  }
+  $output .= theme('table_li', [
+    'caption' => 'Расширения регистраций',
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
+  ]);
+  $output .= '</div>';
+  $output .= '</div>';
+
+  return $output;
+}
+
+function dep_7_get_registrations_ids()
+{
+  $dbr = db_select('eck_registration', 'r');
+  $dbr->condition('r.type', 'registration');
+  $dbr->addField('r', 'id');
+  return $dbr->execute()->fetchCol();
+}
+
+function dep_7_get_registration_info($reg)
+{
+  $reg_id = (is_object($reg)) ? $reg->id : $reg;
+  $reg_arr = [];
+  if ($reg_id) {
+    $reg_wr = entity_metadata_wrapper('registration', $reg_id);
+
+    // базовая регистрация
+    $base_reg_id = 0;
+    if ($reg_wr->field_r_base_cert->value()) {
+      $base_reg_id = $reg_wr->field_r_base_cert->getIdentifier();
+    }
+
+    // период действия
+    $reg_date_from_raw = $reg_wr->field_date_range->value->value();
+    $reg_date_to_raw = $reg_wr->field_date_range->value2->value();
+
+    // активная/в процессе регистрации
+    $status = $reg_wr->field_status->value();
+
+    // тип регистрации
+    // Базовая (base) - активная регистрация
+    // Продление (ext) - продление срока регистрации без внесения изменений
+    // Расширения (add) - внесение изменений в рег. без изменения срока
+    $type = $reg_wr->field_r_type->value();
+
+    // список Номенклатуры
+    $noms_arr = ['list' => []];
+    foreach ($reg_wr->field_nomenklaturas_td->getIterator() as $nom_wr) {
+      $noms_arr['list'][$nom_wr->getIdentifier()] = $nom_wr->label();
+    }
+    $noms_arr['string'] = $noms_arr['list'] ? implode(', ', $noms_arr['list']) : '';
+
+    // список Культур
+    $cultures_arr = ['list' => []];
+    foreach ($reg_wr->field_cultures->getIterator() as $culture_wr) {
+      $cultures_arr['list'][$culture_wr->getIdentifier()] = $culture_wr->label();
+    }
+    $cultures_arr['string'] = $cultures_arr['list'] ? implode(', ', $cultures_arr['list']) : '';
+
+    // определить наличие Продления или Расширения
+    $reg_prod_info = null;
+    $reg_dop_info = null;
+    if ($reg_siblings = dep_7_get_registration_siblings($reg_id)) {
+      foreach ($reg_siblings as $sibling) {
+        $reg_sibling_info = dep_7_get_registration_info($sibling->id);
+        if ($reg_date_to_raw == $reg_sibling_info['period']['to']['raw']) {
+          $reg_dop_info = $reg_sibling_info;
+        } else {
+          $reg_prod_info = $reg_sibling_info;
+        }
+      }
+    }
+
+    // Предупреждения
+    $warn_level = '';
+    $warn_text_arr = [];
+    if ($reg_prod_info) {
+      $warn_level = 'green';
+      $warn_text_arr[] = 'есть&nbsp;продление';
+    }
+    if ($reg_dop_info) {
+      $warn_text_arr[] = 'есть&nbsp;расширение';
+    }
+
+    // есть Продление, но пересечение с базой меньше DEP_7_REG_DAYS_CROSS_TO_ORANGE_ALERT дней ()
+    if ($reg_prod_info
+      && ($reg_date_to_raw - $reg_prod_info['period']['from']['raw']) / (60 * 60 * 24) < DEP_7_REG_DAYS_CROSS_TO_ORANGE_ALERT) {
+      $days = ceil(($reg_date_to_raw - $reg_prod_info['period']['from']['raw']) / (60 * 60 * 24));
+      $warn_level = 'orange';
+      $warn_text_arr[] = 'запас ' . format_plural($days, '@count day', '@count days');
+    }
+
+    // нет Продления и до окончания от DEP_7_REG_DAYS_TO_RED_ALERT до DEP_7_REG_DAYS_TO_ORANGE_ALERT дней
+    if (!$reg_prod_info
+      && ($reg_date_to_raw - REQUEST_TIME) / (60 * 60 * 24) >= DEP_7_REG_DAYS_TO_RED_ALERT
+      && ($reg_date_to_raw - REQUEST_TIME) / (60 * 60 * 24) < DEP_7_REG_DAYS_TO_ORANGE_ALERT) {
+      $warn_level = 'orange';
+      $warn_text_arr[] = 'нет&nbsp;продления';
+    }
+
+    // есть Продление, но разрыв с базой
+    if ($reg_prod_info
+      && ($reg_prod_info['period']['from']['raw'] > $reg_date_to_raw)) {
+      $days = ceil(($reg_prod_info['period']['from']['raw'] - $reg_date_to_raw) / (60 * 60 * 24));
+      $warn_level = 'red';
+      $warn_text_arr[] = 'разрыв ' . format_plural($days, '@count day', '@count days');
+    }
+
+    // нет Продления и до окончания меньше DEP_7_REG_DAYS_TO_RED_ALERT дней
+    if (!$reg_prod_info
+      && ($reg_date_to_raw - REQUEST_TIME) / (60 * 60 * 24) < DEP_7_REG_DAYS_TO_RED_ALERT) {
+      $warn_level = 'red';
+      $warn_text_arr[] = 'нет&nbsp;продления';
+    }
+
+    $reg_arr = [
+      'id' => $reg_wr->getIdentifier(),
+      'type' => $type,
+      'cert_num' => $reg_wr->field_r_cert_number->value(),
+      'reg_num' => $reg_wr->field_r_number->value(),
+      'period' => [
+        'from' => ['raw' => $reg_date_from_raw, 'formatted' => date('d.m.Y', $reg_date_from_raw)],
+        'to' => ['raw' => $reg_date_to_raw, 'formatted' => date('d.m.Y', $reg_date_to_raw)],
+      ],
+      'noms' => $noms_arr,
+      'cultures' => $cultures_arr,
+      'status' => $status,
+      'base_reg_id' => $base_reg_id,
+      'has_prod' => (bool)$reg_prod_info,
+      'has_dop' => (bool)$reg_dop_info,
+      'warning' => [
+        'level' => $warn_level,
+        'text' => implode(', ', $warn_text_arr),
+      ],
+    ];
+  }
+
+  return $reg_arr ?: false;
+}
+
+function dep_7_get_registration_siblings($reg_id)
+{
+  if ($reg_id) {
+    $query = new EntityFieldQuery();
+    $regs = $query
+      ->entityCondition('entity_type', 'registration')
+      ->fieldCondition('field_r_base_cert', 'target_id', $reg_id)
+      ->execute();
+    if ($regs) {
+      $entities = entity_load('registration', array_keys($regs['registration']));
+    }
+  }
+  return empty($entities) ? 0 : $entities;
+}
+
+function dep_7_clean_nomlist($string)
+{
+  $string = preg_replace('/\(.*\)/', '', $string);
+
+  if (strpos($string, 'Агроминерал') !== false) {
+    $string = 'Агроминералы';
+  }
+
+  return trim($string);
+}
+
+/**
+ * ----- Формы --------------------------------------------------------------------------------------------------------
+ */
+function dep_7_reg_nom_filter_form($form, $form_state)
+{
+  $dbr = db_select('eck_registration', 'r');
+  $dbr->condition('r.type', 'registration');
+  $dbr->innerJoin('field_data_field_nomenklaturas_td', 'fn', 'fn.entity_id = r.id');
+  $dbr->condition('fn.bundle', 'registration');
+  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklaturas_td_tid');
+  $dbr->fields('t', ['tid', 'name']);
+  $dbr->orderBy('name');
+  $nom = $dbr->execute()->fetchAllAssoc('tid');
+
+  $options = ['0' => '- Весь список -'];
+  foreach ($nom as $item) {
+    $options[$item->tid] = $item->name;
+  }
+
+  $form['#attributes'] = ['class' => ['dash-filter-form']];
+  $form['nom'] = [
+    '#title' => 'Номенклатура',
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => empty($_GET['nom']) || empty($options[$_GET['nom']]) ? 0 : $_GET['nom'],
+    '#ajax' => [
+      'wrapper' => 'tables-wrapper',
+      'callback' => 'dep_7_reg_nom_filter_form_ajax_callback',
+    ],
+  ];
+
+  return $form;
+}
+
+function dep_7_reg_nom_filter_form_submit($form, &$form_state)
+{
+  $form_state['redirect'] = [
+    'registration', [
+      'query' => ['nom' => $form_state['values']['nom']],
+      'fragment' => 'dash-reg-nom-filter-form'
+    ]
+  ];
+}
+
+function dep_7_reg_nom_filter_form_ajax_callback($form, $form_state)
+{
+  $data_arr = dep_7_reg_get_tables_output($form_state['values']['nom']);
+  return '<div id="tables-wrapper">' . $data_arr . '</div>';
+}

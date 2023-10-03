@@ -1,0 +1,198 @@
+@import "variables"; // продублировано из styles.scss, чтобы переменные не подсвечивались
+
+// индивидуальные для проекта стили
+
+
+.footer .logo { max-width: 60px; }
+
+h3, h4 {
+  text-transform: uppercase; text-align: center;
+}
+h4 { margin-bottom: 0; }
+h5.chart-title {
+  @media #{$tablet} {
+    display: inline-block;
+    padding-left: 50px;
+  }
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 1rem;
+  h3 { margin-bottom: 0; }
+  h4 { margin: 0; }
+  p { margin: 0; }
+}
+
+.charts {
+  .chart {
+    margin-bottom: 1rem;
+
+    @media #{$tablet} {
+      margin-bottom: 2rem;
+    }
+    @media #{$laptop} {
+      margin-bottom: 3rem;
+    }
+  }
+}
+
+.page-user-login {
+  .menu { display: none; }
+}
+
+.form-item {
+  margin-top: 0;
+  position: relative;
+  label {
+    font-weight: 400;
+    margin-bottom: 5px;
+  }
+  .form-text,
+  .form-select {
+    display: block;
+    height: 34px;
+    padding: 6px 12px;
+    color: #555555; font-size: 14px; line-height: 1.42857;
+    background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 2px;
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+    box-shadow: 1px 5px 10px #ddd;
+    transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
+    max-width: 100%;
+  }
+  .form-text {
+    max-width: 100%;
+  }
+  .description {
+    color: $text-muted;
+    strong { font-weight: 400; }
+  }
+  .ajax-progress {
+    position: absolute; right: 0; top: 0;
+  }
+}
+
+.dash-filter-form {
+  padding-left: 50px;
+}
+
+.btn {
+  color: #fff; font-size: 15px; font-weight: normal; text-align: center; line-height: 1.428571429; text-decoration: none; white-space: nowrap;
+  display: inline-block;
+  margin-bottom: 0; padding: 5px 15px;
+  vertical-align: middle;
+  touch-action: manipulation; cursor: pointer; user-select: none;
+  border: 1px solid transparent; border-radius: 2px;
+  transition: all 0.1s ease-in-out;
+  background-color: $text-light;
+  &:hover {
+    background-color: lighten($text-light, 15%);
+  }
+  &.btn-brand {
+    color: #fff;
+    background-color: $brand-blue;
+    border-color: $brand-blue-hover;
+    &:hover {
+      color: #fff;
+      background-color: $brand-blue-hover;
+    }
+  }
+  &.btn-white {
+    color: #333;
+    background-color: $bkg-page;
+    border-color: $brand-blue;
+    &:hover {
+      color: #333;
+      background-color: darken($bkg-page, 15%);
+    }
+  }
+  &.btn-wide { width: 100%; }
+}
+
+.page-dashboard {
+  .dash-filter-form > div {
+    display: flex; flex-wrap: nowrap; justify-content: flex-start; align-items: flex-end;
+    > div { flex: 0 0 auto; }
+    .form-item {
+      max-width: 100%;
+    }
+    @media #{$tablet} {
+      .form-item {
+        padding-left: 50px;
+      }
+    }
+  }
+}
+
+// --- Таблицы --------------------------------------------------------------
+.table-base {
+  .table-header { position: sticky; top: 0; }
+  ul {
+    max-height: 615px;
+    overflow-y: scroll; overflow-x: hidden;
+  }
+  .hovered { transform: scale3d(1.01, 1.01, 1); }
+  .not-clicked { height: 0; overflow: hidden; margin: 0; padding: 0; }
+  .li { transition: all .1s; }
+}
+.table-siblings {
+  .table-header { position: sticky; top: 0; }
+  ul {
+    max-height: 615px;
+    overflow-y: scroll; overflow-x: hidden;
+  }
+  .ext { background-color: #fafafa; }
+  .hovered {
+    transform: scale3d(1.01, 1.01, 1);
+    transition: all .2s;
+    .col { transition: all .2s; }
+    background-color: #ddd;
+    @media #{$tablet} {
+      background: none;
+      .col,
+      &.ext .col { background-color: #ddd; }
+    }
+  }
+  .initially-hidden:not(.clicked):not(.hovered) { height: 0; overflow: hidden; margin: 0; padding: 0; }
+
+  .not-clicked { height: 0; overflow: hidden; margin: 0; padding: 0; }
+  .li { transition: all .1s; }
+}
+.page-td-department-7 {
+  .table-base {
+    .col-1 { flex: 0 0 200px; }
+    .col-2 { flex: 0 0 100px; }
+    .col-3 { flex: auto; }
+    .col-4 { flex: 0 0 145px; }
+  }
+  .table-siblings {
+    .col-1 { flex: 0 0 200px; }
+    .col-2 { flex: 0 0 190px; }
+    .col-3 { flex: auto; }
+  }
+}
+.tables-remains {
+  .table-base,
+  .table-siblings {
+    .col-1 { flex: auto; }
+    .col-2 { flex: 0 0 110px; }
+    .col-3 { flex: 0 0 110px; }
+    .col-4 { flex: 0 0 100px; }
+  }
+}
+.tables-expired {
+  .table-base,
+  .table-siblings {
+    .col-1 { flex: auto; }
+    .col-2 { flex: 0 0 110px; }
+    .col-3 { flex: 0 0 150px; }
+  }
+}
+.tables-remains-by-warehouse {
+  .table-base,
+  .table-siblings {
+    .col-1 { flex: auto; }
+    .col-total { flex: 0 0 110px; }
+    .col-amount { flex: 0 0 150px; }
+  }
+}
