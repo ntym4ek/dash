@@ -72,6 +72,13 @@ function dash_menu()
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
   );
 
+  $items['ajax-load'] = array(
+    'page callback' => 'dash_ajax_load',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_CALLBACK,
+  );
+
 
   return $items;
 }
@@ -707,4 +714,19 @@ function dash_get_no_data_chart($title = null)
       'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
     ],
   ];
+}
+
+function dash_ajax_load()
+{
+  $result = '';
+  $module = $_GET['module'];
+  $func = $_GET['func'];
+  include_once (drupal_get_path('module', $module) . '/' . $module . '.module');
+  $function = $module . '_' . $func;
+  if (function_exists($function)) {
+    $result = $function();
+  }
+
+  print $result;
+  drupal_exit();
 }

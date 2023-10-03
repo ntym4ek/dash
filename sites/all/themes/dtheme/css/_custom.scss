@@ -75,6 +75,12 @@ h5.chart-title {
 .dash-filter-form {
   padding-left: 50px;
 }
+.ajax-load {
+  min-height: 200px;
+  .ajax-progress {
+    padding-left: 50px;
+  }
+}
 
 .btn {
   color: #fff; font-size: 15px; font-weight: normal; text-align: center; line-height: 1.428571429; text-decoration: none; white-space: nowrap;

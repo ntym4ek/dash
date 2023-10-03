@@ -45,7 +45,7 @@ function dep_2v_2g_menu()
  */
 function dep_2v_2g_import_processors_alter(&$processors)
 {
-  $path = drupal_get_path('module', 'dep_2v_2g') . '/includes/';
+//  $path = drupal_get_path('module', 'dep_2v_2g') . '/includes/';
   //$processors['first_queue'][] = ['mask' => '/^scrum_td_storage.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_storages'];
   //$processors['last_queue'][] = ['mask' => '/^scrum_td_remains.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_remains'];
 }
@@ -63,7 +63,59 @@ function dep_2v_2g_current_page()
     '<p>Сезон к сезону за период с ' . date('d', $period['from']) . '.' . date('m', $period['from']) . ' по ' . date('d', $time_yesterday) . '.' . date('m', $time_yesterday) . '</p>' .
     '</div>';
 
+  $output .= dep_2v_2g_row_1($period);
+
   $output .= '<div class="row">';
+  $output .=   '<div class="col-xs-12"><h5 class="chart-title">Суммарная отгрузка (шт/л/кг)</h5></div>';
+  $form =      drupal_get_form('dep_2v_2g_td_column_plan_ship_period_to_period_filter_form');
+  $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .= '</div>';
+  $output .= '<div class="ajax-load" data-func="row_2"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
+  $output .= '<div class="row">';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Отгрузка по номенклатуре (' . DASH_REV_SUFFIX . ')</h5></div>';
+  $form =       drupal_get_form('dep_2v_2g_column_ship_plan_by_nom_filter_form');
+  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .= '</div>';
+  $output .= '<div class="ajax-load" data-func="row_3" data-delay="500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
+  $output .= '<div class="row">';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по номенклатуре (шт/л/кг)</h5></div>';
+  $form =       drupal_get_form('dep_2v_2g_ship_plan_nom_filter_form');
+  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .= '</div>';
+  $output .= '<div class="ajax-load" data-func="row_4" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
+
+  $output .=  '<div class="section-title">' .
+    '<h3>Планы</h3>' .
+    '<p>Сезон ' . date('Y', $period['from']) . '-' . date('Y', $period['to']) . '</p>' .
+    '</div>';
+
+  $output .= '<div class="ajax-load" data-func="row_5" data-delay="2000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
+  $output .= '<div class="row">';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (' . DASH_REV_SUFFIX . ')</h5></div>';
+  $form =       drupal_get_form('dep_2v_2g_line_ship_plan_fact_by_month_filter_form');
+  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .= '</div>';
+  $output .= '<div class="ajax-load" data-func="row_6" data-delay="3000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
+  $output .= '<div class="row">';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (' . DASH_REV_SUFFIX . ')</h5></div>';
+  $form =       drupal_get_form('dep_2v_2g_ship_plan_region_filter_form');
+  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .= '</div>';
+  $output .= '<div class="ajax-load" data-func="row_7" data-delay="4000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
+  return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '">' . $output . '</div>';
+}
+
+function dep_2v_2g_row_1($period = null)
+{
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+
+  $output  = '<div class="row">';
   $data_arr =   dash_column_revenue_period_to_period('td', $period['from'], $period['to']);
   $data_arr['#title'] = 'Суммарная отгрузка за сезон по данным бухгалтерии (' . DASH_REV_SUFFIX . ')';
   $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
@@ -72,51 +124,55 @@ function dep_2v_2g_current_page()
   $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
+  return $output;
+}
+
+function dep_2v_2g_row_2($period = null)
+{
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+
   // отчёт в литрах
-  $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Суммарная отгрузка (шт/л/кг)</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_td_column_plan_ship_period_to_period_filter_form');
-  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-  $output .= '<div class="row">';
+  $output = '<div class="row">';
   $data_arr =   dep_2v_2g_td_column_plan_ship_period_to_period($period, 'qty');
   $data_arr['#title'] = '';
   $output .=    '<div id="summary-target" class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
+  return $output;
+}
+
+function dep_2v_2g_row_3($period = null)
+{
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
 
   // выручка по номенклатуре
-  $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Отгрузка по номенклатуре (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_column_ship_plan_by_nom_filter_form');
-  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-
-  $output .= '<div class="row">';
+  $output = '<div class="row">';
   $data_arr =   dep_2v_2g_column_ship_plan_by_nom($period);
   $output .=    '<div id="nom-r-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
+  return $output;
+}
+
+function dep_2v_2g_row_4($period = null)
+{
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+
   // валовая прибыль, понедельно, из факта
-  $output .= '<div class="row">';
+  $output = '<div class="row">';
   $data_arr =   dep_2v_2g_column_ship_fact_gross_profit_by_week($period);
   $output .=    '<div class="col-xs-12 col-md-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
+  return $output;
+}
 
-  $output .=  '<div class="section-title">' .
-    '<h3>Планы</h3>' .
-    '<p>Сезон ' . date('Y', $period['from']) . '-' . date('Y', $period['to']) . '</p>' .
-    '</div>';
+function dep_2v_2g_row_5($period = null)
+{
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
 
   // план-факт отгрузки по номенклатуре в литрах
-  $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по номенклатуре (шт/л/кг)</h5></div>';
-  $form =     drupal_get_form('dep_2v_2g_ship_plan_nom_filter_form');
-  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-
-  $output .= '<div class="row">';
+  $output = '<div class="row">';
   $nom = empty($_GET['nom']) ? 0 : $_GET['nom'];
   $data_arr =   dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom);
   $output .=    '<div id="nom-target" class="col-xs-12 col-md-4">' . drupal_render($data_arr) . '</div>';
@@ -132,39 +188,35 @@ function dep_2v_2g_current_page()
   $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
+  return $output;
+}
+
+function dep_2v_2g_row_6($period = null)
+{
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
 
   // план-факт по отгрузкам помесячно линейный с подсветкой текущего значения к предыдущему на дату
-  $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_line_ship_plan_fact_by_month_filter_form');
-  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-  $output .= '<div class="row">';
+  $output = '<div class="row">';
   $data_arr =   dep_2v_2g_line_ship_plan_fact_by_month($period);
   $output .=    '<div id="plan-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
   // план-факт выручки помесячно линейный с подсветкой текущего значения к предыдущему на дату
   // фильтр по регионам невозможен, тк в плане нет детализации по клиентам
-//  $output .= '<div class="row">';
-//  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (' . DASH_REV_SUFFIX . ')</h5></div>';
-//  $form =       drupal_get_form('dep_2v_2g_line_revenue_plan_fact_filter_form');
-//  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-//  $output .= '</div>';
   $output .= '<div class="row">';
   $data_arr =   dep_2v_2g_line_revenue_plan_fact('plan_revenue', $period);
   $output .=    '<div id="plan-m-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
+  return $output;
+}
+
+function dep_2v_2g_row_7($period = null)
+{
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
 
   // отгрузка по регионам
-  $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_ship_plan_region_filter_form');
-  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-
-  $output .= '<div class="row">';
+  $output = '<div class="row">';
   $region = empty($_GET['region']) ? 0 : $_GET['region'];
   $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $region);
   $output .=    '<div id="region-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
@@ -175,8 +227,9 @@ function dep_2v_2g_current_page()
   $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
-  return '<div class="charts">' . $output . '</div>';
+  return $output;
 }
+
 
 function dep_2v_2g_previous_page()
 {
@@ -1909,63 +1962,4 @@ function dep_2v_2g_line_ship_plan_fact_by_month_filter_form_ajax_callback($form,
 
   return '<div id="plan-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
 }
-
-//function dep_2v_2g_line_revenue_plan_fact_filter_form($form, $form_state)
-//{
-//  $period = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD);
-//  $time_today = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
-//
-//  $dbr = db_select('eck_plan', 'p');
-//  $dbr->condition('p.type', 'plan_ship');
-//
-//  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
-//  $dbr->condition('frd.bundle', 'plan_ship');
-//  $dbr->condition('frd.field_date_value', $period['from'], '>=');
-//  $dbr->condition('frd.field_date_value', $time_today, '<');
-//
-//  $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
-//  $dbr->condition('fct.bundle', 'plan_ship');
-//  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
-//
-//  $dbr->addField('fr', 'field_region_tid');
-//  $regions = $dbr->execute()->fetchCol();
-//
-//  $options = ['0' => 'Сумма по всем регионам'];
-//
-//  $vid = taxonomy_vocabulary_machine_name_load('regions')->vid;
-//  $tree = taxonomy_get_tree($vid, 0, 4);
-//
-//  $options += dash_get_select_tree($tree, null, $regions);
-//
-//  $form['#attributes'] = ['class' => ['dash-filter-form']];
-//  $form['region'] = [
-//    '#title' => 'Регион',
-//    '#type' => 'select',
-//    '#options' => $options,
-//    '#default_value' => empty($_GET['region-pm']) || empty($options[$_GET['region-pm']]) ? 0 : $_GET['region-pm'],
-//    '#ajax' => [
-//      'wrapper' => 'plan-m-target',
-//      'callback' => 'dep_2v_2g_line_revenue_plan_fact_filter_form_ajax_callback',
-//    ],
-//  ];
-//
-//  return $form;
-//}
-//function dep_2v_2g_line_revenue_plan_fact_filter_form_submit($form, &$form_state)
-//{
-//  $form_state['redirect'] = [
-//    'dashboard/current', [
-//      'query' => ['region-pm' => $form_state['values']['region']],
-//      'fragment' => 'dash-ship-plan-region-filter-form'
-//    ]
-//  ];
-//}
-//function dep_2v_2g_line_revenue_plan_fact_filter_form_ajax_callback($form, $form_state)
-//{
-//  $period = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD);
-//  $regions = $form_state['values']['region'] ? dash_get_term_siblings($form_state['values']['region']) : [];
-//  $data_arr = dep_2v_2g_line_revenue_plan_fact('plan_revenue', $period, $regions);
-//
-//  return '<div id="plan-m-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-//}
 
