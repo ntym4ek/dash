@@ -391,7 +391,7 @@ function dash_column_revenue_by_types($company, $time_from, $time_to)
   $chart = array(
     '#type' => 'chart',
     '#chart_type' => 'column',
-    '#title' => 'Отгрузка по основным видам продукции (' . DASH_REV_SUFFIX . ')',
+    '#title' => 'Отгрузка по основным видам продукции по данным бухгалтерии (' . DASH_REV_SUFFIX . ')',
     '#legend_position' => 'bottom',
     '#height' => '400',
     'xaxis' => [
