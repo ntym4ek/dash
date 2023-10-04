@@ -505,7 +505,7 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
       $fact = $month['fact_amount'] / DASH_REV_DIVIDER;
       $total_plan += $plan;
       $total_fact += $fact;
-      $total_fact = (date('Y', $month['start']) != date('Y')) || (date('n', $month['start']) < date('n')) ? $total_fact : null;
+      $total_fact = (date('Y', $month['start']) != date('Y')) || (date('n', $month['start']) < date('n')) ? $total_fact : 0;
 
       if ($plan || $fact) $no_data = false;
 
@@ -563,7 +563,9 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
 
 function dep_2v_2g_line_revenue_plan_fact($type, $period, $regions = [])
 {
-   $data = [];
+  $chart = dash_get_no_data_chart();
+
+  $data = [];
 
   // список месяцев, за которые выводим график
   $time_months_list = [];
@@ -694,7 +696,7 @@ function dep_2v_2g_line_revenue_plan_fact($type, $period, $regions = [])
 
     $chart['xaxis']['#labels'][] = _month_label_ru(date('n', $month));
     $plan = $datum[0];
-    $fact = (date('Y', $month) != date('Y')) || (date('n', $month) < date('n')) ? $datum[1] : null;
+    $fact = (date('Y', $month) != date('Y')) || (date('n', $month) < date('n')) ? $datum[1] : 0;
     if ($plan || $fact) $no_data = false;
     $chart['plan']['#data'][] = $plan;
     $chart['fact']['#data'][] = $fact;
@@ -745,6 +747,8 @@ function dep_2v_2g_line_revenue_plan_fact($type, $period, $regions = [])
 
 function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $regions)
 {
+  $chart = dash_get_no_data_chart();
+
   // выбрать препараты с наибольшим планом
   $dbr = db_select('eck_plan', 'p');
   $dbr->condition('p.type', 'plan_ship');
@@ -800,120 +804,125 @@ function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $regions)
   $result_fact = $dbr_f->execute()->fetchAll();
   $result_deal = $dbr_d->execute()->fetchAll();
 
-  $chart = array(
-    '#type' => 'chart',
-    '#chart_type' => 'bar',
-    '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#bbb', '#ccc'],
-    'xaxis' => [
-      '#type' => 'chart_xaxis',
-      '#raw_options' => [
-        'textStyle' => ['fontName' => '<global-font-name>'],
-      ]
-    ],
-    'yaxis' => [
-      '#type' => 'chart_yaxis',
-      '#raw_options' => [
-        'textStyle' => ['fontName' => '<global-font-name>'],
-      ],
-    ],
-    '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
-      'bar' => ['groupWidth' => "100%"],
-      'legend' => ['position' => 'top', 'height' => 100, 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
-      'chartArea' => ['width' => '80%', 'left' => 100],
-      'isStacked' => 'true',
-      'tooltip' => ['isHtml' => true],
-      'annotations' => [
-        'textStyle' => ['color' => '#000'],
-        'datum' => ['stem' => ['color' => '#ccc', 'length' => 20]],
-      ],
-    ],
-    'fact' => [
-      '#type' => 'chart_data',
-      '#title' => 'Факт',
-      '#data' => [],
-    ],
-    'deal' => [
-      '#type' => 'chart_data',
-      '#title' => 'Неотгруженные контракты',
-      '#data' => [],
-    ],
-    'plan_curr' => [
-      '#type' => 'chart_data',
-      '#title' => 'Текущий план',
-      '#data' => [],
-    ],
-    'plan' => [
-      '#type' => 'chart_data',
-      '#title' => 'План на сезон',
-      '#data' => [],
-    ],
-  );
-
   $amount_p =  $result_plan[0]->amount/DASH_REV_DIVIDER;
   $amount_pc1 = $result_plan_c1[0]->amount/DASH_REV_DIVIDER;
   $amount_pc2 = $result_plan_c2[0]->amount/DASH_REV_DIVIDER;
   $amount_f =  $result_fact[0]->amount/DASH_REV_DIVIDER;
   $amount_d =  $result_deal[0]->amount/DASH_REV_DIVIDER;
 
-  $curr_month_days = date('t', $time_curr_month_start);
-  $day = date('d', $time_curr_month_start);
+  if ($amount_p || $amount_d || $amount_f) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'bar',
+      '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#bbb', '#ccc'],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+        '#raw_options' => [
+          'textStyle' => ['fontName' => '<global-font-name>'],
+        ]
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#raw_options' => [
+          'textStyle' => ['fontName' => '<global-font-name>'],
+        ],
+      ],
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+        'bar' => ['groupWidth' => "100%"],
+        'legend' => ['position' => 'top', 'height' => 100, 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
+        'chartArea' => ['width' => '80%', 'left' => 100],
+        'isStacked' => 'true',
+        'tooltip' => ['isHtml' => true],
+        'annotations' => [
+          'textStyle' => ['color' => '#000'],
+          'datum' => ['stem' => ['color' => '#ccc', 'length' => 20]],
+        ],
+      ],
+      'fact' => [
+        '#type' => 'chart_data',
+        '#title' => 'Факт',
+        '#data' => [],
+      ],
+      'deal' => [
+        '#type' => 'chart_data',
+        '#title' => 'Неотгруженные контракты',
+        '#data' => [],
+      ],
+      'plan_curr' => [
+        '#type' => 'chart_data',
+        '#title' => 'Текущий план',
+        '#data' => [],
+      ],
+      'plan' => [
+        '#type' => 'chart_data',
+        '#title' => 'План на сезон',
+        '#data' => [],
+      ],
+    );
 
-  // пространство сверху
-  $chart['fact']['#data'][] = $chart['deal']['#data'][] = $chart['plan_curr']['#data'][] = $chart['plan']['#data'][] = 0; $chart['plan_curr'][] = $chart['plan'][] = $chart['fact'][] = $chart['deal'][] = ['#type' => 'chart_data_item'];
+    $curr_month_days = date('t', $time_curr_month_start);
+    $day = date('d', $time_curr_month_start);
 
-  // первая строка
-  $amount_pc = $amount_pc1+($amount_pc2-$amount_pc1)*($day/$curr_month_days);
-  $chart['fact']['#data'][]       = 0;
-  $chart['deal']['#data'][]       = 0;
-  $chart['plan_curr']['#data'][]  = $amount_pc;
-  $chart['plan']['#data'][]       = $amount_p - $amount_pc;
-  // вторая строка
-  $chart['fact']['#data'][]       = $amount_f;
-  $chart['deal']['#data'][]       = $amount_d;
-  $chart['plan_curr']['#data'][]  = 0;
-  $chart['plan']['#data'][]       = 0;
+    // пространство сверху
+    $chart['fact']['#data'][] = $chart['deal']['#data'][] = $chart['plan_curr']['#data'][] = $chart['plan']['#data'][] = 0;
+    $chart['plan_curr'][] = $chart['plan'][] = $chart['fact'][] = $chart['deal'][] = ['#type' => 'chart_data_item'];
 
-  $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-    '<div><div style="display:inline-block; width: 180px;">Текущий план:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_pc, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-    '<div><div style="display:inline-block; width: 180px;">План на сезон:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_p, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-    '</div>';
+    // первая строка
+    $amount_pc = $amount_pc1 + ($amount_pc2 - $amount_pc1) * ($day / $curr_month_days);
+    $chart['fact']['#data'][] = 0;
+    $chart['deal']['#data'][] = 0;
+    $chart['plan_curr']['#data'][] = $amount_pc;
+    $chart['plan']['#data'][] = $amount_p - $amount_pc;
+    // вторая строка
+    $chart['fact']['#data'][] = $amount_f;
+    $chart['deal']['#data'][] = $amount_d;
+    $chart['plan_curr']['#data'][] = 0;
+    $chart['plan']['#data'][] = 0;
 
-  $chart['plan_curr'][] = array(
-    '#type' => 'chart_data_item',
-    '#title' => $tooltip,
-  );
-  $chart['plan'][] = array(
-    '#type' => 'chart_data_item',
-    '#title' => $tooltip,
-  );
-  $chart['fact'][] = $chart['deal'][] = ['#type' => 'chart_data_item'];
+    $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      '<div><div style="display:inline-block; width: 180px;">Текущий план:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_pc, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+      '<div><div style="display:inline-block; width: 180px;">План на сезон:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_p, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+      '</div>';
 
-  $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-    '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_f, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-    '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_d, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>'.
-    '</div>';
+    $chart['plan_curr'][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+    );
+    $chart['plan'][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+    );
+    $chart['fact'][] = $chart['deal'][] = ['#type' => 'chart_data_item'];
 
-  $chart['fact'][] = array(
-    '#type' => 'chart_data_item',
-    '#title' => $tooltip,
-  );
-  $chart['deal'][] = array(
-    '#type' => 'chart_data_item',
-    '#title' => $tooltip,
-  );
+    $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_f, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+      '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_d, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+      '</div>';
 
-  // пространство снизу
-  $chart['fact']['#data'][] = $chart['deal']['#data'][] = $chart['plan_curr']['#data'][] = $chart['plan']['#data'][] = 0;
+    $chart['fact'][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+    );
+    $chart['deal'][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+    );
 
-  $title = $regions ? taxonomy_term_load($regions[0])->name : 'Все регионы';
-  $chart['xaxis']['#title'] = $title;
+    // пространство снизу
+    $chart['fact']['#data'][] = $chart['deal']['#data'][] = $chart['plan_curr']['#data'][] = $chart['plan']['#data'][] = 0;
+
+    $title = $regions ? taxonomy_term_load($regions[0])->name : 'Все регионы';
+    $chart['xaxis']['#title'] = $title;
+  }
 
   return $chart;
 }
 
 function dep_2v_2g_bar_ship_plan_fact_by_region($period, $options = [])
 {
+  $chart = dash_get_no_data_chart();
+
   // сумма Отгрузки по Регионам
   $dbr = db_select('eck_plan', 'p');
   $dbr->condition('p.type', 'plan_ship');
@@ -989,91 +998,93 @@ function dep_2v_2g_bar_ship_plan_fact_by_region($period, $options = [])
   krsort($sort_d);
   $sort = $sort_p + $sort_f + $sort_d;
 
-  $chart = array(
-    '#type' => 'chart',
-    '#chart_type' => 'bar',
-    '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#ccc'],
-    'xaxis' => [
-      '#type' => 'chart_xaxis',
-      '#raw_options' => [
-        'textStyle' => ['fontName' => '<global-font-name>'],
-      ]
-    ],
-    'yaxis' => [
-      '#type' => 'chart_yaxis',
-      '#raw_options' => [
-        'textStyle' => ['fontName' => '<global-font-name>'],
+  if ($sort) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'bar',
+      '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#ccc'],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+        '#raw_options' => [
+          'textStyle' => ['fontName' => '<global-font-name>'],
+        ]
       ],
-    ],
-    '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
-      'bar' => ['groupWidth' => "60%"],
-      'legend' => ['position' => 'top', 'height' => 100, 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
-      'chartArea' => ['width' => '80%', 'left' => 100],
-      'isStacked' => 'true',
-      'tooltip' => ['isHtml' => true],
-      'annotations' => [
-        'textStyle' => ['color' => '#000'],
-        'datum' => ['stem' => ['color' => '#ccc', 'length' => 20]],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#raw_options' => [
+          'textStyle' => ['fontName' => '<global-font-name>'],
+        ],
+      ],
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+        'bar' => ['groupWidth' => "60%"],
+        'legend' => ['position' => 'top', 'height' => 100, 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
+        'chartArea' => ['width' => '80%', 'left' => 100],
+        'isStacked' => 'true',
+        'tooltip' => ['isHtml' => true],
+        'annotations' => [
+          'textStyle' => ['color' => '#000'],
+          'datum' => ['stem' => ['color' => '#ccc', 'length' => 20]],
 //        'alwaysOutside' => true,
+        ],
       ],
-    ],
-    'fact' => [
-      '#type' => 'chart_data',
-      '#title' => 'Факт',
-      '#data' => [],
-    ],
-    'deal' => [
-      '#type' => 'chart_data',
-      '#title' => 'Неотгруженные контракты',
-      '#data' => [],
-    ],
-    'plan' => [
-      '#type' => 'chart_data',
-      '#title' => 'План',
-      '#data' => [],
-    ],
-  );
+      'fact' => [
+        '#type' => 'chart_data',
+        '#title' => 'Факт',
+        '#data' => [],
+      ],
+      'deal' => [
+        '#type' => 'chart_data',
+        '#title' => 'Неотгруженные контракты',
+        '#data' => [],
+      ],
+      'plan' => [
+        '#type' => 'chart_data',
+        '#title' => 'План',
+        '#data' => [],
+      ],
+    );
 
-  foreach ($sort as $tid) {
-    if ($plan_fact[$tid]['fact'] || $plan_fact[$tid]['plan'] || $plan_fact[$tid]['deal']) {
-      $chart['xaxis']['#labels'][] = $plan_fact[$tid]['name'];
-      $amount_p = (float)$plan_fact[$tid]['plan']/DASH_REV_DIVIDER;
-      $amount_d = (float)$plan_fact[$tid]['deal']/DASH_REV_DIVIDER;
-      $amount_f = (float)$plan_fact[$tid]['fact']/DASH_REV_DIVIDER;
+    foreach ($sort as $tid) {
+      if ($plan_fact[$tid]['fact'] || $plan_fact[$tid]['plan'] || $plan_fact[$tid]['deal']) {
+        $chart['xaxis']['#labels'][] = $plan_fact[$tid]['name'];
+        $amount_p = (float)$plan_fact[$tid]['plan'] / DASH_REV_DIVIDER;
+        $amount_d = (float)$plan_fact[$tid]['deal'] / DASH_REV_DIVIDER;
+        $amount_f = (float)$plan_fact[$tid]['fact'] / DASH_REV_DIVIDER;
 
-      $chart['fact']['#data'][] = $amount_f;
-      $chart['deal']['#data'][] = $amount_d;
-      $chart['plan']['#data'][] = max($amount_p - $amount_d - $amount_f, 0);
+        $chart['fact']['#data'][] = $amount_f;
+        $chart['deal']['#data'][] = $amount_d;
+        $chart['plan']['#data'][] = max($amount_p - $amount_d - $amount_f, 0);
 
-      $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:180px;white-space: nowrap;">' .
-        '<div><div style="display:inline-block; width: 170px;">План:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_p, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-        '<div><div style="display:inline-block; width: 170px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_d, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-        '<div><div style="display:inline-block; width: 170px;">Факт:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_f, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-        '</div>';
-      $chart['plan'][] = array(
-        '#type' => 'chart_data_item',
-        '#title' => $tooltip,
-        '#raw_options' => [
-          'annotation' => $amount_p > $amount_f + $amount_d ? number_format($amount_p, 2, ',', ' ') : '',
-        ],
-      );
-      $chart['deal'][] = array(
-        '#type' => 'chart_data_item',
-        '#title' => $tooltip,
-      );
-      $chart['fact'][] = array(
-        '#type' => 'chart_data_item',
-        '#title' => $tooltip,
-        '#raw_options' => [
-          'annotation' => ($amount_f > $amount_p) ? number_format($amount_f, 2, ',', ' ') : '',
-        ],
-      );
+        $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:180px;white-space: nowrap;">' .
+          '<div><div style="display:inline-block; width: 170px;">План:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_p, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+          '<div><div style="display:inline-block; width: 170px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_d, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+          '<div><div style="display:inline-block; width: 170px;">Факт:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_f, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+          '</div>';
+        $chart['plan'][] = array(
+          '#type' => 'chart_data_item',
+          '#title' => $tooltip,
+          '#raw_options' => [
+            'annotation' => $amount_p > $amount_f + $amount_d ? number_format($amount_p, 2, ',', ' ') : '',
+          ],
+        );
+        $chart['deal'][] = array(
+          '#type' => 'chart_data_item',
+          '#title' => $tooltip,
+        );
+        $chart['fact'][] = array(
+          '#type' => 'chart_data_item',
+          '#title' => $tooltip,
+          '#raw_options' => [
+            'annotation' => ($amount_f > $amount_p) ? number_format($amount_f, 2, ',', ' ') : '',
+          ],
+        );
+      }
     }
-  }
 
-  $chart['#height'] = 45*count($chart['fact']['#data']) + 120;
-  $chart['#raw_options']['chartArea']['height'] = 45*count($chart['fact']['#data']);
+    $chart['#height'] = 45 * count($chart['fact']['#data']) + 120;
+    $chart['#raw_options']['chartArea']['height'] = 45 * count($chart['fact']['#data']);
+  }
 
   return $chart;
 }
@@ -1403,90 +1414,92 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
   krsort($sort_d);
   $sort = $sort_p + $sort_f + $sort_d;
 
-  $chart = array(
-    '#type' => 'chart',
-    '#chart_type' => 'column',
-    '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#ccc'],
-    '#height' => '500',
-    'xaxis' => [
-      '#type' => 'chart_xaxis',
-      '#raw_options' => [
-        'textStyle' => ['fontName' => '<global-font-name>'],
-      ]
-    ],
-    'yaxis' => [
-      '#type' => 'chart_yaxis',
-      '#min' => 0,
-    ],
-    '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
-      'legend' => ['position' => 'top', 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
-      'chartArea' => [
-        'height' => '80%',
-        'width' => '95%',
-        'left' => 70,
+  if ($sort) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'column',
+      '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#ccc'],
+      '#height' => '500',
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+        '#raw_options' => [
+          'textStyle' => ['fontName' => '<global-font-name>'],
+        ]
       ],
-      'isStacked' => 'true',
-      'tooltip' => ['isHtml' => true],
-    ],
-    'fact' => [
-      '#type' => 'chart_data',
-      '#title' => 'Факт',
-      '#data' => [],
-    ],
-    'deal' => [
-      '#type' => 'chart_data',
-      '#title' => 'Неотгруженные контракты',
-      '#data' => [],
-    ],
-    'plan' => [
-      '#type' => 'chart_data',
-      '#title' => 'План',
-      '#data' => [],
-    ],
-  );
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+      ],
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+        'legend' => ['position' => 'top', 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
+        'chartArea' => [
+          'height' => '80%',
+          'width' => '95%',
+          'left' => 70,
+        ],
+        'isStacked' => 'true',
+        'tooltip' => ['isHtml' => true],
+      ],
+      'fact' => [
+        '#type' => 'chart_data',
+        '#title' => 'Факт',
+        '#data' => [],
+      ],
+      'deal' => [
+        '#type' => 'chart_data',
+        '#title' => 'Неотгруженные контракты',
+        '#data' => [],
+      ],
+      'plan' => [
+        '#type' => 'chart_data',
+        '#title' => 'План',
+        '#data' => [],
+      ],
+    );
 
-  $index = 0;
-  foreach ($sort as $tid) {
-    if (isset($options['range']) && $options['range'][0] <= $index && $index <= $options['range'][1]) {
-      if ($plan_fact[$tid]['fact'] || $plan_fact[$tid]['plan'] || $plan_fact[$tid]['deal']) {
-        $chart['xaxis']['#labels'][] = $plan_fact[$tid]['name'];
-        $qty_p = (float)$plan_fact[$tid]['plan'];
-        $qty_d = (float)$plan_fact[$tid]['deal'];
-        $qty_f = (float)$plan_fact[$tid]['fact'];
+    $index = 0;
+    foreach ($sort as $tid) {
+      if (isset($options['range']) && $options['range'][0] <= $index && $index <= $options['range'][1]) {
+        if ($plan_fact[$tid]['fact'] || $plan_fact[$tid]['plan'] || $plan_fact[$tid]['deal']) {
+          $chart['xaxis']['#labels'][] = $plan_fact[$tid]['name'];
+          $qty_p = (float)$plan_fact[$tid]['plan'];
+          $qty_d = (float)$plan_fact[$tid]['deal'];
+          $qty_f = (float)$plan_fact[$tid]['fact'];
 
-        $chart['fact']['#data'][] = $qty_f;
-        $chart['deal']['#data'][] = $qty_d;
-        $chart['plan']['#data'][] = max($qty_p - $qty_d - $qty_f, 0);
+          $chart['fact']['#data'][] = $qty_f;
+          $chart['deal']['#data'][] = $qty_d;
+          $chart['plan']['#data'][] = max($qty_p - $qty_d - $qty_f, 0);
 
-        $delta = '';
-        if ($qty_p) {
-          $delta = ($qty_f > $qty_p ? '(+' : '(') . number_format(($qty_f / $qty_p * 100) - 100, 0, null, ' ') . '%)';
+          $delta = '';
+          if ($qty_p) {
+            $delta = ($qty_f > $qty_p ? '(+' : '(') . number_format(($qty_f / $qty_p * 100) - 100, 0, null, ' ') . '%)';
+          }
+
+          $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+            '<div><div style="display:inline-block; width: 180px;">План:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_p, 0, ',', ' ') . '</b></div></div>' .
+            '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_d, 0, ',', ' ') . '</b></div></div>' .
+            '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_f, 0, ',', ' ') . '</b></div></div>' .
+            '</div>';
+          $chart['plan'][] = array(
+            '#type' => 'chart_data_item',
+            '#title' => $tooltip,
+          );
+          $chart['deal'][] = array(
+            '#type' => 'chart_data_item',
+            '#title' => $tooltip,
+          );
+          $chart['fact'][] = array(
+            '#type' => 'chart_data_item',
+            '#title' => $tooltip,
+            '#raw_options' => [
+              'annotation' => $delta,
+            ],
+          );
         }
-
-        $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-          '<div><div style="display:inline-block; width: 180px;">План:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_p, 0, ',', ' ') . '</b></div></div>' .
-          '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_d, 0, ',', ' ') . '</b></div></div>' .
-          '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_f, 0, ',', ' ') . '</b></div></div>' .
-          '</div>';
-        $chart['plan'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-        );
-        $chart['deal'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-        );
-        $chart['fact'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-          '#raw_options' => [
-            'annotation' => $delta,
-          ],
-        );
       }
+      $index++;
     }
-    $index++;
   }
 
   return $chart;
