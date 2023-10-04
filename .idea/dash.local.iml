@@ -3,15 +3,7 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.idea/dataSources" />
-      <excludeFolder url="file://$MODULE_DIR$/sites/all/modules/contrib" />
-      <excludeFolder url="file://$MODULE_DIR$/sites/all/modules/entity" />
       <excludeFolder url="file://$MODULE_DIR$/sites/default/files" />
-      <excludeFolder url="file://$MODULE_DIR$/includes" />
-      <excludeFolder url="file://$MODULE_DIR$/misc" />
-      <excludeFolder url="file://$MODULE_DIR$/modules" />
-      <excludeFolder url="file://$MODULE_DIR$/profiles" />
-      <excludeFolder url="file://$MODULE_DIR$/scripts" />
-      <excludeFolder url="file://$MODULE_DIR$/themes" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
