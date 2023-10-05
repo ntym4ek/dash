@@ -86,6 +86,9 @@ function dash_menu()
 /** Вернуть начальное и конечное (не включительно) время Unix
  * 12-и месячного периода начиная с месяца $month_start
  * и смещением $year_shift лет от текущего периода.
+ * from - начало 12и месячного периода
+ * to   - == end для прошлых периодов и == now для текущего
+ * end  - конец 12и месячного периода
  * $year_shift = 0 - текущий период
  */
 function dash_get_period_time_bounds($month_start, $year_shift = 0)
@@ -97,9 +100,21 @@ function dash_get_period_time_bounds($month_start, $year_shift = 0)
   // применить смещение
   $year_start = $year_start + $year_shift;
 
+  $from = gmmktime(0, 0, 0, $month_start, 1, $year_start);
+  $end = gmmktime(0, 0, 0, $month_start+12, 1, $year_start);
+  // для предыдущих берем весь сезон
+  if ($year_shift) {
+    $to = gmmktime(0, 0, 0, $month_start+12, 1, $year_start);
+  }
+  // для текущего по сегодняшнюю дату
+  else {
+    $to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
+  }
+
   return [
-    'from' => gmmktime(0, 0, 0, $month_start, 1, $year_start),
-    'to' => gmmktime(0, 0, 0, $month_start+12, 1, $year_start),
+    'from' => $from,
+    'to' => $to,
+    'end' => $end,
   ];
 }
 
@@ -109,7 +124,6 @@ function dash_get_page_time_bounds($month_start)
     $bounds = dash_get_period_time_bounds($month_start, -1);
   } else {
     $bounds = dash_get_period_time_bounds($month_start);
-    $bounds['to'] = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
   }
 
   return $bounds;
@@ -563,7 +577,7 @@ function dash_get_months_list($period)
   // список месяцев, за которые выводим график
   $time_months_list = [];
   $time_month_start = $period['from'];
-  while($time_month_start < $period['to']) {
+  while($time_month_start < $period['end']) {
     $time_month_end = gmmktime(0, 0, 0, date('n', $time_month_start)+1, 1, date('Y', $time_month_start));
     $time_months_list[] = [
       'start' => $time_month_start,
@@ -590,10 +604,10 @@ function dash_get_weeks_list($period)
   $week_start =  gmmktime(0,0,0,1,1, $year) + $week_num * 7 * 86400 - date('N', gmmktime(0,0,0,1,1,$year)) * 86400 + 3*86400;
 
   // далее список +7 дней
-  while($week_start < $period['to']) {
+  while($week_start < $period['end']) {
     $week_end =  $week_start + 7 * 86400;
     if ($week_start < $period['from']) $week_start = $period['from'];
-    if ($week_end > $period['to']) $week_end = $period['to'];
+    if ($week_end > $period['end']) $week_end = $period['end'];
 
     $time_weeks_list[] = [
       'start' => $week_start,

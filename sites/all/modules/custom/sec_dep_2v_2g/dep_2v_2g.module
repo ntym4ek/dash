@@ -119,12 +119,12 @@ function dep_2v_2g_current_page()
   $output .= '<div class="ajax-load" data-func="current_7" data-delay="4000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
 
-  return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '">' . $output . '</div>';
+  return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
 }
 
 function dep_2v_2g_current_1($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   $output  = '<div class="row">';
   $data_arr =   dash_column_revenue_period_to_period('td', $period['from'], $period['to']);
@@ -140,7 +140,7 @@ function dep_2v_2g_current_1($period = null)
 
 function dep_2v_2g_current_2($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   // отчёт в литрах
   $output = '<div class="row">';
@@ -154,7 +154,7 @@ function dep_2v_2g_current_2($period = null)
 
 function dep_2v_2g_current_3($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   // выручка по номенклатуре
   $output = '<div class="row">';
@@ -167,7 +167,7 @@ function dep_2v_2g_current_3($period = null)
 
 function dep_2v_2g_current_4($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   // валовая прибыль, понедельно, из факта
   $output = '<div class="row">';
@@ -180,7 +180,7 @@ function dep_2v_2g_current_4($period = null)
 
 function dep_2v_2g_current_5($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   // план-факт отгрузки по номенклатуре в литрах
   $output = '<div class="row">';
@@ -204,7 +204,7 @@ function dep_2v_2g_current_5($period = null)
 
 function dep_2v_2g_current_6($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   // план-факт по отгрузкам помесячно линейный с подсветкой текущего значения к предыдущему на дату
   $output = '<div class="row">';
@@ -224,7 +224,7 @@ function dep_2v_2g_current_6($period = null)
 
 function dep_2v_2g_current_7($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   // отгрузка по регионам
   $output = '<div class="row">';
@@ -269,12 +269,12 @@ function dep_2v_2g_previous_page()
   // план-факт выручки
   $output .= '<div class="ajax-load" data-func="previous_4" data-delay="1200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
-  return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '">' . $output . '</div>';
+  return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
 }
 
 function dep_2v_2g_previous_1($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   $output = '<div class="row">';
   $data_arr =   dash_column_revenue_period_to_period('td', $period['from'], $period['to']);
@@ -294,7 +294,7 @@ function dep_2v_2g_previous_1($period = null)
 }
 function dep_2v_2g_previous_2($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   // выручка по номенклатуре
   $output  = '<div class="row">';
@@ -307,7 +307,7 @@ function dep_2v_2g_previous_2($period = null)
 }
 function dep_2v_2g_previous_3($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   // план-факт по отгрузкам
   $output  = '<div class="row">';
@@ -319,7 +319,7 @@ function dep_2v_2g_previous_3($period = null)
 }
 function dep_2v_2g_previous_4($period = null)
 {
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to']];
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   // план-факт выручки
   $output = '<div class="row">';
@@ -1346,6 +1346,8 @@ function dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom)
   foreach (dash_get_years_shift_list($period) as $shift) {
     $period = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD, $shift);
 
+    // todo текущий период брать по текущую дату
+    //      т.к факт выдаёт больше за весь год вперед
     $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $period, 'noms' => $noms]);
     $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'noms' => $noms]);
     $deal = $shift ? [] : dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_DEAL, 'noms' => $noms]);
