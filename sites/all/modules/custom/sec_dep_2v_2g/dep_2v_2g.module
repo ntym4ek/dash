@@ -877,6 +877,14 @@ function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $regions)
 
     $title = $regions ? taxonomy_term_load($regions[0])->name : 'Все регионы';
     $chart['xaxis']['#title'] = $title;
+
+    // для прошлых периодов убрать контракты и текущий план
+    if (!dash_is_current_season($period)) {
+      array_splice($chart['#colors'], 1, 1);
+      array_splice($chart['#colors'], 1, 1);
+      unset($chart['deal']);
+      unset($chart['plan_curr']);
+    }
   }
 
   return $chart;
@@ -1372,6 +1380,12 @@ function dep_2v_2g_bar_ship_plan_fact_by_region($period, $options = [])
 
     $chart['#height'] = 45 * count($chart['fact']['#data']) + 120;
     $chart['#raw_options']['chartArea']['height'] = 45 * count($chart['fact']['#data']);
+
+    // для прошлых периодов убрать контракты
+    if (!dash_is_current_season($period)) {
+      array_splice($chart['#colors'], 1, 1);
+      unset($chart['deal']);
+    }
   }
 
   return $chart;
@@ -1754,6 +1768,11 @@ function dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom)
 
     // пространство справа
     $chart['fact']['#data'][] = 0; $chart['deal']['#data'][] = 0; $chart['plan']['#data'][] = 0; $chart['xaxis']['#labels'][] = '';
+
+    if (!dash_is_current_season($period)) {
+      array_splice($chart['#colors'], 1, 1);
+      unset($chart['deal']);
+    }
   }
 
   return $chart;
@@ -1902,6 +1921,11 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
         }
       }
       $index++;
+    }
+
+    if (!dash_is_current_season($period)) {
+      array_splice($chart['#colors'], 1, 1);
+      unset($chart['deal']);
     }
   }
 
@@ -2267,7 +2291,7 @@ function dep_2v_2g_column_ship_plan_by_nom($period, $regions = [])
         'legend' => ['position' => 'right', 'maxLines' => 3, 'textStyle' => ['fontSize' => '13', 'fontName' => '<global-font-name>']],
         'chartArea' => [
           'height' => '90%',
-          'width' => '75%',
+          'width' => '70%',
           'left' => 50,
         ],
         'bar' => ['groupWidth' => "80%"],
@@ -2285,16 +2309,16 @@ function dep_2v_2g_column_ship_plan_by_nom($period, $regions = [])
       $chart[$tid][] = array(
         '#type' => 'chart_data_item',
         '#raw_options' => [
-          'annotation' => number_format($amount / DASH_REV_DIVIDER, 1, ',', ' '),
+          'annotation' => number_format($amount / DASH_REV_DIVIDER, 2, ',', ' '),
         ],
       );
     }
-    if (!$result_by_amount) {
-      $chart[] = array(
-        '#type' => 'chart_data',
-        '#data' => [],
-      );
-    }
+//    if (!$result_by_amount) {
+//      $chart[] = array(
+//        '#type' => 'chart_data',
+//        '#data' => [],
+//      );
+//    }
   }
 
   return $chart;
