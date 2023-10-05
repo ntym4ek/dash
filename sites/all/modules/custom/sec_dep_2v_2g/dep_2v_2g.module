@@ -2267,8 +2267,10 @@ function dep_2v_2g_column_ship_plan_by_nom($period, $regions = [])
         'legend' => ['position' => 'right', 'maxLines' => 3, 'textStyle' => ['fontSize' => '13', 'fontName' => '<global-font-name>']],
         'chartArea' => [
           'height' => '90%',
+          'width' => '75%',
           'left' => 50,
         ],
+        'bar' => ['groupWidth' => "80%"],
       ],
     );
 
@@ -2283,7 +2285,7 @@ function dep_2v_2g_column_ship_plan_by_nom($period, $regions = [])
       $chart[$tid][] = array(
         '#type' => 'chart_data_item',
         '#raw_options' => [
-          'annotation' => (string)round($amount / DASH_REV_DIVIDER),
+          'annotation' => number_format($amount / DASH_REV_DIVIDER, 1, ',', ' '),
         ],
       );
     }
