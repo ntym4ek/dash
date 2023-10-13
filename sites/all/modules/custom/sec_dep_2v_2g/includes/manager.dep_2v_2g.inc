@@ -13,10 +13,14 @@ function dep_2v_2g_manager_page()
   $period = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD);
 
   $time_yesterday = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to'])-1, date('Y', $period['to']));
-  $output = '<div class="section-title">' .
-    '<h3>Отгрузка</h3>' .
-    '<p>Сезон к сезону за период с ' . date('d', $period['from']) . '.' . date('m', $period['from']) . ' по ' . date('d', $time_yesterday) . '.' . date('m', $time_yesterday) . '</p>' .
-    '</div>';
+  $output = '<div class="section-title">';
+  $output .= '<h3>Отгрузка</h3>';
+  if (dash_is_current_season($period)) {
+    $output .= '<p>Год к году за период с ' . date('d', $period['from']) . '.' . date('m', $period['from']) . ' по ' . date('d', $time_yesterday) . '.' . date('m', $time_yesterday) . '</p>';
+  } else {
+    $output .= '<p>Год к году';
+  }
+  $output .= '</div>';
 
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12"><h5 class="chart-title">Суммарная отгрузка</h5></div>';
@@ -24,6 +28,15 @@ function dep_2v_2g_manager_page()
   $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
   $output .= '<div class="ajax-load" data-func="manager_2" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
+  $output .= '<div class="section-title">';
+  $output .= '<h3>Отгрузка</h3>';
+  if (dash_is_current_season($period)) {
+    $output .= '<p>За текущий период</p>';
+  } else {
+    $output .= '<p>За период ' . date('Y', $period['from']) . ' - ' . date('Y', $period['end']) . '</p>';
+  }
+  $output .= '</div>';
 
   $output .= '<div class="row">';
   $output .=    '<div class="col-xs-12"><h5 class="chart-title">Отгрузка по номенклатуре (' . DASH_REV_SUFFIX . ')</h5></div>';
@@ -35,7 +48,7 @@ function dep_2v_2g_manager_page()
 
   $output .=  '<div class="section-title">' .
     '<h3>Планы</h3>' .
-    '<p>Сезон ' . date('Y', $period['from']) . '-' . date('Y', $period['to']) . '</p>' .
+    '<p>На период  ' . date('Y', $period['from']) . '-' . date('Y', $period['end']) . '</p>' .
     '</div>';
 
   // план-факт линейные
