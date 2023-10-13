@@ -19,6 +19,9 @@ define ('DASH_COLOR_ORANGE', '#F69200');
 define ('DASH_COLOR_LIGHT_ORANGE', '#f28f43');
 define ('DASH_COLOR_PURPLE', '#CD5B8F');
 
+define ('DASH_COLOR_SET_1', [DASH_COLOR_RED, DASH_COLOR_DARK_RED, DASH_COLOR_ORANGE, DASH_COLOR_LIGHT_ORANGE, DASH_COLOR_PURPLE]);
+define ('DASH_COLOR_SET_2', [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, DASH_COLOR_AQUA, DASH_COLOR_GLOW_GREEN, DASH_COLOR_LIGHT_GREEN]);
+
 define ('DASH_HISTORY_LENGTH', 5);            // максимальное количество лет истории
 define ('DASH_HISTORY_START_YEAR_TD', 2020);  // начало истории сезонов ТД, год
 define ('DASH_PERIOD_START_MONTH_TD', 10);    // начало сезона, месяц
@@ -69,13 +72,13 @@ function dash_menu()
     'page callback' => '<front>',
     'expanded' => true,
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_2V2G_USER_RID]],
   );
 
   $items['ajax-load'] = array(
     'page callback' => 'dash_ajax_load',
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access callback' => 'ext_user_has_roles',  // todo доступ нужно проверять на уровне функции, иначе роли из списка могут получить данные друг друга
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_2V2G_USER_RID]],
     'type' => MENU_CALLBACK,
   );
 
@@ -120,7 +123,7 @@ function dash_get_period_time_bounds($month_start, $year_shift = 0)
 
 function dash_get_page_time_bounds($month_start)
 {
-  if ($_GET['q'] == 'td/department-2v-2g/closed') {
+  if ($_GET['q'] == 'td/department-2v-2g/closed' || $_GET['q'] == 'td/department-2v-2g/manager/closed') {
     $bounds = dash_get_period_time_bounds($month_start, -1);
   } else {
     $bounds = dash_get_period_time_bounds($month_start);

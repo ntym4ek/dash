@@ -3,6 +3,7 @@
 define('ADMIN_RID', 3);
 define('TRADE_HOUSE_USER_RID', 4);
 define('AGROHIMIKAT_USER_RID', 5);
+define('DEP_2V2G_USER_RID', 7);
 define('DEP_7_USER_RID', 6);
 
 
