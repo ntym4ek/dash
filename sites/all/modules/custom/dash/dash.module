@@ -94,7 +94,7 @@ function dash_menu()
  * end  - конец 12и месячного периода
  * $year_shift = 0 - текущий период
  */
-function dash_get_period_time_bounds($month_start, $year_shift = 0)
+function dash_get_year_time_bounds($month_start, $year_shift = 0)
 {
   // получить начало текущего периода
   $time_month_start = gmmktime(0, 0, 0, $month_start, 1, date('Y'));
@@ -121,12 +121,39 @@ function dash_get_period_time_bounds($month_start, $year_shift = 0)
   ];
 }
 
+/** Вернуть начальное и конечное (не включительно) время Unix
+ * для периода:
+ * с месяца $month_start и смещением $year_shift (0 - текущий) лет от текущего периода
+ * до текущей даты в заданном сезоне
+ *
+ * from - начало 12и месячного периода
+ * to   - == end для прошлых периодов и == now для текущего
+ * end  - конец 12и месячного периода
+ */
+function dash_get_period_time_bounds($month_start, $year_shift = 0)
+{
+  // получить начало текущего периода
+  $time_month_start = gmmktime(0, 0, 0, $month_start, 1, date('Y'));
+  $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
+
+  // применить смещение
+  $year_start = $year_start + $year_shift;
+
+  $from = gmmktime(0, 0, 0, $month_start, 1, $year_start);
+  $to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y') + $year_shift);
+
+  return [
+    'from' => $from,
+    'to' => $to,
+  ];
+}
+
 function dash_get_page_time_bounds($month_start)
 {
   if ($_GET['q'] == 'td/department-2v-2g/closed' || $_GET['q'] == 'td/department-2v-2g/manager/closed') {
-    $bounds = dash_get_period_time_bounds($month_start, -1);
+    $bounds = dash_get_year_time_bounds($month_start, -1);
   } else {
-    $bounds = dash_get_period_time_bounds($month_start);
+    $bounds = dash_get_year_time_bounds($month_start);
   }
 
   return $bounds;
@@ -727,6 +754,9 @@ function dash_get_registration_by_1c_id($reg_1c_id)
   return empty($entities) ? 0: current($entities);
 }
 
+/**
+ * Вернуть график по-умолчанию
+ */
 function dash_get_no_data_chart($title = null)
 {
   return [
@@ -778,7 +808,7 @@ function dash_preprocess_page()
  */
 function dash_get_years_shift($period = null)
 {
-  if (!$period) $period = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  if (!$period) $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
 
   $years_shift = date('Y', $period['from']) - (DASH_HISTORY_START_YEAR_TD+1);
   return abs($years_shift)+1 > DASH_HISTORY_LENGTH ? DASH_HISTORY_LENGTH : $years_shift;
@@ -790,9 +820,9 @@ function dash_get_years_shift($period = null)
  */
 function dash_get_years_shift_list($period = null)
 {
-  if (!$period) $period = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  if (!$period) $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
 
-  $period_current = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  $period_current = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
 
   $shift = (date('Y', $period_current['from']) - date('Y', $period['from'])) * (-1);
   $count = date('Y', $period['from']) - DASH_HISTORY_START_YEAR_TD;

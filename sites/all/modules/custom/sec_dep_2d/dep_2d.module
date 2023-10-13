@@ -678,7 +678,7 @@ function dash_get_remains_by_warehouse($conditions)
  */
 function dep_2d_date_remains_actual()
 {
-  $period = dash_get_period_time_bounds(10);
+  $period = dash_get_year_time_bounds(10);
 
   return gmmktime(0,0,0, date('n', $period['from'])+21, 1, date('Y', $period['from']));
 }

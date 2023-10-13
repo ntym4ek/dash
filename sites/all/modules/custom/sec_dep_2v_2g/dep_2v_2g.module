@@ -281,7 +281,7 @@ function dep_2v_2g_current_7($period = null)
  */
 function dep_2v_2g_previous_page()
 {
-  $period = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD, -1);
+  $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD, -1);
 
   $output = '<div class="section-title">' .
     '<h3>Отгрузка</h3>' .
@@ -382,27 +382,48 @@ function dep_2v_2g_td_column_plan_ship_period_to_period($period, $field, $region
   // собираем
   $time_to = REQUEST_TIME;
 
-  // собрать данные периодов с DASH_YEAR_HISTORY_START года
-  $years_shift = dash_get_years_shift($period);
-  do {
-    $time_start = gmmktime(0, 0, 0,  date('n', $period['from'])-12*$years_shift, date('j', $period['from']), date('Y', $period['from']));
-    $time_end = gmmktime(0, 0, 0,  date('n', $time_to)-12*$years_shift, date('j', $time_to), date('Y', $time_to));
+  foreach (dash_get_years_shift_list($period) as $shift) {
+    if (dash_is_current_season($period)) {
+      $bounds = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD, $shift);
+    } else {
+      $bounds = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD, $shift);
+    }
 
-    $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => ['from' => $time_start, 'to' => $time_end], 'regions' => $regions]);
+    $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $bounds, 'regions' => $regions]);
 
     $sum = 0;
     foreach($fact as $record) {
       $sum += $field == 'qty' ? $record->qty : $record->amount/DASH_REV_DIVIDER;
     }
 
-    $data[date('Y', $time_start)] = [
-      'time_start' => $time_start,
-      'time_end' => $time_end,
-      'sum' => $sum
+    $data[date('Y', $bounds['from'])] = [
+      'time_start' => $bounds['from'],
+      'time_end' => $bounds['to'],
+      'sum' => $sum,
     ];
+  }
 
-    $years_shift--;
-  } while ($years_shift >= 0);
+    // собрать данные периодов с DASH_YEAR_HISTORY_START года
+//  $years_shift = dash_get_years_shift($period);
+//  do {
+//    $time_start = gmmktime(0, 0, 0,  date('n', $period['from'])-12*$years_shift, date('j', $period['from']), date('Y', $period['from']));
+//    $time_end = gmmktime(0, 0, 0,  date('n', $time_to)-12*$years_shift, date('j', $time_to), date('Y', $time_to));
+//
+//    $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => ['from' => $time_start, 'to' => $time_end], 'regions' => $regions]);
+//
+//    $sum = 0;
+//    foreach($fact as $record) {
+//      $sum += $field == 'qty' ? $record->qty : $record->amount/DASH_REV_DIVIDER;
+//    }
+//
+//    $data[date('Y', $time_start)] = [
+//      'time_start' => $time_start,
+//      'time_end' => $time_end,
+//      'sum' => $sum
+//    ];
+//
+//    $years_shift--;
+//  } while ($years_shift >= 0);
 
   $chart = array(
     '#type' => 'chart',
@@ -1686,7 +1707,7 @@ function dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom)
   // собрать данные периодов с DASH_YEAR_HISTORY_START года
   $plan_fact_all = [];
   foreach (dash_get_years_shift_list($period) as $shift) {
-    $period = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD, $shift);
+    $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD, $shift);
 
     $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $period, 'noms' => $noms]);
     $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'noms' => $noms]);
@@ -2374,8 +2395,8 @@ function dep_2v_2g_ship_plan_nom_filter_form($form, &$form_state)
 
   // период, за который вибирается номенклатура должен совпадать с выводимым периодом
   $years_shift = dash_get_years_shift();
-  $bounds_start = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD, -$years_shift);
-  $bounds_end = dash_get_period_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  $bounds_start = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD, -$years_shift);
+  $bounds_end = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
 
   $dbr = db_select('eck_plan', 'p');
   $dbr->condition('p.type', 'plan_ship');
