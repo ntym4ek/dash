@@ -708,6 +708,29 @@ function dash_get_term_by_1c_id($voc, $record_1c_id)
   return empty($entities) ? 0: current($entities);
 }
 
+function dash_get_nomenklatura_by_1c_artikul($company, $artikul)
+{
+  $vid = null;
+  if ($company == 'ah') {
+    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
+  } elseif ($company == 'td') {
+    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid;
+  }
+  if ($vid && $artikul) {
+    $query = new EntityFieldQuery();
+    $terms = $query
+      ->entityCondition('entity_type', 'taxonomy_term')
+      ->propertyCondition('vid', $vid)
+      ->fieldCondition('field_nom_artikul', 'value', $artikul)
+      ->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+      $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+    }
+  }
+  return empty($entities) ? 0 : current($entities);
+}
+
 /**
  * Удалить Остатки за период
  * @param $date_start

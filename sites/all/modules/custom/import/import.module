@@ -244,7 +244,7 @@ function import_import_nomenklatura($array)
         $client = import_get_client_by_1c_id('ah', $nom['dav_id']);
         if (isset($client->tid)) {
           // проверить наличие записи Номенклатуры
-          if ($term = import_get_nomenklatura_by_1c_artikul('ah', $nom['art'])) {
+          if ($term = dash_get_nomenklatura_by_1c_artikul('ah', $nom['art'])) {
             // обновить значения полей
             $term_wr = entity_metadata_wrapper('taxonomy_term', $term);
             $term_wr->name = $nom['name'];
@@ -297,7 +297,7 @@ function import_import_nomenklatura_td($array)
     foreach($array['load'] as $nom) {
       if ($nom['id'] && $nom['name'] && $nom['art']) {
         // проверить наличие записи Номенклатуры по артикулу (тк не у всех прописан ID)
-        $term = import_get_nomenklatura_by_1c_artikul('td', $nom['art']);
+        $term = dash_get_nomenklatura_by_1c_artikul('td', $nom['art']);
         // если нет по артикулу, искать по ID или создать
         if (!$term) {
           $term = dash_get_term_by_1c_id('nomenklatura_td', $nom['id']);
@@ -362,7 +362,7 @@ function import_import_production_plan($array)
     // подготовка Плана на месяц
     $plan = [];
     foreach ($array['load'] as $plan_item) {
-      $nom = import_get_nomenklatura_by_1c_artikul('ah', $plan_item['artikul_1c']);
+      $nom = dash_get_nomenklatura_by_1c_artikul('ah', $plan_item['artikul_1c']);
       if (isset($nom->tid)) {
         $date_arr = explode('.', $plan_item['date']);
         $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
@@ -522,7 +522,7 @@ function import_import_ship_plan_td($array)
     foreach ($array['load'] as $load_item) {
       $client = import_get_client_by_1c_id('td', $load_item['clients_id']);
       if (isset($client->tid)) {
-        $nom = import_get_nomenklatura_by_1c_artikul('td', $load_item['artikul_1c']);
+        $nom = dash_get_nomenklatura_by_1c_artikul('td', $load_item['artikul_1c']);
         if (isset($nom->tid)) {
           $date_arr = explode('.', $load_item['date']);
           $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
@@ -673,28 +673,6 @@ function import_revenue_month_delete($company, $month_start)
   }
 }
 
-function import_get_nomenklatura_by_1c_artikul($company, $artikul)
-{
-  $vid = null;
-  if ($company == 'ah') {
-    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
-  } elseif ($company == 'td') {
-    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid;
-  }
-  if ($vid && $artikul) {
-    $query = new EntityFieldQuery();
-    $terms = $query
-      ->entityCondition('entity_type', 'taxonomy_term')
-      ->propertyCondition('vid', $vid)
-      ->fieldCondition('field_nom_artikul', 'value', $artikul)
-      ->execute();
-    if ($terms) {
-      $term = current($terms['taxonomy_term']);
-      $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
-    }
-  }
-  return empty($entities) ? 0 : current($entities);
-}
 
 function import_get_client_by_1c_id($company, $client_id)
 {

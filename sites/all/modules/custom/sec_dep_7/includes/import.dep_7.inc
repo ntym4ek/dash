@@ -68,8 +68,9 @@ function dep_7_import_registrations($array)
       // массив локальных ID Номенклатуры
       $noms = [];
       if ($reg_item['art']) {
-        foreach (explode(',', $reg_item['art']) as $nom_item) {
-          $nom = dash_get_term_by_1c_id('nomenklatura_td', trim($nom_item));
+        foreach (explode(',', $reg_item['art']) as $nom_artikul) {
+          // todo переписать под id номенклатуры вместо артикула
+          $nom = dash_get_nomenklatura_by_1c_artikul('td', trim($nom_artikul));
           if ($nom) {
             $noms[] = $nom->tid;
           }

@@ -98,7 +98,7 @@ function ext_admin_settings_form($form, &$form_state)
 function ext_admin_migration_form($form, &$form_state)
 {
   $function = '';
-//  $function = 'ext_admin_queue_database_processing';
+  $function = 'ext_admin_queue_database_processing';
 //  $function = 'ext_admin_queue_database_processing_2';
 
   $form['message'] = array(
@@ -151,26 +151,49 @@ function ext_admin_queue_database_processing()
   // получить записи с незаполненным полем и поставить в очередь
   $dbr = db_select('taxonomy_term_data', 't');
   $dbr->condition('t.vid', taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid);
-  $dbr->leftjoin('field_data_field_1c_id', 'fid', 'fid.entity_id = t.tid');
-  $dbr->isNull('fid.field_1c_id_value');
+  $dbr->leftjoin('field_data_field_nom_artikul', 'fa', 'fa.entity_id = t.tid');
+  $dbr->isNull('fa.field_nom_artikul_value');
   $dbr->addField('t', 'tid');
   if ($terms = $dbr->execute()->fetchAllAssoc('tid')) {
 
-//    $queue = DrupalQueue::get('database_processing_queue');
-//
-//    foreach($terms as $term) {
-//      $queue->createItem($term);
-//    }
+    $queue = DrupalQueue::get('database_processing_queue');
+    $queue->deleteQueue();
+
+    foreach($terms as $term) {
+      $queue->createItem($term->tid);
+    }
   }
 
 }
 
-function ext_admin_database_process_record($record_id)
+function ext_admin_database_process_record($old_term_id)
 {
-  // обработать запись базы данных
-  $plan_wr = entity_metadata_wrapper('plan', $record_id);
-  $plan_wr->field_record_type_td = (integer)$plan_wr->field_is_fact->value();
-  $plan_wr->save();
+  $old_term_wr = entity_metadata_wrapper('taxonomy_term', $old_term_id);
+  $art = $old_term_wr->field_1c_id->value();
+
+  // найти номенклатуру с таким же артикулом, но заполненным name и id
+  $dbr = db_select('taxonomy_term_data', 't');
+  $dbr->condition('t.vid', taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid);
+  $dbr->innerjoin('field_data_field_nom_artikul', 'fna', 'fna.entity_id = t.tid');
+  $dbr->condition('fna.field_nom_artikul_value', $art);
+  $dbr->condition('t.name', '', '<>');
+  $dbr->addField('t', 'tid');
+  if ($new_term_id = $dbr->execute()->fetchField()) {
+
+    db_update('field_data_field_nomenklaturas_td')
+      ->fields(array('field_nomenklaturas_td_tid' => $new_term_id))
+      ->condition('field_nomenklaturas_td_tid', $old_term_id)
+      ->execute();
+
+    // найти записи с левой номенклатурой
+//    $dbr = db_select('field_data_field_nomenklaturas_td', 'fns');
+//    $dbr->condition('fns.field_nomenklaturas_td_tid', $old_term_id);
+//    $dbr->addField('fns', 'entity_id');
+//    $dbr->addField('fns', 'bundle');
+//
+//    if ($records = $dbr->execute()->fetchCol()) {
+//    }
+  }
 }
 
 function ext_admin_queue_database_processing_2()
