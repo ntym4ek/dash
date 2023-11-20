@@ -489,8 +489,10 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
 {
   $chart = dash_get_no_data_chart();
 
+  $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
+
   // собрать все записи за период
-  $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $period, 'regions' => $regions]);
+  $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions]);
   $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
 
   if ($plan || $fact) {
@@ -822,7 +824,9 @@ function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $regions)
 {
   $chart = dash_get_no_data_chart();
 
-  $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $period, 'regions' => $regions]);
+  $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
+
+  $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions]);
   $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
   $deal = dash_is_current_season($period) ? dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_DEAL, 'regions' => $regions]) : [];
 
@@ -1314,7 +1318,9 @@ function dep_2v_2g_bar_ship_plan_fact_by_region($period, $options = [])
   $exclude = [];
   if (!empty($options['regions']['exclude'])) $exclude['regions'] = $options['regions']['exclude'];
 
-  $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $period, 'regions' => $regions, 'exclude' => $exclude]);
+  $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
+
+  $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions, 'exclude' => $exclude]);
   $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions, 'exclude' => $exclude]);
   $deal = dash_is_current_season($period) ? dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_DEAL, 'regions' => $regions, 'exclude' => $exclude]) : [];
 
@@ -1722,8 +1728,9 @@ function dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom)
   $plan_fact_all = [];
   foreach (dash_get_years_shift_list($period) as $shift) {
     $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD, $shift);
+    $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
-    $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $period, 'noms' => $noms]);
+    $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'noms' => $noms]);
     $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'noms' => $noms]);
     $deal = $shift ? [] : dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_DEAL, 'noms' => $noms]);
 
@@ -1856,7 +1863,9 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
 {
   $chart = dash_get_no_data_chart();
 
-  $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $period]);
+  $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
+
+  $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds]);
   $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period]);
   $deal = date('Y', $period['from']) == date('Y') ? dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_DEAL]) : [];
 
