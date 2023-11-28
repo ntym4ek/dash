@@ -866,3 +866,27 @@ function dash_is_current_season($period)
 {
   return $period['from'] < REQUEST_TIME && REQUEST_TIME < $period['end'];
 }
+
+/**
+ * Вернуть отсортированный по имени список опций для селекта формы
+ * @param $voc_name - имя словаря
+ * @param $default_options - начальные опции, например 'all' => 'Все'
+ */
+function dash_get_form_options_from_taxonomy($voc_name, $default_options = null)
+{
+  if ($voc = taxonomy_vocabulary_machine_name_load($voc_name)) {
+    if ($terms = taxonomy_get_tree($voc->vid)) {
+      foreach ($terms as $term) {
+        $options[$term->name] = $term->tid;
+      }
+    }
+  }
+  ksort($options);
+  $options = array_flip($options);
+
+  if (!empty($default_options)) {
+    $options = array_merge($default_options, $options);
+  }
+
+  return $options;
+}

@@ -1,0 +1,350 @@
+<?php
+
+const CURR_DEFAULT = 194730;  // CNY
+
+/**
+ * Implementation of hook_menu().
+ */
+function dep_4_menu()
+{
+  $items['td/department-4'] = array(
+    'title' => 'Управление 4',
+    'menu_name' => 'main-menu',
+    'weight' => 9,
+    'page callback' => 'dep_4_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_4_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_menu_alter().
+ */
+function dep_4_menu_alter(&$items)
+{
+  // выводить меню, если есть доступ к Управлению 4
+  $items['td']['access arguments'][0][] = DEP_4_USER_RID;
+}
+
+/**
+ * hook_import_processors_alter
+ */
+function dep_4_import_processors_alter(&$processors)
+{
+  $path = drupal_get_path('module', 'dep_4') . '/includes/';
+  $processors['last_queue'][] =   ['mask' => '/^scrum_td_manufacturers.*\.json/', 'include' => $path . 'import.dep_4.inc', 'func' => 'dep_4_import_analog_prices'];
+}
+
+function dep_4_preprocess_page(&$vars)
+{
+  if ($_GET['q'] == 'td/department-4') {
+    drupal_set_title('Аналитика');
+  }
+}
+
+function dep_4_page()
+{
+  $period = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  $form   = drupal_get_form('dep_4_analog_prices_filters_form');
+
+  $output =  '<div id="analog-prices" class="row">';
+  $output .=   '<div class="col-xs-12"><h5 class="chart-title">Цены на аналоги</h5></div>';
+  $output .=   '<div class="col-xs-12"><div class="filters">' . drupal_render($form) . '</div>';
+  $output .=   '<div class="col-xs-12"><div class="content">';
+  $output .=     '<div class="ajax-load" data-func="analog_prices" data-delay="100">' .
+                   '<div class="ajax-progress ajax-progress-throbber">' .
+                     '<div class="throbber">&nbsp;</div>' .
+                     '<div class="message">Пожалуйста, подождите...</div>' .
+                   '</div>' .
+                 '</div>';
+  $output .=   '</div></div>';
+  $output .= '</div>';
+
+
+
+  return '<div class="charts" data-module="dep_4" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
+}
+
+/**
+ * Вернуть массив данных из таблицы Цен на аналоги
+ *
+ * @param $conditions ['nom', 'period']
+ */
+function dash_4_get_data_by_conditions($conditions = [])
+{
+  $dbr = db_select('eck_analog_price', 'ap');
+  $dbr->addField('ap', 'id');
+  $dbr->innerJoin('field_data_field_ap_nom_td', 'fn', 'fn.entity_id = ap.id');
+  $dbr->condition('fn.field_ap_nom_td_tid', $conditions['nom']);
+  $dbr->leftJoin('taxonomy_term_data', 't', 't.tid = fn.field_ap_nom_td_tid');
+  $dbr->addField('t', 'tid', 'nom_id');
+  $dbr->addField('t', 'name', 'nom_name');
+  $dbr->leftJoin('field_data_field_ap_doc_1c_id', 'fdid', 'fdid.entity_id = ap.id');
+  $dbr->addField('fdid', 'field_ap_doc_1c_id_value', 'doc_id');
+  $dbr->leftJoin('field_data_field_ap_date', 'fd', 'fd.entity_id = ap.id');
+  $dbr->addField('fd', 'field_ap_date_value', 'date');
+  $dbr->leftJoin('field_data_field_ap_price', 'fp', 'fp.entity_id = ap.id');
+  $dbr->addField('fp', 'field_ap_price_value', 'price');
+  $dbr->leftJoin('field_data_field_ap_delivery_china', 'fdc', 'fdc.entity_id = ap.id');
+  $dbr->addField('fdc', 'field_ap_delivery_china_value', 'delivery_china');
+  $dbr->leftJoin('field_data_field_ap_customs_tax', 'fct', 'fct.entity_id = ap.id');
+  $dbr->addField('fct', 'field_ap_customs_tax_value', 'customs_tax');
+  $dbr->leftJoin('field_data_field_ap_delivery_russia', 'fdr', 'fdr.entity_id = ap.id');
+  $dbr->addField('fdr', 'field_ap_delivery_russia_value', 'delivery_russia');
+  $dbr->leftJoin('field_data_field_ap_manufacturer', 'fm', 'fm.entity_id = ap.id');
+  $dbr->addField('fm', 'field_ap_manufacturer_value', 'manufacturer');
+  $dbr->orderBy('date');
+  $result = $dbr->execute()->fetchAll();
+
+  return (array)$result;
+}
+
+
+function dep_4_analog_prices($filters = null)
+{
+  if (!$filters) {
+    $filters = dep_4_get_analog_prices_filters_set();
+  }
+  $chart = dash_get_no_data_chart();
+
+  // собрать данные по заданной номенклатуре
+  if ($data = dash_4_get_data_by_conditions(['nom' => $filters['nom']['current_id'], 'period' => $filters['period']])) {
+    $curr_set = $filters['currency']['options'][$filters['currency']['current_id']];
+
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'line',
+      '#height' => '350',
+      '#colors' => [DASH_COLOR_BLUE],
+      '#legend_position' => 'bottom',
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+        'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
+        'legend' => ['position' => 'top'],
+        'annotations' => [
+          'datum' => ['stem' => ['color' => '#ccc', 'length' => 40]],
+        ],
+        'chartArea' => [
+          'height' => '90%',
+          'width' => '85%',
+          'left' => 50,
+        ],
+      ],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
+      ],
+      'price' => [
+        '#type' => 'chart_data',
+        '#title' => 'Цена в ' . $curr_set,
+        '#data' => [],
+      ],
+    );
+
+    foreach($data as $item) {
+      $item = (array)$item;
+
+      // формула:  ((цена_в_CNY) + доставка_по_китаю_в_USD) * (1 + tax_в_%/100) + доставка_по_россии_в_RUB) * налог_1.2
+        // вычислить цену в рублях
+      $cny_rate = dash_4_get_currency_rate('CNY', $item['date']);
+      $usd_rate = dash_4_get_currency_rate('USD', $item['date']);
+      $price_rub = (($item['price']*$cny_rate + $item['delivery_china']*$usd_rate) * (1 + $item['customs_tax']/100) + $item['delivery_russia']) * 1.2;
+        // перевести в заданную
+      $curr_set_rate = dash_4_get_currency_rate($curr_set, $item['date']);
+      $price = $price_rub / $curr_set_rate;
+
+      $chart['xaxis']['#labels'][] = date('d.m.Y', $item['date']);
+      $chart['price']['#data'][] = $price;
+    }
+
+    // вывести по курсам на сегодня
+      // получить текущие курсы
+    $cbr_rates = dash_4_get_cbr_now_currency_rate();
+    $cny_now_rate = $cbr_rates['CNY'];
+    $usd_now_rate = $cbr_rates['USD'];
+    $price_now_rub = (($item['price']*$cny_now_rate + $item['delivery_china']*$usd_now_rate) * (1 + $item['customs_tax']/100) + $item['delivery_russia']) * 1.2;
+    $curr_now_rate = $cbr_rates[$curr_set];
+    $price_now = $price_now_rub / $curr_now_rate;
+
+    $chart['xaxis']['#labels'][] = date('d.m.Y');
+    $chart['price']['#data'][] = $price_now;
+  }
+
+  $output   = '<div class="row">';
+  $output  .=    '<div id="analog-prices" class="col-xs-12">' . drupal_render($chart) . '</div>';
+  $output  .= '</div>';
+
+  return $output;
+}
+
+function dash_4_get_currency_rate($currency, $date)
+{
+  $dbr = db_select('eck_currency_rate', 'cr');
+  $dbr->innerJoin('field_data_field_cr_currency', 'fc', 'fc.entity_id = cr.id');
+  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fc.field_cr_currency_tid');
+  $dbr->condition('t.name', $currency);
+  $dbr->innerJoin('field_data_field_cr_date', 'fd', 'fd.entity_id = cr.id');
+  $dbr->condition('fd.field_cr_date_value', $date);
+  $dbr->innerJoin('field_data_field_cr_rate', 'fr', 'fr.entity_id = cr.id');
+  $dbr->addField('fr', 'field_cr_rate_value');
+  $dbr->range(0, 1);
+
+  return $dbr->execute()->fetchField();
+}
+
+function dash_4_get_cbr_now_currency_rate()
+{
+  $content = file_get_contents('http://www.cbr.ru/scripts/XML_daily.asp');
+
+  $currencies = [];
+  $xml_array = simplexml_load_string($content);
+  $json = json_encode($xml_array);
+  $array = json_decode($json,TRUE);
+  if (!empty($array['Valute'])) {
+    foreach ($array['Valute'] as $item) {
+      $currencies[$item['CharCode']] = str_replace(',', '.', $item['VunitRate']);
+    }
+  }
+
+  return $currencies;
+}
+
+/**
+ * ----- Формы --------------------------------------------------------------------------------------------------------
+ */
+function dep_4_analog_prices_filters_form($form, $form_state)
+{
+  $form['filters'] = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['row']],
+  ];
+
+  $filters = dep_4_get_analog_prices_filters_set();
+
+  // запоминаем фильтры
+  $form_state['filters'] = $filters;
+  // через форму будем передавать фильтры в функцию формирования контента
+  $form['#data']['filters'] = $filters;
+
+  $form['filters']['nom'] = [
+    '#type' => 'select',
+    '#title' => 'Номенклатура',
+    '#options' => $filters['nom']['options'],
+    '#default_value' => $filters['nom']['current_id'],
+    '#prefix' => '<div class="col-xs-12 col-md-6 col-lg-3">',
+    '#suffix' => '</div>',
+    '#ajax' => [
+      'wrapper' => '',
+      'callback' => 'dep_4_analog_prices_filters_form_ajax',
+    ],
+  ];
+
+  $form['filters']['currency'] = [
+    '#type' => 'select',
+    '#title' => 'Валюта',
+    '#options' => $filters['currency']['options'],
+    '#default_value' => $filters['currency']['current_id'],
+    '#prefix' => '<div class="col-xs-12 col-md-3 col-lg-2">',
+    '#suffix' => '</div>',
+    '#ajax' => [
+      'wrapper' => '',
+      'callback' => 'dep_4_analog_prices_filters_form_ajax',
+    ],
+  ];
+
+  return $form;
+}
+
+function dep_4_analog_prices_filters_form_submit($form, &$form_state)
+{
+  $form_state['redirect'] = [
+    'td/department-4', [
+      'query' => ['nom' => $form_state['values']['nom'], 'currency' => $form_state['values']['currency']],
+    ]
+  ];
+}
+
+function dep_4_analog_prices_filters_form_ajax($form, $form_state)
+{
+  // отправить новую форму
+  $commands[] = ajax_command_html('#analog-prices .filters', drupal_render($form));
+
+  // отправить новое содержимое страницы
+  $commands[] = ajax_command_html('#analog-prices .content', dep_4_analog_prices($form['#data']['filters']));
+
+  return ['#type' => 'ajax', '#commands' => $commands];
+}
+
+
+/**
+ * Вернуть массив возможных значений фильтров и выбранные значения
+ */
+function dep_4_get_analog_prices_filters_set()
+{
+  $key = drupal_hash_base64($_GET['q']);
+  $filters = &drupal_static(__FUNCTION__ . $key);
+  if (!isset($filters)) {
+
+    $filters = [
+      'nom' => ['current_id' => NULL, 'options' => []],
+      'currency' => ['current_id' => NULL, 'options' => []],
+      'period' => dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD),
+    ];
+
+    // -- Номенклатура
+    $curr_nom_id = null;
+    $dbr = db_select('taxonomy_term_data', 't');
+    $dbr->innerJoin('field_data_field_ap_nom_td', 'fn', 'fn.field_ap_nom_td_tid = t.tid');
+    $dbr->distinct();
+    $dbr->fields('t', ['tid', 'name']);
+    if ($noms = $dbr->execute()->fetchAllAssoc('tid')) {
+      foreach ($noms as $nom) {
+        $filters['nom']['options'][$nom->name] = $nom->tid;
+      }
+      ksort($filters['nom']['options']);
+      $filters['nom']['options'] = array_flip($filters['nom']['options']);
+    }
+    if ($_GET['q'] == 'system/ajax' && isset($_POST["nom"]) && is_numeric($_POST["nom"])) {
+      $curr_nom_id = $_POST["nom"];
+    }
+    elseif (isset($_GET['nom']) && is_numeric($_GET['nom'])) {
+      $curr_nom_id = $_GET['nom'];
+    }
+    // проверить наличие заданного значения в списке фильтра
+    if (empty($curr_nom_id) && $filters['nom']['options']) $curr_nom_id = array_keys($filters['nom']['options'])[0];
+    if (!empty($filters['nom']['options'][$curr_nom_id])) $filters['nom']['current_id'] = $curr_nom_id;
+
+
+    // -- Валюты
+    $curr_curr_id = CURR_DEFAULT;
+    $dbr = db_select('taxonomy_term_data', 't');
+    $dbr->innerJoin('field_data_field_ap_nom_td', 'fn', 'fn.field_ap_nom_td_tid = t.tid');
+    $dbr->distinct();
+    $dbr->fields('t', ['tid', 'name']);
+    if ($currs = taxonomy_get_tree(taxonomy_vocabulary_machine_name_load('currencies')->vid)) {
+      foreach ($currs as $curr) {
+        $filters['currency']['options'][$curr->name] = $curr->tid;
+      }
+      ksort($filters['currency']['options']);
+      $filters['currency']['options'] = array_flip($filters['currency']['options']);
+    }
+    if ($_GET['q'] == 'system/ajax' && isset($_POST["currency"]) && is_numeric($_POST["currency"])) {
+      $curr_curr_id = $_POST["currency"];
+    }
+    elseif (isset($_GET['currency']) && is_numeric($_GET['currency'])) {
+      $curr_curr_id = $_GET['currency'];
+    }
+    // проверить наличие заданного значения в списке фильтра
+    if (!empty($filters['currency']['options'][$curr_curr_id])) $filters['currency']['current_id'] = $curr_curr_id;
+  }
+
+  return $filters;
+}
