@@ -890,3 +890,17 @@ function dash_get_form_options_from_taxonomy($voc_name, $default_options = null)
 
   return $options;
 }
+
+/**
+ * Вернуть отформатированное число
+ */
+function dash_number_format($number, $decimals)
+{
+  // форматируем согласно заданному количеству знаков после запятой
+  $result = number_format($number, $decimals, ',', '');
+  // обрезаем ноли после запятой
+  $result = str_replace(',00', '', $result);
+  $result = strpos($result, ',') ? rtrim($result, '0') : $result;
+
+  return $result;
+}

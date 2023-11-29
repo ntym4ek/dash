@@ -1,6 +1,6 @@
 <?php
 
-const CURR_DEFAULT = 194730;  // Дефолтная валюта в форме (CNY)
+const CURR_DEFAULT = 'CNY';  // Дефолтная валюта в форме
 const CURR_SET = ['CNY', 'RUB', 'USD']; // валюты в фильтре
 
 
@@ -43,7 +43,7 @@ function dep_4_import_processors_alter(&$processors)
 function dep_4_preprocess_page(&$vars)
 {
   if ($_GET['q'] == 'td/department-4') {
-    drupal_set_title('Статистика');
+    drupal_set_title('Управление производственной логистики');
   }
 }
 
@@ -53,7 +53,7 @@ function dep_4_page()
   $form   = drupal_get_form('dep_4_analog_prices_filters_form');
 
   $output =  '<div id="analog-prices" class="row">';
-  $output .=   '<div class="col-xs-12"><h5 class="chart-title">Цены на аналоги</h5></div>';
+  $output .=   '<div class="col-xs-12"><h5 class="chart-title">Цены на китайское производство</h5></div>';
   $output .=   '<div class="col-xs-12"><div class="filters">' . drupal_render($form) . '</div>';
   $output .=   '<div class="col-xs-12"><div class="content">';
   $output .=     '<div class="ajax-load" data-func="analog_prices" data-delay="100">' .
@@ -134,6 +134,7 @@ function dep_4_analog_prices($filters = null)
           'width' => '85%',
           'left' => 50,
         ],
+        'tooltip' => ['isHtml' => true],
       ],
       'xaxis' => [
         '#type' => 'chart_xaxis',
@@ -146,7 +147,7 @@ function dep_4_analog_prices($filters = null)
       ],
       'price' => [
         '#type' => 'chart_data',
-        '#title' => 'Цена в ' . $curr_set,
+        '#title' => 'Стоимость в ' . $curr_set,
         '#data' => [],
       ],
     );
@@ -163,6 +164,15 @@ function dep_4_analog_prices($filters = null)
 
       $chart['xaxis']['#labels'][] = date('d.m.Y', $item['date']);
       $chart['price']['#data'][] = $price;
+
+      $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+                  '<div><div style="display:inline-block; width: 150px;">Стоимость на ' . date('d.m.Y', $item['date']) . ':</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . dash_number_format($price, 2) . '</b>&nbsp;' . $curr_set . '</div></div>' .
+                '</div>';
+
+      $chart['price'][] = array(
+        '#type' => 'chart_data_item',
+        '#title' => $tooltip,
+      );
     }
 
     // вывести по курсам на сегодня
@@ -173,6 +183,16 @@ function dep_4_analog_prices($filters = null)
 
     $chart['xaxis']['#labels'][] = date('d.m.Y');
     $chart['price']['#data'][] = $price_now;
+
+    $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      '<div><div style="display:inline-block; width: 150px;">Стоимость на сегодня:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . dash_number_format($price_now, 2) . '</b>&nbsp;' . $curr_set . '</div></div>' .
+      '</div>';
+
+    $chart['price'][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+    );
+
   }
 
   $output   = '<div class="row">';
@@ -353,11 +373,12 @@ function dep_4_get_analog_prices_filters_set()
 
 
     // -- Валюты
-    $curr_curr_id = CURR_DEFAULT;
+    $curr_curr_id = null;
     if ($currs = taxonomy_get_tree(taxonomy_vocabulary_machine_name_load('currencies')->vid)) {
       foreach ($currs as $curr) {
         if (in_array($curr->name, CURR_SET)) {
           $filters['currency']['options'][$curr->name] = $curr->tid;
+          if ($curr->name == CURR_DEFAULT) $curr_curr_id = $curr->tid;
         }
       }
       ksort($filters['currency']['options']);
