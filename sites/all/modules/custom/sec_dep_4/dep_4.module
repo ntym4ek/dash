@@ -1,6 +1,8 @@
 <?php
 
-const CURR_DEFAULT = 194730;  // CNY
+const CURR_DEFAULT = 194730;  // Дефолтная валюта в форме (CNY)
+const CURR_SET = ['CNY', 'RUB', 'USD']; // валюты в фильтре
+
 
 /**
  * Implementation of hook_menu().
@@ -41,7 +43,7 @@ function dep_4_import_processors_alter(&$processors)
 function dep_4_preprocess_page(&$vars)
 {
   if ($_GET['q'] == 'td/department-4') {
-    drupal_set_title('Аналитика');
+    drupal_set_title('Статистика');
   }
 }
 
@@ -153,13 +155,11 @@ function dep_4_analog_prices($filters = null)
       $item = (array)$item;
 
       // формула:  ((цена_в_CNY) + доставка_по_китаю_в_USD) * (1 + tax_в_%/100) + доставка_по_россии_в_RUB) * налог_1.2
-        // вычислить цену в рублях
-      $cny_rate = dash_4_get_currency_rate('CNY', $item['date']);
-      $usd_rate = dash_4_get_currency_rate('USD', $item['date']);
-      $price_rub = (($item['price']*$cny_rate + $item['delivery_china']*$usd_rate) * (1 + $item['customs_tax']/100) + $item['delivery_russia']) * 1.2;
+        // вычислить цену в рублях на дату
+      $rates = dash_4_get_currency_rate_on_date($item['date']);
+      $price_rub = (($item['price']*$rates['CNY'] + $item['delivery_china']*$rates['USD']) * (1 + $item['customs_tax']/100) + $item['delivery_russia']) * 1.2;
         // перевести в заданную
-      $curr_set_rate = dash_4_get_currency_rate($curr_set, $item['date']);
-      $price = $price_rub / $curr_set_rate;
+      $price = $price_rub / $rates[$curr_set];
 
       $chart['xaxis']['#labels'][] = date('d.m.Y', $item['date']);
       $chart['price']['#data'][] = $price;
@@ -167,12 +167,9 @@ function dep_4_analog_prices($filters = null)
 
     // вывести по курсам на сегодня
       // получить текущие курсы
-    $cbr_rates = dash_4_get_cbr_now_currency_rate();
-    $cny_now_rate = $cbr_rates['CNY'];
-    $usd_now_rate = $cbr_rates['USD'];
-    $price_now_rub = (($item['price']*$cny_now_rate + $item['delivery_china']*$usd_now_rate) * (1 + $item['customs_tax']/100) + $item['delivery_russia']) * 1.2;
-    $curr_now_rate = $cbr_rates[$curr_set];
-    $price_now = $price_now_rub / $curr_now_rate;
+    $now_rates = dash_4_get_currency_rate_on_date();
+    $price_now_rub = (($item['price']*$now_rates['CNY'] + $item['delivery_china']*$now_rates['USD']) * (1 + $item['customs_tax']/100) + $item['delivery_russia']) * 1.2;
+    $price_now = $price_now_rub / $now_rates[$curr_set];
 
     $chart['xaxis']['#labels'][] = date('d.m.Y');
     $chart['price']['#data'][] = $price_now;
@@ -185,34 +182,66 @@ function dep_4_analog_prices($filters = null)
   return $output;
 }
 
-function dash_4_get_currency_rate($currency, $date)
+function dash_4_get_currency_rate_on_date($date = REQUEST_TIME, $currency_name = '')
 {
+  $currencies = [];
+
+  // в базе хранится начало суток
+  $timestamp = gmmktime(0, 0, 0, date('n', $date), date('j', $date), date('Y', $date));
+
   $dbr = db_select('eck_currency_rate', 'cr');
   $dbr->innerJoin('field_data_field_cr_currency', 'fc', 'fc.entity_id = cr.id');
   $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fc.field_cr_currency_tid');
-  $dbr->condition('t.name', $currency);
+  if ($currency_name) {
+    $dbr->condition('t.name', $currency_name);
+  }
+  $dbr->fields('t', ['tid', 'name']);
   $dbr->innerJoin('field_data_field_cr_date', 'fd', 'fd.entity_id = cr.id');
-  $dbr->condition('fd.field_cr_date_value', $date);
+  $dbr->condition('fd.field_cr_date_value', $timestamp);
   $dbr->innerJoin('field_data_field_cr_rate', 'fr', 'fr.entity_id = cr.id');
-  $dbr->addField('fr', 'field_cr_rate_value');
-  $dbr->range(0, 1);
-
-  return $dbr->execute()->fetchField();
-}
-
-function dash_4_get_cbr_now_currency_rate()
-{
-  $content = file_get_contents('http://www.cbr.ru/scripts/XML_daily.asp');
-
-  $currencies = [];
-  $xml_array = simplexml_load_string($content);
-  $json = json_encode($xml_array);
-  $array = json_decode($json,TRUE);
-  if (!empty($array['Valute'])) {
-    foreach ($array['Valute'] as $item) {
-      $currencies[$item['CharCode']] = str_replace(',', '.', $item['VunitRate']);
+  $dbr->addField('fr', 'field_cr_rate_value', 'rate');
+  if ($items = $dbr->execute()->fetchAll()) {
+    foreach ($items as $item) {
+      $currencies[$item->name] = $item->rate;
     }
   }
+
+  if (!$currencies) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL,'http://www.cbr.ru/scripts/XML_daily.asp?date_req=' . date('d', $date) . '/' . date('m', $date) . '/' . date('Y', $date));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.0.3705; .NET CLR 1.1.4322)');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+    if ($response = curl_exec($ch)) {
+      $xml_array = simplexml_load_string($response);
+      $json = json_encode($xml_array);
+      $array = json_decode($json, TRUE);
+      if (!empty($array['Valute'])) {
+        foreach ($array['Valute'] as $item) {
+          $name = $item['CharCode'];
+          $rate = str_replace(',', '.', $item['VunitRate']);
+          $currencies[$name] = $rate;
+
+          // проверить наличие валюты в словаре и запомнить курс при наличии
+          $terms = taxonomy_get_term_by_name($name, 'currencies');
+          if ($curr_term = reset($terms)) {
+            $curr_rate = entity_create('currency_rate', ['type' => 'currency_rate']);
+            $curr_rate_wr = entity_metadata_wrapper('currency_rate', $curr_rate);
+            $curr_rate_wr->field_cr_date = $timestamp;
+            $curr_rate_wr->field_cr_currency = $curr_term->tid;
+            $curr_rate_wr->field_cr_rate = $rate;
+            $curr_rate_wr->save();
+          }
+        }
+      } else {
+        watchdog('dep_4', 'Ошибка при запросе курса валют с сайта ЦБР: @responce', ['@responce' => var_dump($array)], WATCHDOG_WARNING);
+      }
+    }
+    curl_close($ch);
+  }
+
+  if ($currencies) $currencies['RUB'] = 1;
 
   return $currencies;
 }
@@ -325,13 +354,11 @@ function dep_4_get_analog_prices_filters_set()
 
     // -- Валюты
     $curr_curr_id = CURR_DEFAULT;
-    $dbr = db_select('taxonomy_term_data', 't');
-    $dbr->innerJoin('field_data_field_ap_nom_td', 'fn', 'fn.field_ap_nom_td_tid = t.tid');
-    $dbr->distinct();
-    $dbr->fields('t', ['tid', 'name']);
     if ($currs = taxonomy_get_tree(taxonomy_vocabulary_machine_name_load('currencies')->vid)) {
       foreach ($currs as $curr) {
-        $filters['currency']['options'][$curr->name] = $curr->tid;
+        if (in_array($curr->name, CURR_SET)) {
+          $filters['currency']['options'][$curr->name] = $curr->tid;
+        }
       }
       ksort($filters['currency']['options']);
       $filters['currency']['options'] = array_flip($filters['currency']['options']);
