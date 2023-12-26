@@ -567,7 +567,6 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
       ],
     );
 
-
     $total_plan = $total_fact = 0;
     foreach ($plan_fact_by_month as $month) {
       $chart['xaxis']['#labels'][] = _month_label_ru(date('n', $month['start']));
@@ -576,9 +575,9 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
       $fact = $month['fact_amount'] / DASH_REV_DIVIDER;
       $total_plan += $plan;
       $total_fact += $fact;
-      $total_fact = (date('Y', $month['start']) != date('Y')) || (date('n', $month['start']) < date('n')) ? $total_fact : 0;
-
-      if ($plan || $fact) $no_data = false;
+      // если это текущий период,
+      // то считаем и выводим накопительный факт только до месяца предстоящего текущему месяцу
+      $total_fact = ($month['start'] < gmmktime(0, 0, 0, date('n'), 1, date('Y'))) ? $total_fact : null;
 
       $chart['plan']['#data'][] = $total_plan;
       $chart['fact']['#data'][] = $total_fact;
@@ -593,8 +592,8 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
         ],
       );
 
-      // для текущего периода вставить текущую дату
-      if ($period['from'] <= REQUEST_TIME && REQUEST_TIME < $period['to'] && date('n', $month['start']) == date('n')) {
+      // перед текущим месяцем вставить текущую дату
+      if (date('n', $month['start']) == date('n') && date('Y', $month['start']) == date('Y')) {
         $plan_amount_current = $plan_amount_current/DASH_REV_DIVIDER;
         $fact_amount_current = $fact_amount_current/DASH_REV_DIVIDER;
 
@@ -631,7 +630,152 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
   return $chart;
 }
 
-function dep_2v_2g_line_revenue_plan_fact($type, $period, $regions = [])
+function dep_2v_2g_line_revenue_plan_fact($type, $period)
+{
+  $chart = dash_get_no_data_chart();
+
+  $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
+
+  // собрать все записи за период
+  $plan = dash_get_revenue_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds]);
+  $fact = dash_get_revenue_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period]);
+
+  if ($plan || $fact) {
+    // сгруппировать помесячно
+    $plan_fact_by_month = [];
+    $plan_amount_current = 0;
+    $fact_amount_current = 0;
+    foreach (dash_get_months_list($period) as $month) {
+      $plan_fact_by_month[$month['start']] = [
+        'plan_amount' => 0,
+        'fact_amount' => 0,
+        'start' => $month['start'],
+        'end' => $month['end'],
+      ];
+
+      foreach ($plan as $record) {
+        if ($record->date >= $month['start'] && $record->date < $month['end']) {
+          $plan_fact_by_month[$month['start']]['plan_amount'] += $record->amount;
+          if ($record->date <= REQUEST_TIME) {
+            $plan_amount_current += $record->amount;
+          }
+        }
+      }
+      foreach ($fact as $record) {
+        if ($record->date >= $month['start'] && $record->date < $month['end']) {
+          $plan_fact_by_month[$month['start']]['fact_amount'] += $record->amount;
+          if ($record->date <= REQUEST_TIME) {
+            $fact_amount_current += $record->amount;
+          }
+        }
+      }
+    }
+    ksort($plan_fact_by_month);
+
+    $title = 'Выполнение плана поступления денежных средств (' . DASH_REV_SUFFIX . ')';
+
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'line',
+      '#chart_id' => 'dep_2v_2g_lines_revenue_plan_fact_' . $type,
+      '#title' => $title,
+      '#height' => '350',
+      '#colors' => ['#aaa', DASH_COLOR_BLUE],
+      '#legend_position' => 'bottom',
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+        'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
+        'legend' => ['position' => 'top'],
+        'annotations' => [
+          'datum' => ['stem' => ['color' => '#ccc', 'length' => 40]],
+        ],
+        'chartArea' => [
+          'width' => '85%',
+          'left' => 50,
+        ],
+      ],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
+      ],
+      'plan' => [
+        '#type' => 'chart_data',
+        '#title' => 'План',
+        '#data' => [],
+      ],
+      'fact' => [
+        '#type' => 'chart_data',
+        '#title' => 'Факт',
+        '#data' => [],
+      ],
+    );
+
+    $total_plan = $total_fact = 0;
+    foreach ($plan_fact_by_month as $month) {
+      $chart['xaxis']['#labels'][] = _month_label_ru(date('n', $month['start']));
+
+      $plan = $month['plan_amount'] / DASH_REV_DIVIDER;
+      $fact = $month['fact_amount'] / DASH_REV_DIVIDER;
+      $total_plan += $plan;
+      $total_fact += $fact;
+      // если это текущий период,
+      // то считаем и выводим накопительный факт только до месяца предстоящего текущему месяцу
+      $total_fact = ($month['start'] < gmmktime(0, 0, 0, date('n'), 1, date('Y'))) ? $total_fact : null;
+
+      $chart['plan']['#data'][] = $total_plan;
+      $chart['fact']['#data'][] = $total_fact;
+
+      $delta = $total_plan ? (int)($total_fact/$total_plan*100-100) : 0;
+      $ratio = ($total_fact > $total_plan ? ' +' : ' ') . number_format($delta, 0, null, ' ') . '%';
+
+      $chart['fact'][] = array(
+        '#type' => 'chart_data_item',
+        '#raw_options' => [
+          'annotation' => $delta ? $ratio : null,
+        ],
+      );
+
+      // перед текущим месяцем вставить текущую дату
+      if (date('n', $month['start']) == date('n') && date('Y', $month['start']) == date('Y')) {
+        $plan_amount_current = $plan_amount_current/DASH_REV_DIVIDER;
+        $fact_amount_current = $fact_amount_current/DASH_REV_DIVIDER;
+
+        $pos = count($chart['plan']['#data'])-1;
+
+        // вычислить значение плана на текущую дату пропорционально кол-ву дней в месяце
+        $prev_amount_p = $chart['plan']['#data'][$pos-1];
+        $next_amount_p = $chart['plan']['#data'][$pos];
+        $curr_month_days = date('t');
+        $day = date('d');
+        $curr_amount_p = $prev_amount_p + ($next_amount_p - $prev_amount_p)*($day/$curr_month_days);
+
+        // вставляем перед текущим месяцем
+        array_splice($chart['xaxis']['#labels'], $pos, 0, date('d.m'));
+        array_splice($chart['plan']['#data'], $pos, 0, $curr_amount_p);
+        array_splice($chart['fact']['#data'], $pos, 0, $fact_amount_current);
+
+        $delta = $curr_amount_p ? (int)($fact_amount_current/$curr_amount_p*100-100) : '0';
+        $ratio = $delta ? (($fact_amount_current > $plan_amount_current ? ' +' : ' ') . number_format($delta, 0, null, ' ') . '%') : number_format($fact_amount_current, 1, null, ' ');
+
+        $pos = count($chart['fact'])-1;
+        array_splice($chart['fact'], $pos, 0, [
+          ['#type' => 'chart_data_item',
+            '#raw_options' => [
+              'annotation' => $ratio,
+            ]
+          ]]);
+      }
+    }
+  }
+
+  return $chart;
+}
+function dep_2v_2g_line_revenue_plan_fact_bak($type, $period, $regions = [])
 {
   $chart = dash_get_no_data_chart();
 
@@ -640,7 +784,7 @@ function dep_2v_2g_line_revenue_plan_fact($type, $period, $regions = [])
   // список месяцев, за которые выводим график
   $time_months_list = [];
   $time_month_start = $period['from'];
-  while($time_month_start < $period['to']) {
+  while($time_month_start < $period['end']) {
     $time_months_list[] = $time_month_start;
     $time_month_start = gmmktime(0, 0, 0, date('n', $time_month_start)+1, 1, date('Y', $time_month_start));
   }
@@ -770,7 +914,9 @@ function dep_2v_2g_line_revenue_plan_fact($type, $period, $regions = [])
 
       $chart['xaxis']['#labels'][] = _month_label_ru(date('n', $month));
       $plan = $datum[0];
-      $fact = (date('Y', $month) != date('Y')) || (date('n', $month) < date('n')) ? $datum[1] : 0;
+
+      // считаем и выводим накопительный факт только до месяца предстоящего текущему месяцу
+      $fact = ($month < gmmktime(0, 0, 0, date('n'), 1, date('Y'))) ? $datum[1] : null;
 
       $chart['plan']['#data'][] = $plan;
       $chart['fact']['#data'][] = $fact;
@@ -787,8 +933,11 @@ function dep_2v_2g_line_revenue_plan_fact($type, $period, $regions = [])
 
       // для текущего периода вставить текущую дату
       // вставляем перед текущим месяцем
-      $pos = count($chart['plan']['#data']) - 1;
-      if ($pos && $period['from'] <= REQUEST_TIME && REQUEST_TIME < $period['to'] && date('n', $month) == date('n')) {
+//      if ($pos && $period['from'] <= REQUEST_TIME && REQUEST_TIME < $period['to'] && date('n', $month) == date('n')) {
+      // перед текущим месяцем вставить текущую дату
+      if (date('n', $month) == date('n') && date('n', $month['start']) == date('n')) {
+
+        $pos = count($chart['plan']['#data']) - 1;
 
         // вычислить значение плана на текущую дату пропорционально кол-ву дней в месяце
         $prev_amount_p = $chart['plan']['#data'][$pos - 1];
