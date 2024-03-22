@@ -135,7 +135,7 @@ function dep_7_reg_get_tables_output($filter_nom_id = null)
   $rows = [];
   foreach ($sort_date_start as $reg_id) {
     $reg_info = $regs_arr[$reg_id];
-    if ($reg_info['type'] == 'ext' || ($reg_info['type'] == 'base' && !$reg_info['status'])) {
+    if ($reg_info['type'] == 'ext' || ($reg_info['type'] == 'base' && !$reg_info['status'] && $reg_info["period"]["from"]["raw"] > REQUEST_TIME)) {
 
       if ($filter_nom_id && !isset($reg_info['noms']['list'][$filter_nom_id]) && (!$base_reg_id_by_nom_filter || $reg_info['base_reg_id'] != $base_reg_id_by_nom_filter)) {
         continue;
@@ -341,7 +341,7 @@ function dep_7_get_registration_siblings($reg_id)
 
 function dep_7_clean_nomlist($string)
 {
-  $string = preg_replace('/\(.*\)/', '', $string);
+  $string = preg_replace('/\(.*?\)/', '', $string);
 
   if (strpos($string, 'Агроминерал') !== false) {
     $string = 'Агроминералы';
