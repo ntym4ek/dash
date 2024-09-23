@@ -44,9 +44,7 @@ function import_queue_incoming_exchange_files()
   ];
 
   $processors = [
-    'first_queue' => [
-      ['mask' => '/^scrum_td_region.*\.json/',        'func' => 'import_import_regions'],         // -- Справочник Регионов
-    ],
+    'first_queue' => [],
     // вторая очередь
     'last_queue' => [
       ['mask' => '/^scrum_revenue.*\.json/',          'func' => 'import_import_revenue'],         // -- Выручка

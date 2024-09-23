@@ -143,9 +143,8 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
 
     $chart['fact_prev']['#data'][] = $total_fact_prev/DASH_REV_DIVIDER;
 
+    $chart['fact_curr']['#data'][] = $total_fact_curr/DASH_REV_DIVIDER;
     if ($total_fact_curr) {
-      $chart['fact_curr']['#data'][] = $total_fact_curr/DASH_REV_DIVIDER;
-
       $delta = $total_fact_prev ? (int)($total_fact_curr/$total_fact_prev*100-100) : 0;
       $ratio = ($total_fact_curr > $total_fact_prev ? ' +' : ' ') . number_format($delta, 0, null, ' ') . '%';
 
@@ -289,14 +288,12 @@ function dep_3_line_revenue_fact_by_week()
   );
 
   foreach ($fact_by_week as $week) {
+    $label = date('d.m', $week['start']) . '-' . date('d.m', $week['end']-1);
+    $amount = $week['amount'] / DASH_REV_DIVIDER;
+
+    $chart['xaxis']['#labels'][] = $label;
+    $chart['fact']['#data'][] = $amount;
     if ($week['amount']) {
-      $label = date('d.m', $week['start']) . '-' . date('d.m', $week['end']-1);
-
-      $amount = $week['amount'] / DASH_REV_DIVIDER;
-
-      $chart['xaxis']['#labels'][] = $label;
-      $chart['fact']['#data'][] = $amount;
-
       $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
         '<div><div style="display:inline-block; width: 160px;">Выручка за неделю:</div><div style="display:inline-block; text-align: right; width: 100px;"><b>' . number_format($week['amount'], 0, ',', ' ') . '</b> руб.</div></div>' .
         '</div>';

@@ -2010,6 +2010,7 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
 
   $plan = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds]);
   $fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period]);
+  $deal = [];
   if (dash_is_current_season($period)) {
     $deal = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_DEAL]);
   }

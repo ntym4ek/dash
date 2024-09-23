@@ -20,10 +20,9 @@ function ah_menu()
   );
   $items['ah/previous'] = array(
     'title' => 'Предыдущий период',
-    'page callback' => 'dash_report_ah_previous_tab',
+    'page callback' => 'ah_previous_tab',
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID]],
-    'file' => 'includes/agrohimikat.dash.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => 1,
   );
