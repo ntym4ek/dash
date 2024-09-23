@@ -131,7 +131,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
   $no_data = true;
   $total_fact_prev = $total_fact_curr = 0;
   foreach ($facts_by_month as $month) {
-    $chart['xaxis']['#labels'][] = _month_label_ru(date('n', $month['curr']['start']));
+    $chart['xaxis']['#labels'][] = dash_month_label_ru(date('n', $month['curr']['start']));
 
     $fact_prev_amount = $month['prev']['amount'];
     $fact_curr_amount = $month['curr']['amount'];

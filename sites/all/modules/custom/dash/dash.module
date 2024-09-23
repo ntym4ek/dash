@@ -43,30 +43,6 @@ date_default_timezone_set('UTC');
  */
 function dash_menu()
 {
-  $items['ah'] = array(
-    'title' => 'Агрохимикат',
-    'menu_name' => 'main-menu',
-    'page callback' => 'dash_report_ah_current_tab',
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID]],
-    'file' => 'includes/agrohimikat.dash.inc',
-    'type' => MENU_NORMAL_ITEM,
-  );
-  $items['ah/current'] = array(
-    'title' => 'Текущий период',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 0,
-  );
-  $items['ah/previous'] = array(
-    'title' => 'Предыдущий период',
-    'page callback' => 'dash_report_ah_previous_tab',
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID]],
-    'file' => 'includes/agrohimikat.dash.inc',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 1,
-  );
-
   $items['td'] = array(
     'title' => 'Торговый Дом',
     'menu_name' => 'main-menu',
@@ -122,7 +98,8 @@ function dash_get_year_time_bounds($month_start, $year_shift = 0)
   ];
 }
 
-/** Вернуть начальное и конечное (не включительно) время Unix
+/**
+ * Вернуть начальное и конечное (не включительно) время Unix
  * для периода:
  * с месяца $month_start и смещением $year_shift (0 - текущий) лет от текущего периода
  * до текущей даты в заданном сезоне
@@ -149,6 +126,11 @@ function dash_get_period_time_bounds($month_start, $year_shift = 0)
   ];
 }
 
+/**
+ * Вернуть для страницы период по-умолчанию
+ * @param $month_start
+ * @return array
+ */
 function dash_get_page_time_bounds($month_start)
 {
   if ($_GET['q'] == 'td/department-2v-2g/closed' || $_GET['q'] == 'td/department-2v-2g/manager/closed') {
@@ -170,13 +152,6 @@ function dash_chart_definition_alter(&$element, $chart)
   if (isset($element["options"]["vAxes"][0])) {
     $element["options"]["vAxes"][0]["format"] = 'decimal';
   }
-}
-
-function _month_label_ru($month_index, $roditelniy = false)
-{
-  $months = $roditelniy ? explode('|', 'января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря') : explode('|', 'Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь');
-
-  return $months[$month_index-1];
 }
 
 /**
@@ -333,7 +308,7 @@ function dash_pie_revenue_year($company, $time_from, $time_to)
 
   $chart = array(
     '#type' => 'chart',
-    '#title' => 'Структура отгрузки за сезон ' . $period . 'по данным бухгалтерии (' . DASH_REV_SUFFIX . ')',
+    '#title' => 'Структура отгрузки за период ' . $period . 'по данным бухгалтерии (' . DASH_REV_SUFFIX . ')',
 //    '#title_position' => 'center',
     '#chart_type' => 'pie',
     '#legend_position' => 'right',
@@ -595,6 +570,14 @@ function dash_get_revenue_plan_fact_by_conditions($conditions)
 /**
  * ----- Вспомогательные функции ---------------------------------------------------------------------------------------
  */
+
+function dash_month_label_ru($month_index, $roditelniy = false)
+{
+  $months = $roditelniy ? explode('|', 'января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря') : explode('|', 'Январь|Февраль|Март|Апрель|Май|Июнь|Июль|Август|Сентябрь|Октябрь|Ноябрь|Декабрь');
+
+  return $months[$month_index-1];
+}
+
 function dash_get_types_to_merge()
 {
   return [

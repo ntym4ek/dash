@@ -202,3 +202,9 @@ h5.chart-title {
     .col-amount { flex: 0 0 150px; }
   }
 }
+
+.period-container {
+  display: flex;
+  .container-inline-date:not(:last-child) { margin-right: 1rem; }
+  .container-inline-date .form-item .form-item { margin-bottom: 0; }
+}

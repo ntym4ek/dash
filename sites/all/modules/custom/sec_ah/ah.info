@@ -1,0 +1,4 @@
+name = Раздел 'Агрохимикат'
+description = ""
+package = Custom
+core = 7.x
