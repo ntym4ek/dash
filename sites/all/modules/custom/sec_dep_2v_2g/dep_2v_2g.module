@@ -72,16 +72,6 @@ function dep_2v_2g_menu()
 }
 
 /**
- * hook_import_processors_alter
- */
-function dep_2v_2g_import_processors_alter(&$processors)
-{
-//  $path = drupal_get_path('module', 'dep_2v_2g') . '/includes/';
-  //$processors['first_queue'][] = ['mask' => '/^scrum_td_storage.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_storages'];
-  //$processors['last_queue'][] = ['mask' => '/^scrum_td_remains.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_remains'];
-}
-
-/**
  * ----- Страницы ------------------------------------------------------------------------------------------------------
  */
 
@@ -106,6 +96,10 @@ function dep_2v_2g_current_page()
   }
   $output .= '</div>';
 
+  $output .= '<div class="row">';
+  $form =       drupal_get_form('dep_2v_2g_ship_period_to_period_filter_form');
+  $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .= '</div>';
   $output .= '<div class="ajax-load" data-func="current_1"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   $output .= '<div class="row">';
@@ -2744,6 +2738,72 @@ function dep_2v_2g_column_ship_plan_by_nom_filter_form_ajax_callback($form, $for
   return '<div id="nom-r-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
 }
 
+
+function dep_2v_2g_ship_period_to_period_filter_form($form, &$form_state)
+{
+  if (!isset($form_state['period'])) {
+    $form_state['period'] = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_AH);
+  }
+
+  $form['#attributes'] = ['class' => ['dash-period-filter-form']];
+  $form['period'] = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['period-container']],
+  ];
+  $form['period']['period_from'] = [
+    '#type' => 'date_popup',
+    '#title' => 'Период',
+    '#default_value' => date('Y-m-d', empty($_GET['period-from']) ? $form_state['period']['from'] : $_GET['period-from']),
+    '#ajax' => [
+      'wrapper' => 'summary-ship',
+      'callback' => 'ah_ship_period_to_period_filter_form_ajax_callback',
+    ],
+    '#date_format' => 'd.m.Y',
+    '#date_year_range' => '-3:+1',
+    '#date_label_position' => 'invisible',
+  ];
+
+  $form['period']['period_to'] = [
+    '#type' => 'date_popup',
+    '#title' => '&nbsp;',
+    '#default_value' => date('Y-m-d', empty($_GET['period-to']) ? $form_state['period']['to'] - 1 : $_GET['period-to']),
+    '#ajax' => [
+      'wrapper' => 'summary-ship',
+      'callback' => 'dep_2v_2g_ship_period_to_period_filter_form_ajax_callback',
+    ],
+    '#date_format' => 'd.m.Y',
+    '#date_year_range' => '-3:+1',
+    '#date_label_position' => 'invisible',
+  ];
+
+  return $form;
+}
+function dep_2v_2g_ship_period_to_period_filter_form_submit($form, &$form_state)
+{
+  $form_state['redirect'] = [
+    'dashboard/current', [
+      'query' => [
+        'period-from' => strtotime($form_state['values']['period_from']['date']),
+        'period-to' => strtotime($form_state['values']['period_to']['date']),
+      ],
+      'fragment' => 'dep-2v-2g-ship-period-to-period-filter-form'
+    ]
+  ];
+}
+function dep_2v_2g_ship_period_to_period_filter_form_ajax_callback($form, $form_state)
+{
+  $period = [
+    'from' => strtotime($form_state['values']['period_from']['date']),
+    'to' => strtotime($form_state['values']['period_to']['date']),
+    'end' => '',
+  ];
+
+
+
+  return '<div id="summary-ship" class="row">' . $output . '</div>';
+}
+
+
 function dep_2v_2g_td_column_plan_ship_period_to_period_filter_form($form, &$form_state)
 {
   if (!isset($form_state['period'])) {
@@ -2865,5 +2925,24 @@ function dep_2v_2g_line_ship_plan_fact_by_month_filter_form_ajax_callback($form,
   $data_arr = dep_2v_2g_line_ship_plan_fact_by_month($form_state['period'], $regions);
 
   return '<div id="plan-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+}
+
+
+/**
+ * ----- Импорт --------------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * hook_import_processors_alter
+ */
+function dep_2v_2g_import_processors_alter(&$processors)
+{
+  $path = drupal_get_path('module', 'dep_2v_2g') . '/includes/';
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_region.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_regions']; // -- Справочник Регионов
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_clients.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_clients_td']; // -- Справочник Клиентов ТД
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_nom.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_nomenklatura_td']; // -- Справочник Номенклатуры ТД
+
+  $processors['last_queue'][] = ['mask' => '/^scrum_td_payplan.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_pay_plan_td']; // -- План выручки ТД
+  $processors['last_queue'][] = ['mask' => '/^scrum_td_shipplan.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_ship_plan_td']; // -- План отгрузки ТД
 }
 

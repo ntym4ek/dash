@@ -715,6 +715,62 @@ function dash_get_nomenklatura_by_1c_artikul($company, $artikul)
   return empty($entities) ? 0 : current($entities);
 }
 
+
+function dash_get_client_by_1c_id($company, $client_id)
+{
+  $vid = null;
+  if ($company == 'ah') {
+    $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
+  } elseif ($company == 'td') {
+    $vid = taxonomy_vocabulary_machine_name_load('clients_td')->vid;
+  }
+  if ($vid && $client_id) {
+    $query = new EntityFieldQuery();
+    $terms = $query
+      ->entityCondition('entity_type', 'taxonomy_term')
+      ->propertyCondition('vid', $vid)
+      ->fieldCondition('field_client_id', 'value', $client_id)
+      ->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+    } else {
+      $term = (object)array(
+        'vid' => $vid,
+        'name' => '',
+        'field_client_id' => ['und' => [0 => ['value' => $client_id]]],
+      );
+      taxonomy_term_save($term);
+    }
+    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+  }
+  return empty($entities) ? 0: current($entities);
+}
+
+function dash_get_region_by_1c_id($region_1c_id)
+{
+  if ($region_1c_id) {
+    $vid = taxonomy_vocabulary_machine_name_load('regions')->vid;
+    $query = new EntityFieldQuery();
+    $terms = $query
+      ->entityCondition('entity_type', 'taxonomy_term')
+      ->propertyCondition('vid', $vid)
+      ->fieldCondition('field_1c_id', 'value', $region_1c_id)
+      ->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+    } else {
+      $term = (object)array(
+        'vid' => $vid,
+        'name' => '',
+        'field_1c_id' => ['und' => [0 => ['value' => $region_1c_id]]],
+      );
+      taxonomy_term_save($term);
+    }
+    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+  }
+  return empty($entities) ? 0: current($entities);
+}
+
 /**
  * Удалить Остатки за период
  * @param $date_start
