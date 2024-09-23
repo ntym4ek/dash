@@ -568,6 +568,62 @@ function dash_get_revenue_plan_fact_by_conditions($conditions)
 }
 
 /**
+ * ----- Формы ---------------------------------------------------------------------------------------------------------
+ */
+function dash_period_filter_form($form, &$form_state, $params)
+{
+  if (!isset($form_state['period'])) {
+    $form_state['period'] = $params['period'];
+  }
+  $form_state['callback'] = $params['callback'];
+
+  $form['#attributes'] = ['class' => ['dash-filter-form']];
+  $form['period'] = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['period-container']],
+  ];
+  $form['period']['period_from'] = [
+    '#type' => 'date_popup',
+    '#title' => 'Период',
+    '#default_value' => date('Y-m-d', empty($_GET['period_from']) ? $form_state['period']['from'] : $_GET['period_from']),
+    '#ajax' => [
+      'wrapper' => $params['wrapper'],
+      'callback' => 'dash_period_filter_form_ajax_callback',
+    ],
+    '#date_format' => 'd.m.Y',
+    '#date_year_range' => '-3:+1',
+    '#date_label_position' => 'invisible',
+  ];
+
+  $form['period']['period_to'] = [
+    '#type' => 'date_popup',
+    '#title' => '&nbsp;',
+    '#default_value' => date('Y-m-d', empty($_GET['period_to']) ? $form_state['period']['to'] - 1 : $_GET['period_to']),
+    '#ajax' => [
+      'wrapper' => $params['wrapper'],
+      'callback' => 'dash_period_filter_form_ajax_callback',
+    ],
+    '#date_format' => 'd.m.Y',
+    '#date_year_range' => '-3:+1',
+    '#date_label_position' => 'invisible',
+  ];
+
+  return $form;
+}
+function dash_period_filter_form_ajax_callback($form, $form_state)
+{
+  $period = [
+    'from' => strtotime($form_state['values']['period_from']['date']),
+    'to' => strtotime($form_state['values']['period_to']['date']) + 60*60*24,  // конец периода задаётся днём, следующим за заданным
+    'end' => '',
+  ];
+
+  $func = $form_state['callback'];
+
+  return (function_exists($func) ? $func($period) : 'Function ' . $func . ' not found');
+}
+
+/**
  * ----- Вспомогательные функции ---------------------------------------------------------------------------------------
  */
 

@@ -38,16 +38,14 @@ function ah_current_tab()
 
   $output = '<div class="section-title">' .
               '<h3>Отгрузка</h3>' .
-              '<p>За период год к году</p>' .
+              '<p>Год к году за период</p>' .
             '</div>';
 
   $output .= '<div class="row">';
-  $form =       drupal_get_form('ah_ship_period_to_period_filter_form');
+  $form =       drupal_get_form('dash_period_filter_form', ['wrapper' => 'summary-ship-ah', 'callback' => 'ah_block_current_1', 'period' => $period]);
   $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
   $output .= '<div class="ajax-load" data-func="block_current_1" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-
 
 
   $output .=  '<div class="section-title">' .
@@ -76,6 +74,7 @@ function ah_current_tab()
 
 function ah_block_current_1($period = null)
 {
+  // параметры, отправляемые в ajax запросе после загрузки страницы
   $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
   $data_arr = dash_column_revenue_period_to_period('ah', $period['from'], $period['to']);
@@ -91,7 +90,7 @@ function ah_block_current_1($period = null)
   $data_arr = dash_column_revenue_period_to_period('ah', $period['from'], $period['to'], ['Производство смолы']);
   $output .= '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
 
-  return '<div id="summary-ship" class="row">' . $output . '</div>';
+  return '<div id="summary-ship-ah" class="row">' . $output . '</div>';
 }
 
 function ah_previous_tab()
@@ -166,7 +165,7 @@ function ah_clients_filter_form($form, $form_state, $type)
   $dbr->innerJoin('field_data_field_nom_type', 'fnt', 'fnt.entity_id = fn.field_nomenklatura_tid');
   $dbr->condition('fnt.field_nom_type_value', $type);
   $dbr->innerJoin('field_data_field_is_fact', 'ff', 'ff.entity_id = p.id');
-  $dbr->condition('ff.field_is_fact_value', DASH_TYPE_PLAN);
+  $dbr->condition('ff.field_is_fact_value', DASH_TYPE_FACT);
   $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
   $dbr->condition('frd.field_date_value', $month_start, '>=');
   $dbr->condition('frd.field_date_value', $month_next_start, '<');
@@ -194,99 +193,10 @@ function ah_clients_filter_form($form, $form_state, $type)
 
   return $form;
 }
-
-function ah_clients_filter_form_submit($form, &$form_state)
-{
-  $form_state['redirect'] = [
-    'dashboard/current', [
-      'query' => ['client' => $form_state['values']['client']],
-      'fragment' => 'dash-clients-filter-form'
-    ]
-  ];
-}
-
 function ah_clients_filter_form_ajax_callback($form, $form_state)
 {
   $data_arr = ah_line_prod_plan_fact_current_month_by_day('Пестициды', $form_state['values']['client']);
   return '<div id="clients-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-}
-
-
-function ah_ship_period_to_period_filter_form($form, &$form_state)
-{
-  if (!isset($form_state['period'])) {
-    $form_state['period'] = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_AH);
-  }
-
-  $form['#attributes'] = ['class' => ['dash-period-filter-form']];
-  $form['period'] = [
-    '#type' => 'container',
-    '#attributes' => ['class' => ['period-container']],
-  ];
-  $form['period']['period_from'] = [
-    '#type' => 'date_popup',
-    '#title' => 'Период',
-    '#default_value' => date('Y-m-d', empty($_GET['period-from']) ? $form_state['period']['from'] : $_GET['period-from']),
-    '#ajax' => [
-      'wrapper' => 'summary-ship',
-      'callback' => 'ah_ship_period_to_period_filter_form_ajax_callback',
-    ],
-    '#date_format' => 'd.m.Y',
-    '#date_year_range' => '-3:+1',
-    '#date_label_position' => 'invisible',
-  ];
-
-  $form['period']['period_to'] = [
-    '#type' => 'date_popup',
-    '#title' => '&nbsp;',
-    '#default_value' => date('Y-m-d', empty($_GET['period-to']) ? $form_state['period']['to'] - 1 : $_GET['period-to']),
-    '#ajax' => [
-      'wrapper' => 'summary-ship',
-      'callback' => 'ah_ship_period_to_period_filter_form_ajax_callback',
-    ],
-    '#date_format' => 'd.m.Y',
-    '#date_year_range' => '-3:+1',
-    '#date_label_position' => 'invisible',
-  ];
-
-  return $form;
-}
-
-function ah_ship_period_to_period_filter_form_submit($form, &$form_state)
-{
-  $form_state['redirect'] = [
-    'dashboard/current', [
-      'query' => [
-        'period-from' => strtotime($form_state['values']['period_from']['date']),
-        'period-to' => strtotime($form_state['values']['period_to']['date']),
-      ],
-      'fragment' => 'ah-ship-period-to-period-filter-form'
-    ]
-  ];
-}
-
-function ah_ship_period_to_period_filter_form_ajax_callback($form, $form_state)
-{
-  $period = [
-    'from' => strtotime($form_state['values']['period_from']['date']),
-    'to' => strtotime($form_state['values']['period_to']['date']),
-    'end' => '',
-  ];
-
-  $data_arr = dash_column_revenue_period_to_period('ah', $period['from'], $period['to']);
-  $data_arr['#title'] = 'Суммарная отгрузка за период (' . DASH_REV_SUFFIX . ')';
-  $output = '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-
-  $data_arr = dash_pie_revenue_year('ah', $period['from'], $period['to']);
-  $output .= '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-
-  $data_arr = dash_column_revenue_period_to_period('ah', $period['from'], $period['to'], ['Производство СЗР', 'Собственная продукция (производство СЗР)']);
-  $output .= '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-
-  $data_arr = dash_column_revenue_period_to_period('ah', $period['from'], $period['to'], ['Производство смолы']);
-  $output .= '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-
-  return '<div id="summary-ship" class="row">' . $output . '</div>';
 }
 
 

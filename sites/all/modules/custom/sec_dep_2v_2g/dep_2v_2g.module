@@ -85,29 +85,29 @@ function dep_2v_2g_current_page()
   // Функция, отвечающая за содержимое, определяется атрибутом data-func
 
   $period = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD);
-
   $time_yesterday = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to'])-1, date('Y', $period['to']));
+
   $output = '<div class="section-title">';
   $output .= '<h3>Отгрузка</h3>';
   if (dash_is_current_season($period)) {
-    $output .= '<p>Год к году за период с ' . date('d', $period['from']) . '.' . date('m', $period['from']) . ' по ' . date('d', $time_yesterday) . '.' . date('m', $time_yesterday) . '</p>';
+    $output .= '<p>Год к году за период</p>';
   } else {
     $output .= '<p>Год к году';
   }
   $output .= '</div>';
 
   $output .= '<div class="row">';
-  $form =       drupal_get_form('dep_2v_2g_ship_period_to_period_filter_form');
+  $form =       drupal_get_form('dash_period_filter_form', ['wrapper' => 'summary-ship-td', 'callback' => 'dep_2v_2g_block_current_1', 'period' => $period]);
   $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="current_1"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="block_current_1"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12"><h5 class="chart-title">Суммарная отгрузка</h5></div>';
   $form =      drupal_get_form('dep_2v_2g_td_column_plan_ship_period_to_period_filter_form');
   $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="current_2" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="block_current_2" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   $output .= '<div class="section-title">';
   $output .= '<h3>Отгрузка</h3>';
@@ -124,9 +124,9 @@ function dep_2v_2g_current_page()
   $form =       drupal_get_form('dep_2v_2g_column_ship_plan_by_nom_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="current_3" data-delay="500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="block_current_3" data-delay="500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
-  $output .= '<div class="ajax-load" data-func="current_4" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="block_current_4" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
 
   $output .=  '<div class="section-title">' .
@@ -140,7 +140,7 @@ function dep_2v_2g_current_page()
   $form =       drupal_get_form('dep_2v_2g_ship_plan_nom_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="current_5" data-delay="2000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="block_current_5" data-delay="2000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // план-факт линейные
   $output .= '<div class="row">';
@@ -148,7 +148,7 @@ function dep_2v_2g_current_page()
   $form =       drupal_get_form('dep_2v_2g_line_ship_plan_fact_by_month_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="current_6" data-delay="3000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="block_current_6" data-delay="3000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // отгрузка по регионам
   $output .= '<div class="row">';
@@ -156,17 +156,17 @@ function dep_2v_2g_current_page()
   $form =       drupal_get_form('dep_2v_2g_ship_plan_region_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="current_7" data-delay="4000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="block_current_7" data-delay="4000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
 
   return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
 }
 
-function dep_2v_2g_current_1($period = null)
+function dep_2v_2g_block_current_1($period = null)
 {
   $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
-  $output  = '<div class="row">';
+  $output  = '<div id="summary-ship-td" class="row">';
   $data_arr =   dash_column_revenue_period_to_period('td', $period['from'], $period['to']);
   $data_arr['#title'] = 'Суммарная отгрузка за сезон по данным бухгалтерии (' . DASH_REV_SUFFIX . ')';
   $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
@@ -178,7 +178,7 @@ function dep_2v_2g_current_1($period = null)
   return $output;
 }
 
-function dep_2v_2g_current_2($period = null)
+function dep_2v_2g_block_current_2($period = null)
 {
   $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
@@ -195,7 +195,7 @@ function dep_2v_2g_current_2($period = null)
   return $output;
 }
 
-function dep_2v_2g_current_3($period = null)
+function dep_2v_2g_block_current_3($period = null)
 {
   $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
@@ -208,7 +208,7 @@ function dep_2v_2g_current_3($period = null)
   return $output;
 }
 
-function dep_2v_2g_current_4($period = null)
+function dep_2v_2g_block_current_4($period = null)
 {
   $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
@@ -221,7 +221,7 @@ function dep_2v_2g_current_4($period = null)
   return $output;
 }
 
-function dep_2v_2g_current_5($period = null)
+function dep_2v_2g_block_current_5($period = null)
 {
   $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
@@ -245,7 +245,7 @@ function dep_2v_2g_current_5($period = null)
   return $output;
 }
 
-function dep_2v_2g_current_6($period = null)
+function dep_2v_2g_block_current_6($period = null)
 {
   $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
@@ -265,7 +265,7 @@ function dep_2v_2g_current_6($period = null)
   return $output;
 }
 
-function dep_2v_2g_current_7($period = null)
+function dep_2v_2g_block_current_7($period = null)
 {
   $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
 
@@ -2601,15 +2601,6 @@ function dep_2v_2g_ship_plan_nom_filter_form($form, &$form_state)
 
   return $form;
 }
-function dep_2v_2g_ship_plan_nom_filter_form_submit($form, &$form_state)
-{
-  $form_state['redirect'] = [
-    'dashboard/current', [
-      'query' => ['nom' => $form_state['values']['nom']],
-      'fragment' => 'dash-ship-plan-nom-filter-form'
-    ]
-  ];
-}
 function dep_2v_2g_ship_plan_nom_filter_form_ajax_callback($form, $form_state)
 {
   $data_arr = dep_2v_2g_column_ship_plan_fact_by_nom_single($form_state['period'], $form_state['values']['nom']);
@@ -2659,15 +2650,6 @@ function dep_2v_2g_ship_plan_region_filter_form($form, &$form_state)
   ];
 
   return $form;
-}
-function dep_2v_2g_ship_plan_region_filter_form_submit($form, &$form_state)
-{
-  $form_state['redirect'] = [
-    'dashboard/current', [
-      'query' => ['region' => $form_state['values']['region']],
-      'fragment' => 'dash-ship-plan-region-filter-form'
-    ]
-  ];
 }
 function dep_2v_2g_ship_plan_region_filter_form_ajax_callback($form, $form_state)
 {
@@ -2721,15 +2703,6 @@ function dep_2v_2g_column_ship_plan_by_nom_filter_form($form, &$form_state)
 
   return $form;
 }
-function dep_2v_2g_column_ship_plan_by_nom_filter_form_submit($form, &$form_state)
-{
-  $form_state['redirect'] = [
-    'dashboard/current', [
-      'query' => ['region-n' => $form_state['values']['region']],
-      'fragment' => 'dash-ship-plan-region-filter-form'
-    ]
-  ];
-}
 function dep_2v_2g_column_ship_plan_by_nom_filter_form_ajax_callback($form, $form_state)
 {
   $regions = $form_state['values']['region'] ? dash_get_term_siblings($form_state['values']['region']) : [];
@@ -2739,69 +2712,7 @@ function dep_2v_2g_column_ship_plan_by_nom_filter_form_ajax_callback($form, $for
 }
 
 
-function dep_2v_2g_ship_period_to_period_filter_form($form, &$form_state)
-{
-  if (!isset($form_state['period'])) {
-    $form_state['period'] = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_AH);
-  }
 
-  $form['#attributes'] = ['class' => ['dash-period-filter-form']];
-  $form['period'] = [
-    '#type' => 'container',
-    '#attributes' => ['class' => ['period-container']],
-  ];
-  $form['period']['period_from'] = [
-    '#type' => 'date_popup',
-    '#title' => 'Период',
-    '#default_value' => date('Y-m-d', empty($_GET['period-from']) ? $form_state['period']['from'] : $_GET['period-from']),
-    '#ajax' => [
-      'wrapper' => 'summary-ship',
-      'callback' => 'ah_ship_period_to_period_filter_form_ajax_callback',
-    ],
-    '#date_format' => 'd.m.Y',
-    '#date_year_range' => '-3:+1',
-    '#date_label_position' => 'invisible',
-  ];
-
-  $form['period']['period_to'] = [
-    '#type' => 'date_popup',
-    '#title' => '&nbsp;',
-    '#default_value' => date('Y-m-d', empty($_GET['period-to']) ? $form_state['period']['to'] - 1 : $_GET['period-to']),
-    '#ajax' => [
-      'wrapper' => 'summary-ship',
-      'callback' => 'dep_2v_2g_ship_period_to_period_filter_form_ajax_callback',
-    ],
-    '#date_format' => 'd.m.Y',
-    '#date_year_range' => '-3:+1',
-    '#date_label_position' => 'invisible',
-  ];
-
-  return $form;
-}
-function dep_2v_2g_ship_period_to_period_filter_form_submit($form, &$form_state)
-{
-  $form_state['redirect'] = [
-    'dashboard/current', [
-      'query' => [
-        'period-from' => strtotime($form_state['values']['period_from']['date']),
-        'period-to' => strtotime($form_state['values']['period_to']['date']),
-      ],
-      'fragment' => 'dep-2v-2g-ship-period-to-period-filter-form'
-    ]
-  ];
-}
-function dep_2v_2g_ship_period_to_period_filter_form_ajax_callback($form, $form_state)
-{
-  $period = [
-    'from' => strtotime($form_state['values']['period_from']['date']),
-    'to' => strtotime($form_state['values']['period_to']['date']),
-    'end' => '',
-  ];
-
-
-
-  return '<div id="summary-ship" class="row">' . $output . '</div>';
-}
 
 
 function dep_2v_2g_td_column_plan_ship_period_to_period_filter_form($form, &$form_state)
@@ -2845,15 +2756,6 @@ function dep_2v_2g_td_column_plan_ship_period_to_period_filter_form($form, &$for
   ];
 
   return $form;
-}
-function dep_2v_2g_td_column_plan_ship_period_to_period_filter_form_submit($form, &$form_state)
-{
-  $form_state['redirect'] = [
-    'dashboard/current', [
-      'query' => ['region-s' => $form_state['values']['region']],
-      'fragment' => 'dash-ship-plan-region-filter-form'
-    ]
-  ];
 }
 function dep_2v_2g_td_column_plan_ship_period_to_period_filter_form_ajax_callback($form, $form_state)
 {
