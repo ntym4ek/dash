@@ -24,8 +24,8 @@ function dep_2d_menu()
 function dep_2d_import_processors_alter(&$processors)
 {
   $path = drupal_get_path('module', 'dep_2d') . '/includes/';
-  $processors['first_queue'][] = ['mask' => '/^scrum_td_storage.*\.json/', 'include' => $path . 'import.dep_2d.inc', 'func' => 'dep_2d_import_storages'];
-  $processors['last_queue'][] = ['mask' => '/^scrum_td_remains.*\.json/', 'include' => $path . 'import.dep_2d.inc', 'func' => 'dep_2d_import_remains'];
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_storage.*\.json/', 'include' => $path . 'import.dep_2d.inc', 'func' => 'dep_2d_import_storages', 'archive' => 'dash/td'];
+  $processors['last_queue'][] = ['mask' => '/^scrum_td_remains.*\.json/', 'include' => $path . 'import.dep_2d.inc', 'func' => 'dep_2d_import_remains', 'archive' => 'dash/td'];
 }
 
 function dep_2d_remains_page()

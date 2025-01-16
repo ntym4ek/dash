@@ -37,8 +37,8 @@ function dep_7_menu_alter(&$items)
 function dep_7_import_processors_alter(&$processors)
 {
   $path = drupal_get_path('module', 'dep_7') . '/includes/';
-  $processors['first_queue'][] =  ['mask' => '/^scrum_td_cultures.*\.json/',      'include' => $path . 'import.dep_7.inc', 'func' => 'dep_7_import_cultures'];
-  $processors['last_queue'][] =   ['mask' => '/^scrum_td_registrations.*\.json/', 'include' => $path . 'import.dep_7.inc', 'func' => 'dep_7_import_registrations'];
+  $processors['first_queue'][] =  ['mask' => '/^scrum_td_cultures.*\.json/',      'include' => $path . 'import.dep_7.inc', 'func' => 'dep_7_import_cultures', 'archive' => 'dash/td'];
+  $processors['last_queue'][] =   ['mask' => '/^scrum_td_registrations.*\.json/', 'include' => $path . 'import.dep_7.inc', 'func' => 'dep_7_import_registrations', 'archive' => 'dash/td'];
 }
 
 function dep_7_preprocess_page(&$vars)

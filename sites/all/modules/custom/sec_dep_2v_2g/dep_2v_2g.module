@@ -2841,11 +2841,11 @@ function dep_2v_2g_line_ship_plan_fact_by_month_filter_form_ajax_callback($form,
 function dep_2v_2g_import_processors_alter(&$processors)
 {
   $path = drupal_get_path('module', 'dep_2v_2g') . '/includes/';
-  $processors['first_queue'][] = ['mask' => '/^scrum_td_region.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_regions']; // -- Справочник Регионов
-  $processors['first_queue'][] = ['mask' => '/^scrum_td_clients.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_clients_td']; // -- Справочник Клиентов ТД
-  $processors['first_queue'][] = ['mask' => '/^scrum_td_nom.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_nomenklatura_td']; // -- Справочник Номенклатуры ТД
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_region.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_regions', 'archive' => 'dash/td']; // -- Справочник Регионов
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_clients.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_clients_td', 'archive' => 'dash/td']; // -- Справочник Клиентов ТД
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_nom.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_nomenklatura_td', 'archive' => 'dash/td']; // -- Справочник Номенклатуры ТД
 
-  $processors['last_queue'][] = ['mask' => '/^scrum_td_payplan.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_pay_plan_td']; // -- План выручки ТД
-  $processors['last_queue'][] = ['mask' => '/^scrum_td_shipplan.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_ship_plan_td']; // -- План отгрузки ТД
+  $processors['last_queue'][] = ['mask' => '/^scrum_td_payplan.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_pay_plan_td', 'archive' => 'dash/td']; // -- План выручки ТД
+  $processors['last_queue'][] = ['mask' => '/^scrum_td_shipplan.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_ship_plan_td', 'archive' => 'dash/td']; // -- План отгрузки ТД
 }
 
