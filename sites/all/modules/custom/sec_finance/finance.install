@@ -1,0 +1,26 @@
+<?php
+
+
+
+/**
+ * Implements hook_enable().
+ */
+function finance_enable()
+{
+  if (!user_role_load_by_name('finance_user')) {
+    $finance_role = new stdClass();
+    $finance_role->name = 'finance_user';
+    $finance_role->weight = 1;
+    user_role_save($finance_role);
+  }
+}
+
+/**
+ * Implements hook_disable().
+ */
+function finance_disable()
+{
+  if (user_role_load_by_name('finance_user')) {
+    user_role_delete('finance_user');
+  }
+}

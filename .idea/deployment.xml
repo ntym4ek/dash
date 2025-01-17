@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="dash.kccc.ru" uploadOnCheckin="07e7cbc3-a9ae-4766-9c98-04b0bd42a645" confirmBeforeUploading="false">
+  <component name="PublishConfigData" serverName="dash.kccc.ru" confirmBeforeUploading="false">
     <option name="confirmBeforeUploading" value="false" />
     <serverData>
       <paths name="ae.local">
@@ -94,6 +94,20 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="kccckz.local">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="local">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="mineral.local">
         <serverdata>
           <mappings>
@@ -165,6 +179,5 @@
         </serverdata>
       </paths>
     </serverData>
-    <option name="myUploadOnCheckinName" value="dash.kccc.ru" />
   </component>
 </project>

@@ -3,7 +3,6 @@
 const FINANCE_DOC_TYPE_CASH = 1;
 const FINANCE_DOC_TYPE_BANK = 2;
 
-
 /**
  * Implementation of hook_menu().
  */
@@ -13,8 +12,8 @@ function finance_menu()
     'title' => 'Финансы',
     'menu_name' => 'main-menu',
     'page callback' => 'finance_page',
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access callback' => 'ext_user_has_roles_by_name',
+    'access arguments' => [['administrator', 'finance_user']],
     'type' => MENU_NORMAL_ITEM,
   );
   $items['fn/bank-doc'] = array(
@@ -22,8 +21,8 @@ function finance_menu()
     'menu_name' => 'main-menu',
     'weight' => 10,
     'page callback' => 'finance_page',
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access callback' => 'ext_user_has_roles_by_name',
+    'access arguments' => [['administrator', 'finance_user']],
     'type' => MENU_NORMAL_ITEM,
   );
 

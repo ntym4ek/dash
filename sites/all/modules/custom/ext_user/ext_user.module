@@ -201,13 +201,33 @@ function ext_user_mail_alter(&$message)
 
 /**
  * Определить наличие роли у текущего пользователя
- * @param $rids
+ * @param $rids - массив ID ролей
  * @return bool
  */
 function ext_user_has_roles($rids)
 {
   $account = $GLOBALS['user'];
   $account_rids = array_keys($account->roles);
+
+  return (bool)array_intersect($rids, $account_rids);
+}
+
+/**
+ * Определить наличие роли у текущего пользователя по имени роли
+ * @param $role_names - массив имён ролей
+ * @return bool
+ */
+function ext_user_has_roles_by_name($role_names)
+{
+  $account = $GLOBALS['user'];
+  $account_rids = array_keys($account->roles);
+
+  $rids = [];
+  foreach ($role_names as $role_name) {
+    if ($role = user_role_load_by_name($role_name)) {
+      $rids[] = $role->rid;
+    }
+  }
 
   return (bool)array_intersect($rids, $account_rids);
 }
