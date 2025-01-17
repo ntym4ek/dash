@@ -1,0 +1,272 @@
+<?php
+
+const FINANCE_DOC_TYPE_CASH = 1;
+const FINANCE_DOC_TYPE_BANK = 2;
+
+
+/**
+ * Implementation of hook_menu().
+ */
+function finance_menu()
+{
+  $items['fn'] = array(
+    'title' => 'Финансы',
+    'menu_name' => 'main-menu',
+    'page callback' => 'finance_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['fn/bank-doc'] = array(
+    'title' => 'Реестр банковских документов',
+    'menu_name' => 'main-menu',
+    'weight' => 10,
+    'page callback' => 'finance_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * hook_import_processors_alter
+ */
+function finance_import_processors_alter(&$processors)
+{
+  $path = drupal_get_path('module', 'finance') . '/includes/';
+  $processors['first_queue'][] =  ['mask' => '/^scrum_td_bank_doc.*\.json/',      'include' => $path . 'import.finance.inc', 'func' => 'finance_import_bank_docs', 'archive' => 'dash/fn'];
+}
+
+function finance_preprocess_page(&$vars)
+{
+  if ($_GET['q'] == 'fn/bank-doc') {
+    drupal_set_title('Реестр банковских документов');
+  }
+}
+
+function finance_page()
+{
+  $output = '';
+  // дата по умолчанию
+  $params['date'] = gmmktime(0, 0, 0, date('n'), date('j')-1, date('Y'));
+
+  $form = drupal_get_form('finance_filter_form', $params);
+  $output .= '<div class="holding-balances">';
+  $output .=   '<div class="row">';
+  $output .=     '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .=   '</div>';
+
+  $output .=   '<div id="table-wrapper">' . finance_get_table_output($params['date']) . '</div>';
+  $output .= '</div>';
+
+  return $output;
+}
+
+function finance_get_table_output($filter_date = null)
+{
+  $timestamp_from = $filter_date ?? gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
+  $timestamp_to = $timestamp_from + 86400 - 1; // последняя секунда заданного дня
+
+  // сортировка по компаниям
+  $companies_arr = [
+    'balance' => 0,
+    'income' => 0,
+    'outcome' => 0,
+    'list' => [],
+  ];
+  if ($docs_ids = finance_get_docs_ids($timestamp_from, $timestamp_to)) {
+    foreach ($docs_ids as $doc_id) {
+      $doc_wr = entity_metadata_wrapper('bank_doc', $doc_id);
+
+      $company = $doc_wr->field_bd_company->value();
+      $income = $doc_wr->field_bd_income->value() ?: 0;
+      $outcome = $doc_wr->field_bd_outcome->value() ?: 0;
+
+      if (!isset($companies_arr['list'][$company])) {
+        $companies_arr['list'][$company] = [
+          'label' => $company,
+          'cash_start' => 0, 'bank_start' => 0,
+          'cash_income' => 0, 'bank_income' => 0,
+          'cash_outcome' => 0, 'bank_outcome' => 0,
+          'list' => []
+        ];
+      }
+
+      if ($doc_wr->field_bd_purpose->value() == 'balance') {
+        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_CASH) $companies_arr['list'][$company]['cash_start'] = $doc_wr->field_bd_income->value();
+        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK) $companies_arr['list'][$company]['bank_start'] = $doc_wr->field_bd_income->value();
+        $companies_arr['balance'] += $doc_wr->field_bd_income->value();
+      } else {
+        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_CASH) {
+          $companies_arr['list'][$company]['cash_income'] += $income;
+          $companies_arr['list'][$company]['cash_outcome'] += $outcome;
+        }
+        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK) {
+          $companies_arr['list'][$company]['bank_income'] += $income;
+          $companies_arr['list'][$company]['bank_outcome'] += $outcome;
+        }
+        $companies_arr['income'] += $income;
+        $companies_arr['outcome'] += $outcome;
+      }
+
+      $companies_arr['list'][$company]['docs'][] = [
+        'type'      => $doc_wr->field_bd_type->value(),
+        'datetime'  => $doc_wr->field_bd_datetime->value(),
+        'income'    => $income,
+        'outcome'   => $outcome,
+        'purpose'   => $doc_wr->field_bd_purpose->value(),
+        'agent'     => $doc_wr->field_bd_agent->value(),
+      ];
+
+    }
+  }
+
+  // отбираем Действующие регистрации
+  $header = [
+    ['data' => '', 'align' => 'center', 'class' => ['bd-toggle']],
+    ['data' => 'Предприятие', 'align' => 'center'],
+    ['data' => '', 'align' => 'center', 'class' => ['bd-type']],
+    ['data' => 'Остаток на начало',  'align' => 'center', 'class' => ['bd-start']],
+    ['data' => 'Приход', 'align' => 'center', 'class' => ['bd-company-income']],
+    ['data' => 'Расход', 'align' => 'center', 'class' => ['bd-company-outcome']],
+    ['data' => 'Остаток на конец дня', 'align' => 'center', 'class' => ['bd-end']],
+  ];
+
+  $rows = [];
+//  $total_income = $total_outcome = $total_start = $total_end = 0;
+  if ($companies_arr) {
+    $index = 0;
+    foreach ($companies_arr['list'] as $company) {
+      $subheader = [
+        ['data' => 'Поступление', 'align' => 'center', 'class' => ['bd-income']],
+        ['data' => 'Списание',    'align' => 'center', 'class' => ['bd-outcome']],
+        ['data' => 'Назначение',  'align' => 'center', 'class' => ['bd-purpose']],
+        ['data' => 'Контрагент',  'align' => 'center', 'class' => ['bd-agent']],
+      ];
+
+      $subrows = [];
+      foreach ($company['docs'] as $doc) {
+        if ($doc['purpose'] != 'balance') {
+          $subrows[] = [
+            'data' => [
+              ['data' => dash_number_format($doc['income'], 2, ' ', false), 'align' => 'right'],
+              ['data' => dash_number_format($doc['outcome'], 2, ' ', false), 'align' => 'right'],
+              $doc['purpose'],
+              $doc['agent'],
+            ],
+          ];
+        }
+      }
+
+      $table = theme('table', [
+        'header' => $subheader,
+        'rows' => $subrows,
+        'attributes' => ['class' => ['table', 'table-bordered', 'table-sm']],
+        'sticky' => false,
+      ]);
+
+      $rows[] = [
+        'data' => [
+          ['data' => '+', 'rowspan' => 2, 'class' => ['table-row-toggle'], 'align' => 'center', "data-target" => "sub-table-" . $index],
+          ['data' => $company['label'], 'rowspan' => 2],
+          'банк',
+          ['data' => dash_number_format($company['bank_start'], 2, ' ', false), 'align' => 'right'],
+          ['data' => dash_number_format($company['bank_income'], 2, ' ', false), 'align' => 'right'],
+          ['data' => dash_number_format($company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
+          ['data' => dash_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
+        ],
+      ];
+      $rows[] = [
+        'data' => [
+          'касса',
+          ['data' => dash_number_format($company['cash_start'], 2, ' ', false), 'align' => 'right'],
+          ['data' => dash_number_format($company['cash_income'], 2, ' ', false), 'align' => 'right'],
+          ['data' => dash_number_format($company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
+          ['data' => dash_number_format($company['cash_start'] + $company['cash_income'] - $company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
+        ],
+      ];
+      $rows[] = [
+        'data' => [
+          ['data' => '<div class="sub-table sub-table-' . $index++ . '">' . $table . '</div>', 'colspan' => 7, 'class' => ['table-wrapper']],
+        ],
+      ];
+    }
+
+    $rows[] = [
+      'data' => [
+        ['data' => 'Итого', 'colspan' => 2],
+        '',
+        ['data' => dash_number_format($companies_arr['balance'], 2, ' ', false), 'align' => 'right'],
+        ['data' => dash_number_format($companies_arr['income'], 2, ' ', false), 'align' => 'right'],
+        ['data' => dash_number_format($companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
+        ['data' => dash_number_format($companies_arr['balance'] + $companies_arr['income'] - $companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
+      ], 'class' => ['tfoot'],
+    ];
+
+  }
+  $output = theme('table', [
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table', 'table-bordered']],
+    'sticky' => false,
+  ]);
+
+  return $output;
+}
+
+function finance_get_docs_ids($from, $to)
+{
+  $dbr = db_select('eck_bank_doc', 'bc');
+  $dbr->condition('bc.type', 'bank_doc');
+  $dbr->innerJoin('field_data_field_bd_datetime', 'fdt', 'fdt.entity_id = bc.id');
+  $dbr->condition('fdt.field_bd_datetime_value', [$from, $to], 'BETWEEN');
+  $dbr->orderBy('fdt.field_bd_datetime_value');
+  $dbr->addField('bc', 'id');
+
+  return $dbr->execute()->fetchCol();
+}
+
+
+/**
+ * ----- Формы --------------------------------------------------------------------------------------------------------
+ */
+function finance_filter_form($form, $form_state, $params)
+{
+  if (!isset($form_state['date'])) {
+    $form_state['date'] = $params['date'];
+  }
+
+  $form['date'] = [
+    '#type' => 'date_popup',
+    '#title' => 'Дата',
+    '#default_value' => date('Y-m-d', empty($_GET['date']) ? $form_state['date'] : $_GET['date']),
+    '#ajax' => [
+      'wrapper' => "table-wrapper",
+      'callback' => 'finance_filter_form_ajax_callback',
+    ],
+    '#date_format' => 'd.m.Y',
+    '#date_year_range' => '-1:+0',
+    '#date_label_position' => 'invisible',
+  ];
+
+  return $form;
+}
+
+function finance_filter_form_submit($form, &$form_state)
+{
+  $form_state['redirect'] = [
+    'registration', [
+      'query' => ['nom' => $form_state['values']['nom']],
+      'fragment' => 'dash-reg-nom-filter-form'
+    ]
+  ];
+}
+
+function finance_filter_form_ajax_callback($form, $form_state)
+{
+  $timestamp = dash_datetime_to_timestamp($form_state['values']['date']['date']);
+  $data_arr = finance_get_table_output($timestamp);
+  return '<div id="table-wrapper">' . $data_arr . '</div>';
+}

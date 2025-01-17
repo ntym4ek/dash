@@ -1004,7 +1004,7 @@ function dash_number_format($number, $decimals, $separator = '', $trailing_cut =
 }
 
 /**
- * Преобразовать текстовую дату и время в unix
+ * Преобразовать текстовую дату или дату и время в unix
  *
  * @param $datetime - в формате d.m.Y H:i
  * @return - unix timestamp

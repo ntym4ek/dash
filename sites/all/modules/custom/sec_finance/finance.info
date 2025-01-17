@@ -1,0 +1,4 @@
+name = Раздел 'Финансы'
+description = ""
+package = Custom
+core = 7.x
