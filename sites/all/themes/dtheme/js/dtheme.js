@@ -78,10 +78,14 @@
       }
 
       // -- collapsible ячейки на странице Финансы ----------------------------------------------------------
-      $(".table-row-toggle").on("click", (el) => {
-        const target = $(el.target).data("target");
-        $('.' + target).slideToggle(200);
+      $(context).find(".table-row-toggle").once( function () {
+        $(this).on("click", (el) => {
+          const target = $(el.target).data("target");
+          $('.' + target).slideToggle(200);
+        });
       });
+
+
 
     }
   };

@@ -35,7 +35,7 @@ function finance_menu()
 function finance_import_processors_alter(&$processors)
 {
   $path = drupal_get_path('module', 'finance') . '/includes/';
-  $processors['first_queue'][] =  ['mask' => '/^scrum_td_bank_doc.*\.json/',      'include' => $path . 'import.finance.inc', 'func' => 'finance_import_bank_docs', 'archive' => 'dash/fn'];
+  $processors['first_queue'][] =  ['mask' => '/^scrum_fn_bank_doc.*\.json/',      'include' => $path . 'import.finance.inc', 'func' => 'finance_import_bank_docs', 'archive' => 'dash/fn'];
 }
 
 function finance_preprocess_page(&$vars)
@@ -49,7 +49,7 @@ function finance_page()
 {
   $output = '';
   // дата по умолчанию
-  $params['date'] = gmmktime(0, 0, 0, date('n'), date('j')-1, date('Y'));
+  $params['date'] = gmmktime(0, 0, 0, date('n'), date('j')-6, date('Y'));
 
   $form = drupal_get_form('finance_filter_form', $params);
   $output .= '<div class="holding-balances">';
@@ -111,106 +111,107 @@ function finance_get_table_output($filter_date = null)
       }
 
       $companies_arr['list'][$company]['docs'][] = [
-        'type'      => $doc_wr->field_bd_type->value(),
-        'datetime'  => $doc_wr->field_bd_datetime->value(),
-        'income'    => $income,
-        'outcome'   => $outcome,
-        'purpose'   => $doc_wr->field_bd_purpose->value(),
-        'agent'     => $doc_wr->field_bd_agent->value(),
+        'type' => $doc_wr->field_bd_type->value(),
+        'datetime' => $doc_wr->field_bd_datetime->value(),
+        'income' => $income,
+        'outcome' => $outcome,
+        'purpose' => $doc_wr->field_bd_purpose->value(),
+        'agent' => $doc_wr->field_bd_agent->value(),
       ];
 
     }
-  }
 
-  // отбираем Действующие регистрации
-  $header = [
-    ['data' => '', 'align' => 'center', 'class' => ['bd-toggle']],
-    ['data' => 'Предприятие', 'align' => 'center'],
-    ['data' => '', 'align' => 'center', 'class' => ['bd-type']],
-    ['data' => 'Остаток на начало',  'align' => 'center', 'class' => ['bd-start']],
-    ['data' => 'Приход', 'align' => 'center', 'class' => ['bd-company-income']],
-    ['data' => 'Расход', 'align' => 'center', 'class' => ['bd-company-outcome']],
-    ['data' => 'Остаток на конец дня', 'align' => 'center', 'class' => ['bd-end']],
-  ];
-
-  $rows = [];
-//  $total_income = $total_outcome = $total_start = $total_end = 0;
-  if ($companies_arr) {
-    $index = 0;
-    foreach ($companies_arr['list'] as $company) {
-      $subheader = [
-        ['data' => 'Поступление', 'align' => 'center', 'class' => ['bd-income']],
-        ['data' => 'Списание',    'align' => 'center', 'class' => ['bd-outcome']],
-        ['data' => 'Назначение',  'align' => 'center', 'class' => ['bd-purpose']],
-        ['data' => 'Контрагент',  'align' => 'center', 'class' => ['bd-agent']],
-      ];
-
-      $subrows = [];
-      foreach ($company['docs'] as $doc) {
-        if ($doc['purpose'] != 'balance') {
-          $subrows[] = [
-            'data' => [
-              ['data' => dash_number_format($doc['income'], 2, ' ', false), 'align' => 'right'],
-              ['data' => dash_number_format($doc['outcome'], 2, ' ', false), 'align' => 'right'],
-              $doc['purpose'],
-              $doc['agent'],
-            ],
-          ];
-        }
-      }
-
-      $table = theme('table', [
-        'header' => $subheader,
-        'rows' => $subrows,
-        'attributes' => ['class' => ['table', 'table-bordered', 'table-sm']],
-        'sticky' => false,
-      ]);
-
-      $rows[] = [
-        'data' => [
-          ['data' => '+', 'rowspan' => 2, 'class' => ['table-row-toggle'], 'align' => 'center', "data-target" => "sub-table-" . $index],
-          ['data' => $company['label'], 'rowspan' => 2],
-          'банк',
-          ['data' => dash_number_format($company['bank_start'], 2, ' ', false), 'align' => 'right'],
-          ['data' => dash_number_format($company['bank_income'], 2, ' ', false), 'align' => 'right'],
-          ['data' => dash_number_format($company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
-          ['data' => dash_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
-        ],
-      ];
-      $rows[] = [
-        'data' => [
-          'касса',
-          ['data' => dash_number_format($company['cash_start'], 2, ' ', false), 'align' => 'right'],
-          ['data' => dash_number_format($company['cash_income'], 2, ' ', false), 'align' => 'right'],
-          ['data' => dash_number_format($company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
-          ['data' => dash_number_format($company['cash_start'] + $company['cash_income'] - $company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
-        ],
-      ];
-      $rows[] = [
-        'data' => [
-          ['data' => '<div class="sub-table sub-table-' . $index++ . '">' . $table . '</div>', 'colspan' => 7, 'class' => ['table-wrapper']],
-        ],
-      ];
-    }
-
-    $rows[] = [
-      'data' => [
-        ['data' => 'Итого', 'colspan' => 2],
-        '',
-        ['data' => dash_number_format($companies_arr['balance'], 2, ' ', false), 'align' => 'right'],
-        ['data' => dash_number_format($companies_arr['income'], 2, ' ', false), 'align' => 'right'],
-        ['data' => dash_number_format($companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
-        ['data' => dash_number_format($companies_arr['balance'] + $companies_arr['income'] - $companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
-      ], 'class' => ['tfoot'],
+    // формируем таблицу
+    $header = [
+      ['data' => '', 'align' => 'center', 'class' => ['bd-toggle']],
+      ['data' => 'Предприятие', 'align' => 'center'],
+      ['data' => '', 'align' => 'center', 'class' => ['bd-type']],
+      ['data' => 'Остаток на начало', 'align' => 'center', 'class' => ['bd-start']],
+      ['data' => 'Приход', 'align' => 'center', 'class' => ['bd-company-income']],
+      ['data' => 'Расход', 'align' => 'center', 'class' => ['bd-company-outcome']],
+      ['data' => 'Остаток на конец дня', 'align' => 'center', 'class' => ['bd-end']],
     ];
 
+    $rows = [];
+    if ($companies_arr) {
+      $index = 0;
+      foreach ($companies_arr['list'] as $company) {
+        $subheader = [
+          ['data' => 'Поступление', 'align' => 'center', 'class' => ['bd-income']],
+          ['data' => 'Списание', 'align' => 'center', 'class' => ['bd-outcome']],
+          ['data' => 'Назначение', 'align' => 'center', 'class' => ['bd-purpose']],
+          ['data' => 'Контрагент', 'align' => 'center', 'class' => ['bd-agent']],
+        ];
+
+        $subrows = [];
+        foreach ($company['docs'] as $doc) {
+          if ($doc['purpose'] != 'balance') {
+            $subrows[] = [
+              'data' => [
+                ['data' => dash_number_format($doc['income'], 2, ' ', false), 'align' => 'right'],
+                ['data' => dash_number_format($doc['outcome'], 2, ' ', false), 'align' => 'right'],
+                $doc['purpose'],
+                $doc['agent'],
+              ],
+            ];
+          }
+        }
+
+        $table = theme('table', [
+          'header' => $subheader,
+          'rows' => $subrows,
+          'attributes' => ['class' => ['table', 'table-bordered', 'table-sm']],
+          'sticky' => false,
+        ]);
+
+        $rows[] = [
+          'data' => [
+            ['data' => $subrows ? '+' : '', 'rowspan' => 2, 'class' => [$subrows ? 'table-row-toggle' : ''], 'align' => 'center', 'data-target' => 'sub-table-' . $timestamp_from . '-' . $index],
+            ['data' => $company['label'], 'rowspan' => 2],
+            'банк',
+            ['data' => dash_number_format($company['bank_start'], 2, ' ', false), 'align' => 'right'],
+            ['data' => dash_number_format($company['bank_income'], 2, ' ', false), 'align' => 'right'],
+            ['data' => dash_number_format($company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
+            ['data' => dash_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
+          ],
+        ];
+        $rows[] = [
+          'data' => [
+            'касса',
+            ['data' => dash_number_format($company['cash_start'], 2, ' ', false), 'align' => 'right'],
+            ['data' => dash_number_format($company['cash_income'], 2, ' ', false), 'align' => 'right'],
+            ['data' => dash_number_format($company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
+            ['data' => dash_number_format($company['cash_start'] + $company['cash_income'] - $company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
+          ],
+        ];
+        $rows[] = [
+          'data' => [
+            ['data' => '<div class="sub-table sub-table-' . $timestamp_from . '-' . $index++ . '" style="display:none;">' . $table . '</div>', 'colspan' => 7, 'class' => ['table-wrapper']],
+          ],
+        ];
+      }
+
+      $rows[] = [
+        'data' => [
+          ['data' => 'Итого', 'colspan' => 2],
+          '',
+          ['data' => dash_number_format($companies_arr['balance'], 2, ' ', false), 'align' => 'right'],
+          ['data' => dash_number_format($companies_arr['income'], 2, ' ', false), 'align' => 'right'],
+          ['data' => dash_number_format($companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
+          ['data' => dash_number_format($companies_arr['balance'] + $companies_arr['income'] - $companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
+        ], 'class' => ['tfoot'],
+      ];
+
+    }
+    $output = theme('table', [
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => ['class' => ['table', 'table-bordered']],
+      'sticky' => false,
+    ]);
+  } else {
+    $output = 'На выбранную дату нет загруженных банковских выписок.';
   }
-  $output = theme('table', [
-    'header' => $header,
-    'rows' => $rows,
-    'attributes' => ['class' => ['table', 'table-bordered']],
-    'sticky' => false,
-  ]);
 
   return $output;
 }

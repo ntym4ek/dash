@@ -18,7 +18,7 @@ function finance_delete_bank_docs_by_date($timestamp)
   $dbr->orderBy('fdt.field_bd_datetime_value');
   $dbr->addField('bc', 'id');
   if ($ids = $dbr->execute()->fetchCol()) {
-    entity_delete_multiple('currency_rate', $ids);
+    entity_delete_multiple('bank_doc', $ids);
   }
 }
 
@@ -28,7 +28,7 @@ function finance_import_bank_docs($array)
   $transaction = db_transaction();
 
   try {
-    if (!empty($array['load'])) {
+    if (!empty($array['date'])) {
       $date_ts = dash_datetime_to_timestamp($array['date']);
 
       // удалить старые документы на дату

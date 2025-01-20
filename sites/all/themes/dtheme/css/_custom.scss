@@ -245,13 +245,13 @@ h5.chart-title {
     > thead { border-bottom-width: 2px; }
     .table-wrapper { padding: 0; }
     .sub-table {
-      display: none;
+      //display: none;
       padding: 1rem;
     }
     .table {
       font-size: $font-size-small;
     }
-    .toggle {
+    .table-row-toggle {
       cursor: pointer;
       &:hover {
         background-color: #ddd;

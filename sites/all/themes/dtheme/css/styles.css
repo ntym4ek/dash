@@ -1485,13 +1485,12 @@ h4 {
 .holding-balances .table .table-wrapper {
   padding: 0; }
 .holding-balances .table .sub-table {
-  display: none;
   padding: 1rem; }
 .holding-balances .table .table {
   font-size: 0.8rem; }
-.holding-balances .table .toggle {
+.holding-balances .table .table-row-toggle {
   cursor: pointer; }
-  .holding-balances .table .toggle:hover {
+  .holding-balances .table .table-row-toggle:hover {
     background-color: #ddd;
     transition: all 200ms; }
 .holding-balances .tfoot {

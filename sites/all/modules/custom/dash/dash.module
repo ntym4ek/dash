@@ -1017,7 +1017,7 @@ function dash_datetime_to_timestamp($datetime)
   if ($datetime_arr[0]) {
     $date_arr = explode('.', $datetime_arr[0]);
     $hours = $minutes = 0;
-    if ($datetime_arr[1]) {
+    if (!empty($datetime_arr[1])) {
       $time_arr = explode(':', $datetime_arr[1]);
       $hours = $time_arr[0];
       $minutes = $time_arr[1];
