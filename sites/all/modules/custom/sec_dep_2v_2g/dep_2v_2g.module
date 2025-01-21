@@ -563,7 +563,7 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
 
     $total_plan = $total_fact = 0;
     foreach ($plan_fact_by_month as $month) {
-      $chart['xaxis']['#labels'][] = dash_month_label_ru(date('n', $month['start']));
+      $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
       $plan = $month['plan_amount'] / DASH_REV_DIVIDER;
       $fact = $month['fact_amount'] / DASH_REV_DIVIDER;
@@ -711,7 +711,7 @@ function dep_2v_2g_line_revenue_plan_fact($type, $period)
 
     $total_plan = $total_fact = 0;
     foreach ($plan_fact_by_month as $month) {
-      $chart['xaxis']['#labels'][] = dash_month_label_ru(date('n', $month['start']));
+      $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
       $plan = $month['plan_amount'] / DASH_REV_DIVIDER;
       $fact = $month['fact_amount'] / DASH_REV_DIVIDER;
@@ -906,7 +906,7 @@ function dep_2v_2g_line_revenue_plan_fact_bak($type, $period, $regions = [])
 
     foreach ($data as $month => $datum) {
 
-      $chart['xaxis']['#labels'][] = dash_month_label_ru(date('n', $month));
+      $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month));
       $plan = $datum[0];
 
       // считаем и выводим накопительный факт только до месяца предстоящего текущему месяцу

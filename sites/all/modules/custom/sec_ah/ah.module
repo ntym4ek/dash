@@ -120,7 +120,7 @@ function ah_previous_tab()
 
   $output .= '<div class="section-title">' .
     '<h3>Производство</h3>' .
-    '<p>' . dash_month_label_ru(date('n', $period['from'])) . ' - ' . dash_month_label_ru(date('n', $time_current_month - 1)) . '</p>' .
+    '<p>' . helper_month_label_ru(date('n', $period['from'])) . ' - ' . helper_month_label_ru(date('n', $time_current_month - 1)) . '</p>' .
     '</div>';
 
   // вывести набор графиков по типам продукции
@@ -251,7 +251,7 @@ function ah_line_prod_plan_fact_current_month_by_day($type, $client = null)
     '#type' => 'chart',
     '#chart_type' => 'line',
     '#chart_id' => 'dash_prod_plan_fact_lines',
-    '#title' => 'Выполнение плана на ' . dash_month_label_ru(date('n', $month_start)) . ' (тыс. ед.)',
+    '#title' => 'Выполнение плана на ' . helper_month_label_ru(date('n', $month_start)) . ' (тыс. ед.)',
     '#height' => '350',
     '#legend_position' => 'bottom',
     '#colors' => ['#aaa', DASH_COLOR_RED],
@@ -326,7 +326,7 @@ function ah_lines_prod_plan_fact($type, $time_from, $time_to)
     $amount = (int)$dbr->execute()->fetchField();
     $amount_f = (int)$dbr_f->execute()->fetchField();
 
-    $data[dash_month_label_ru(date('n', $time_month_start))] = [$amount / 1000, $amount_f / 1000];
+    $data[helper_month_label_ru(date('n', $time_month_start))] = [$amount / 1000, $amount_f / 1000];
   }
 
   $chart = array(

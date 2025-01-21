@@ -166,7 +166,7 @@ function dep_4_analog_prices($filters = null)
       $chart['price']['#data'][] = $price;
 
       $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-                  '<div><div style="display:inline-block; width: 150px;">Стоимость на ' . date('d.m.Y', $item['date']) . ':</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . dash_number_format($price, 2) . '</b>&nbsp;' . $curr_set . '</div></div>' .
+                  '<div><div style="display:inline-block; width: 150px;">Стоимость на ' . date('d.m.Y', $item['date']) . ':</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . helper_number_format($price, 2) . '</b>&nbsp;' . $curr_set . '</div></div>' .
                 '</div>';
 
       $chart['price'][] = array(
@@ -185,7 +185,7 @@ function dep_4_analog_prices($filters = null)
     $chart['price']['#data'][] = $price_now;
 
     $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-      '<div><div style="display:inline-block; width: 150px;">Стоимость на сегодня:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . dash_number_format($price_now, 2) . '</b>&nbsp;' . $curr_set . '</div></div>' .
+      '<div><div style="display:inline-block; width: 150px;">Стоимость на сегодня:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . helper_number_format($price_now, 2) . '</b>&nbsp;' . $curr_set . '</div></div>' .
       '</div>';
 
     $chart['price'][] = array(

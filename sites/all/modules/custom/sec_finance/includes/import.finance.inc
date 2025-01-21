@@ -29,7 +29,7 @@ function finance_import_bank_docs($array)
 
   try {
     if (!empty($array['date'])) {
-      $date_ts = dash_datetime_to_timestamp($array['date']);
+      $date_ts = helper_datetime_to_timestamp($array['date']);
 
       // удалить старые документы на дату
       finance_delete_bank_docs_by_date($date_ts);
@@ -55,7 +55,7 @@ function finance_import_bank_docs($array)
       $bank_doc_wr->save();
 
       foreach ($array['load'] as $doc) {
-        $datetime_ts = dash_datetime_to_timestamp($doc['datetime']);
+        $datetime_ts = helper_datetime_to_timestamp($doc['datetime']);
 
         $bank_doc = entity_create('bank_doc', ['type' => 'bank_doc']);
         $bank_doc_wr = entity_metadata_wrapper('bank_doc', $bank_doc);

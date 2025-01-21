@@ -49,7 +49,7 @@ function finance_page()
 {
   $output = '';
   // дата по умолчанию
-  $params['date'] = gmmktime(0, 0, 0, date('n'), date('j')-6, date('Y'));
+  $params['date'] = gmmktime(0, 0, 0, date('n'), date('j')-1, date('Y'));
 
   $form = drupal_get_form('finance_filter_form', $params);
   $output .= '<div class="holding-balances">';
@@ -148,8 +148,8 @@ function finance_get_table_output($filter_date = null)
           if ($doc['purpose'] != 'balance') {
             $subrows[] = [
               'data' => [
-                ['data' => dash_number_format($doc['income'], 2, ' ', false), 'align' => 'right'],
-                ['data' => dash_number_format($doc['outcome'], 2, ' ', false), 'align' => 'right'],
+                ['data' => helper_number_format($doc['income'], 2, ' ', false), 'align' => 'right'],
+                ['data' => helper_number_format($doc['outcome'], 2, ' ', false), 'align' => 'right'],
                 $doc['purpose'],
                 $doc['agent'],
               ],
@@ -169,19 +169,19 @@ function finance_get_table_output($filter_date = null)
             ['data' => $subrows ? '+' : '', 'rowspan' => 2, 'class' => [$subrows ? 'table-row-toggle' : ''], 'align' => 'center', 'data-target' => 'sub-table-' . $timestamp_from . '-' . $index],
             ['data' => $company['label'], 'rowspan' => 2],
             'банк',
-            ['data' => dash_number_format($company['bank_start'], 2, ' ', false), 'align' => 'right'],
-            ['data' => dash_number_format($company['bank_income'], 2, ' ', false), 'align' => 'right'],
-            ['data' => dash_number_format($company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
-            ['data' => dash_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['bank_start'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['bank_income'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
           ],
         ];
         $rows[] = [
           'data' => [
             'касса',
-            ['data' => dash_number_format($company['cash_start'], 2, ' ', false), 'align' => 'right'],
-            ['data' => dash_number_format($company['cash_income'], 2, ' ', false), 'align' => 'right'],
-            ['data' => dash_number_format($company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
-            ['data' => dash_number_format($company['cash_start'] + $company['cash_income'] - $company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['cash_start'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['cash_income'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['cash_start'] + $company['cash_income'] - $company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
           ],
         ];
         $rows[] = [
@@ -195,10 +195,10 @@ function finance_get_table_output($filter_date = null)
         'data' => [
           ['data' => 'Итого', 'colspan' => 2],
           '',
-          ['data' => dash_number_format($companies_arr['balance'], 2, ' ', false), 'align' => 'right'],
-          ['data' => dash_number_format($companies_arr['income'], 2, ' ', false), 'align' => 'right'],
-          ['data' => dash_number_format($companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
-          ['data' => dash_number_format($companies_arr['balance'] + $companies_arr['income'] - $companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($companies_arr['balance'], 2, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($companies_arr['income'], 2, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($companies_arr['balance'] + $companies_arr['income'] - $companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
         ], 'class' => ['tfoot'],
       ];
 
@@ -266,7 +266,7 @@ function finance_filter_form_submit($form, &$form_state)
 
 function finance_filter_form_ajax_callback($form, $form_state)
 {
-  $timestamp = dash_datetime_to_timestamp($form_state['values']['date']['date']);
+  $timestamp = helper_datetime_to_timestamp($form_state['values']['date']['date']);
   $data_arr = finance_get_table_output($timestamp);
   return '<div id="table-wrapper">' . $data_arr . '</div>';
 }
