@@ -148,8 +148,8 @@ function finance_get_table_output($filter_date = null)
           if ($doc['purpose'] != 'balance') {
             $subrows[] = [
               'data' => [
-                ['data' => helper_number_format($doc['income'], 2, ' ', false), 'align' => 'right'],
-                ['data' => helper_number_format($doc['outcome'], 2, ' ', false), 'align' => 'right'],
+                ['data' => helper_number_format($doc['income'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($doc['income']) ? '' : 'zero-value']],
+                ['data' => helper_number_format($doc['outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($doc['outcome']) ? '' : 'zero-value']],
                 $doc['purpose'],
                 $doc['agent'],
               ],
@@ -169,19 +169,19 @@ function finance_get_table_output($filter_date = null)
             ['data' => $subrows ? '+' : '', 'rowspan' => 2, 'class' => [$subrows ? 'table-row-toggle' : ''], 'align' => 'center', 'data-target' => 'sub-table-' . $timestamp_from . '-' . $index],
             ['data' => $company['label'], 'rowspan' => 2],
             'банк',
-            ['data' => helper_number_format($company['bank_start'], 2, ' ', false), 'align' => 'right'],
-            ['data' => helper_number_format($company['bank_income'], 2, ' ', false), 'align' => 'right'],
-            ['data' => helper_number_format($company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
-            ['data' => helper_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['bank_start'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_start']) ? '' : 'zero-value']],
+            ['data' => helper_number_format($company['bank_income'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_income']) ? '' : 'zero-value']],
+            ['data' => helper_number_format($company['bank_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_outcome']) ? '' : 'zero-value']],
+            ['data' => helper_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_start'] + $company['bank_income'] - $company['bank_outcome']) ? '' : 'zero-value']],
           ],
         ];
         $rows[] = [
           'data' => [
             'касса',
-            ['data' => helper_number_format($company['cash_start'], 2, ' ', false), 'align' => 'right'],
-            ['data' => helper_number_format($company['cash_income'], 2, ' ', false), 'align' => 'right'],
-            ['data' => helper_number_format($company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
-            ['data' => helper_number_format($company['cash_start'] + $company['cash_income'] - $company['cash_outcome'], 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($company['cash_start'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['cash_start']) ? '' : 'zero-value']],
+            ['data' => helper_number_format($company['cash_income'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['cash_income']) ? '' : 'zero-value']],
+            ['data' => helper_number_format($company['cash_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['cash_outcome']) ? '' : 'zero-value']],
+            ['data' => helper_number_format($company['cash_start'] + $company['cash_income'] - $company['cash_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['cash_start'] + $company['cash_income'] - $company['cash_outcome']) ? '' : 'zero-value']],
           ],
         ];
         $rows[] = [

@@ -1480,38 +1480,42 @@ h4 {
 .table-sm > :not(caption) > * > * {
   padding: .25rem .25rem; }
 
-.holding-balances .table > thead {
-  border-bottom-width: 2px; }
-.holding-balances .table .table-wrapper {
-  padding: 0; }
-.holding-balances .table .sub-table {
-  padding: 1rem; }
-.holding-balances .table .table {
-  font-size: 0.8rem; }
-.holding-balances .table .table-row-toggle {
-  cursor: pointer; }
-  .holding-balances .table .table-row-toggle:hover {
-    background-color: #ddd;
-    transition: all 200ms; }
-.holding-balances .tfoot {
-  font-weight: 600; }
-.holding-balances .bd-toggle {
-  width: 40px; }
-.holding-balances .bd-type {
-  width: 80px; }
-.holding-balances .bd-start {
-  width: 15%; }
-.holding-balances .bd-company-income {
-  width: 15%; }
-.holding-balances .bd-company-outcome {
-  width: 15%; }
-.holding-balances .bd-end {
-  width: 15%; }
-.holding-balances .bd-income {
-  width: 12%; }
-.holding-balances .bd-outcome {
-  width: 12%; }
-.holding-balances .bd-agent {
-  width: 20%; }
+.holding-balances {
+  margin-bottom: 3rem; }
+  .holding-balances .table > thead {
+    border-bottom-width: 2px; }
+  .holding-balances .table .table-wrapper {
+    padding: 0; }
+  .holding-balances .table .sub-table {
+    padding: 1rem; }
+  .holding-balances .table .table {
+    font-size: 0.8rem; }
+  .holding-balances .table .table-row-toggle {
+    cursor: pointer; }
+    .holding-balances .table .table-row-toggle:hover {
+      background-color: #ddd;
+      transition: all 200ms; }
+  .holding-balances .tfoot {
+    font-weight: 600; }
+  .holding-balances .bd-toggle {
+    width: 40px; }
+  .holding-balances .bd-type {
+    width: 80px; }
+  .holding-balances .bd-start {
+    width: 15%; }
+  .holding-balances .bd-company-income {
+    width: 15%; }
+  .holding-balances .bd-company-outcome {
+    width: 15%; }
+  .holding-balances .bd-end {
+    width: 15%; }
+  .holding-balances .bd-income {
+    width: 12%; }
+  .holding-balances .bd-outcome {
+    width: 12%; }
+  .holding-balances .bd-agent {
+    width: 20%; }
+  .holding-balances .zero-value {
+    color: #ccc; }
 
 /*# sourceMappingURL=styles.css.map */

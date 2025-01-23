@@ -81,7 +81,15 @@
       $(context).find(".table-row-toggle").once( function () {
         $(this).on("click", (el) => {
           const target = $(el.target).data("target");
-          $('.' + target).slideToggle(200);
+          if ($('.' + target).hasClass('show')) {
+            $('.' + target).slideUp(200);
+            $('.' + target).removeClass('show');
+            $(el.target).text('+');
+          } else {
+            $('.' + target).slideDown(200);
+            $('.' + target).addClass('show');
+            $(el.target).text('-');
+          }
         });
       });
 

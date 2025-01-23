@@ -241,6 +241,7 @@ h5.chart-title {
 }
 
 .holding-balances {
+  margin-bottom: 3rem;
   .table {
     > thead { border-bottom-width: 2px; }
     .table-wrapper { padding: 0; }
@@ -269,4 +270,5 @@ h5.chart-title {
   .bd-income { width: 12%; }
   .bd-outcome { width: 12%; }
   .bd-agent { width: 20%; }
+  .zero-value { color: $text-muted; }
 }
