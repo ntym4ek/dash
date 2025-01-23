@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="dash.kccc.ru" confirmBeforeUploading="false">
+  <component name="PublishConfigData" serverName="dash.kccc.ru" uploadOnCheckin="07e7cbc3-a9ae-4766-9c98-04b0bd42a645" confirmBeforeUploading="false">
     <option name="confirmBeforeUploading" value="false" />
     <serverData>
       <paths name="ae.local">
@@ -179,5 +179,6 @@
         </serverdata>
       </paths>
     </serverData>
+    <option name="myUploadOnCheckinName" value="dash.kccc.ru" />
   </component>
 </project>

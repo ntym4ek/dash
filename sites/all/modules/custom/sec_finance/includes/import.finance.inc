@@ -6,7 +6,7 @@
  * @param $timestamp - unix
  * @return void
  */
-function finance_delete_bank_docs_by_date($timestamp)
+function finance_delete_bank_docs($timestamp, $company)
 {
   $timestamp_from = gmmktime(0, 0, 0, date('n', $timestamp), date('j', $timestamp), date('Y', $timestamp));
   $timestamp_to = $timestamp_from + 86400 - 1;
@@ -15,6 +15,8 @@ function finance_delete_bank_docs_by_date($timestamp)
   $dbr->condition('bc.type', 'bank_doc');
   $dbr->innerJoin('field_data_field_bd_datetime', 'fdt', 'fdt.entity_id = bc.id');
   $dbr->condition('fdt.field_bd_datetime_value', [$timestamp_from, $timestamp_to], 'BETWEEN');
+  $dbr->innerJoin('field_data_field_bd_company', 'fc', 'fc.entity_id = bc.id');
+  $dbr->condition('fc.field_bd_company_value', $company);
   $dbr->orderBy('fdt.field_bd_datetime_value');
   $dbr->addField('bc', 'id');
   if ($ids = $dbr->execute()->fetchCol()) {
@@ -32,7 +34,7 @@ function finance_import_bank_docs($array)
       $date_ts = helper_datetime_to_timestamp($array['date']);
 
       // удалить старые документы на дату
-      finance_delete_bank_docs_by_date($date_ts);
+      finance_delete_bank_docs($date_ts, $array['company']);
 
       // создать запись с остатком в кассе на начало дня
       $bank_doc = entity_create('bank_doc', ['type' => 'bank_doc']);
