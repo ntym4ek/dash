@@ -2,6 +2,7 @@
 
 const FINANCE_DOC_TYPE_CASH = 1;
 const FINANCE_DOC_TYPE_BANK = 2;
+const FINANCE_DOC_TYPE_BANK_DEPOSIT = 3;
 
 /**
  * Implementation of hook_menu().
@@ -86,9 +87,9 @@ function finance_get_table_output($filter_date = null)
       if (!isset($companies_arr['list'][$company])) {
         $companies_arr['list'][$company] = [
           'label' => $company,
-          'cash_start' => 0, 'bank_start' => 0,
-          'cash_income' => 0, 'bank_income' => 0,
-          'cash_outcome' => 0, 'bank_outcome' => 0,
+          'cash_start' => 0, 'bank_start' => 0, 'bankd_start' => 0,
+          'cash_income' => 0, 'bank_income' => 0, 'bankd_income' => 0,
+          'cash_outcome' => 0, 'bank_outcome' => 0, 'bankd_outcome' => 0,
           'list' => []
         ];
       }
@@ -96,6 +97,7 @@ function finance_get_table_output($filter_date = null)
       if ($doc_wr->field_bd_purpose->value() == 'balance') {
         if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_CASH) $companies_arr['list'][$company]['cash_start'] = $doc_wr->field_bd_income->value();
         if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK) $companies_arr['list'][$company]['bank_start'] = $doc_wr->field_bd_income->value();
+        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK_DEPOSIT) $companies_arr['list'][$company]['bankd_start'] = $doc_wr->field_bd_income->value();
         $companies_arr['balance'] += $doc_wr->field_bd_income->value();
       } else {
         if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_CASH) {
@@ -105,6 +107,10 @@ function finance_get_table_output($filter_date = null)
         if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK) {
           $companies_arr['list'][$company]['bank_income'] += $income;
           $companies_arr['list'][$company]['bank_outcome'] += $outcome;
+        }
+        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK_DEPOSIT) {
+          $companies_arr['list'][$company]['bankd_income'] += $income;
+          $companies_arr['list'][$company]['bankd_outcome'] += $outcome;
         }
         $companies_arr['income'] += $income;
         $companies_arr['outcome'] += $outcome;
@@ -164,10 +170,12 @@ function finance_get_table_output($filter_date = null)
           'sticky' => false,
         ]);
 
+        // если нет депозитов, то не выводить строку
+        $rowspan = ($company['bankd_start'] || $company['bankd_income'] || $company['bankd_outcome']) ? 3 : 2;
         $rows[] = [
           'data' => [
-            ['data' => $subrows ? '+' : '', 'rowspan' => 2, 'class' => [$subrows ? 'table-row-toggle' : ''], 'align' => 'center', 'data-target' => 'sub-table-' . $timestamp_from . '-' . $index],
-            ['data' => $company['label'], 'rowspan' => 2],
+            ['data' => $subrows ? '+' : '', 'rowspan' => $rowspan, 'class' => [$subrows ? 'table-row-toggle' : ''], 'align' => 'center', 'data-target' => 'sub-table-' . $timestamp_from . '-' . $index],
+            ['data' => $company['label'], 'rowspan' => $rowspan],
             'банк',
             ['data' => helper_number_format($company['bank_start'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_start']) ? '' : 'zero-value']],
             ['data' => helper_number_format($company['bank_income'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_income']) ? '' : 'zero-value']],
@@ -175,6 +183,17 @@ function finance_get_table_output($filter_date = null)
             ['data' => helper_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_start'] + $company['bank_income'] - $company['bank_outcome']) ? '' : 'zero-value']],
           ],
         ];
+        if ($company['bankd_start'] || $company['bankd_income'] || $company['bankd_outcome']) {
+          $rows[] = [
+            'data' => [
+              'депозиты',
+              ['data' => helper_number_format($company['bankd_start'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bankd_start']) ? '' : 'zero-value']],
+              ['data' => helper_number_format($company['bankd_income'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bankd_income']) ? '' : 'zero-value']],
+              ['data' => helper_number_format($company['bankd_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bankd_outcome']) ? '' : 'zero-value']],
+              ['data' => helper_number_format($company['bankd_start'] + $company['bankd_income'] - $company['bankd_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bankd_start'] + $company['bankd_income'] - $company['bankd_outcome']) ? '' : 'zero-value']],
+            ],
+          ];
+        }
         $rows[] = [
           'data' => [
             'касса',

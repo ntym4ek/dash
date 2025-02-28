@@ -56,6 +56,18 @@ function finance_import_bank_docs($array)
       $bank_doc_wr->field_bd_purpose = 'balance';
       $bank_doc_wr->save();
 
+      // создать запись с остатком депозитов на начало дня
+      if (isset($array['bankd'])) {
+        $bank_doc = entity_create('bank_doc', ['type' => 'bank_doc']);
+        $bank_doc_wr = entity_metadata_wrapper('bank_doc', $bank_doc);
+        $bank_doc_wr->field_bd_company = $array['company'];
+        $bank_doc_wr->field_bd_datetime = $date_ts;
+        $bank_doc_wr->field_bd_type = FINANCE_DOC_TYPE_BANK_DEPOSIT;
+        $bank_doc_wr->field_bd_income = $array['bankd'];
+        $bank_doc_wr->field_bd_purpose = 'balance';
+        $bank_doc_wr->save();
+      }
+
       foreach ($array['load'] as $doc) {
         $datetime_ts = helper_datetime_to_timestamp($doc['datetime']);
 
