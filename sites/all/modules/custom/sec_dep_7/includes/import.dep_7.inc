@@ -83,10 +83,15 @@ function dep_7_import_registrations($array)
 
       $base_reg = dash_get_registration_by_1c_id($reg_item['base_id']);
 
-      $date_from_arr = explode('.', $reg_item['date_from']);
-      $date_from = gmmktime(0, 0, 0, $date_from_arr[1], $date_from_arr[0], $date_from_arr[2]);
-      $date_to_arr = explode('.', $reg_item['date_to']);
-      $date_to = gmmktime(0, 0, 0, $date_to_arr[1], $date_to_arr[0], $date_to_arr[2]);
+      $date_from = $date_to = null;
+      if (trim($reg_item['date_from'])) {
+        $date_from_arr = explode('.', $reg_item['date_from']);
+        $date_from = gmmktime(0, 0, 0, $date_from_arr[1], $date_from_arr[0], $date_from_arr[2]);
+      }
+      if (trim($reg_item["date_to"])) {
+        $date_to_arr = explode('.', $reg_item['date_to']);
+        $date_to = gmmktime(0, 0, 0, $date_to_arr[1], $date_to_arr[0], $date_to_arr[2]);
+      }
 
       $reg = dash_get_registration_by_1c_id($reg_item['id']);
 

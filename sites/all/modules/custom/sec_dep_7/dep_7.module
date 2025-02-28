@@ -305,8 +305,8 @@ function dep_7_get_registration_info($reg)
       'cert_num' => $reg_wr->field_r_cert_number->value(),
       'reg_num' => $reg_wr->field_r_number->value(),
       'period' => [
-        'from' => ['raw' => $reg_date_from_raw, 'formatted' => date('d.m.Y', $reg_date_from_raw)],
-        'to' => ['raw' => $reg_date_to_raw, 'formatted' => date('d.m.Y', $reg_date_to_raw)],
+        'from' => ['raw' => $reg_date_from_raw, 'formatted' => $reg_date_from_raw ? date('d.m.Y', $reg_date_from_raw) : 'x'],
+        'to' => ['raw' => $reg_date_to_raw, 'formatted' => $reg_date_to_raw ? date('d.m.Y', $reg_date_to_raw) : 'x'],
       ],
       'noms' => $noms_arr,
       'cultures' => $cultures_arr,
