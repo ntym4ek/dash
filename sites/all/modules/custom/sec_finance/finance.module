@@ -171,7 +171,7 @@ function finance_get_table_output($filter_date = null)
         ]);
 
         // если нет депозитов, то не выводить строку
-        $rowspan = ($company['bankd_start'] || $company['bankd_income'] || $company['bankd_outcome']) ? 3 : 2;
+        $rowspan = ((float)$company['bankd_start'] || (float)$company['bankd_income'] || (float)$company['bankd_outcome']) ? 3 : 2;
         $rows[] = [
           'data' => [
             ['data' => $subrows ? '+' : '', 'rowspan' => $rowspan, 'class' => [$subrows ? 'table-row-toggle' : ''], 'align' => 'center', 'data-target' => 'sub-table-' . $timestamp_from . '-' . $index],
@@ -183,7 +183,7 @@ function finance_get_table_output($filter_date = null)
             ['data' => helper_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_start'] + $company['bank_income'] - $company['bank_outcome']) ? '' : 'zero-value']],
           ],
         ];
-        if ($company['bankd_start'] || $company['bankd_income'] || $company['bankd_outcome']) {
+        if ((float)$company['bankd_start'] || (float)$company['bankd_income'] || (float)$company['bankd_outcome']) {
           $rows[] = [
             'data' => [
               'депозиты',
