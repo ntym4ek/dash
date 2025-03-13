@@ -50,7 +50,11 @@ function dep_7_preprocess_page(&$vars)
 
 function dep_7_page()
 {
-  $output = '';
+  $output  =  '<div class="section-title">' .
+                '<h3>Регистрации на препараты</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
+
 
   $form = drupal_get_form('dep_7_reg_nom_filter_form');
   $output .= '<div class="row">';
@@ -64,7 +68,7 @@ function dep_7_page()
 
 function dep_7_reg_get_tables_output($filter_nom_id = null)
 {
-  $output = '<div class="tables-set">';
+  $output = '<div class="tables-set tables-registrations">';
   $output .= '<div class="row">';
 
   // готовим массив всех регистраций
@@ -88,6 +92,7 @@ function dep_7_reg_get_tables_output($filter_nom_id = null)
     ['data' => 'До', 'attributes' => ['class' => ['center']]],
     ['data' => 'Культуры', 'attributes' => ['class' => ['center']]],
     ['data' => '', 'attributes' => ['class' => ['center'], 'data-label' => 'Предупреждение']],
+    ['data' => 'v', 'attributes' => ['class' => ['center', 'col-select']]],
   ];
 
   $rows = [];
@@ -107,9 +112,10 @@ function dep_7_reg_get_tables_output($filter_nom_id = null)
       $row = [
         'data' => [
           dep_7_clean_nomlist($reg_info['noms']['string']),
-          ['data' => $reg_info['period']['to']['formatted'], 'attributes' => ['class' => ['center']]],
+          ['data' => $reg_info['period']['to']['formatted'], 'attributes' => ['class' => ['right']]],
           $reg_info['cultures']['string'],
-          ['data' => $reg_info['warning']['text'], 'attributes' => ['class' => ['center', ($reg_info['warning']['level'] ?: '')]]],
+          ['data' => $reg_info['warning']['text'], 'attributes' => ['class' => [($reg_info['warning']['level'] ?: '')]]],
+          ['data' => '', 'attributes' => ['class' => ['center', 'col-select']]],
         ],
         'attributes' => ['data-id' => $reg_id, 'class' => [$reg_info['type']]]
       ];
@@ -119,10 +125,10 @@ function dep_7_reg_get_tables_output($filter_nom_id = null)
     }
   }
   $output .= theme('table_li', [
-    'caption' => 'Действующие регистрации',
+    'caption' => 'Действующие',
     'header' => $header,
     'rows' => $rows,
-    'attributes' => ['class' => ['table-base', 'col-xs-12', 'col-lg-6']]
+    'attributes' => ['class' => ['table-base', 'col-xs-12']]
   ]);
 
   // отбираем Продления
@@ -155,7 +161,7 @@ function dep_7_reg_get_tables_output($filter_nom_id = null)
     }
   }
   $output .= theme('table_li', [
-    'caption' => 'Продления/Новые регистрации',
+    'caption' => 'Продления и новые',
     'header' => $header,
     'rows' => $rows,
     'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
@@ -184,7 +190,7 @@ function dep_7_reg_get_tables_output($filter_nom_id = null)
     }
   }
   $output .= theme('table_li', [
-    'caption' => 'Расширения регистраций',
+    'caption' => 'Расширения',
     'header' => $header,
     'rows' => $rows,
     'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
@@ -364,14 +370,14 @@ function dep_7_reg_nom_filter_form($form, $form_state)
   $dbr->orderBy('name');
   $nom = $dbr->execute()->fetchAllAssoc('tid');
 
-  $options = ['0' => '- Весь список -'];
+  $options = ['0' => '- Вся номенклатура -'];
   foreach ($nom as $item) {
     $options[$item->tid] = $item->name;
   }
 
   $form['#attributes'] = ['class' => ['dash-filter-form']];
   $form['nom'] = [
-    '#title' => 'Номенклатура',
+//    '#title' => 'Номенклатура',
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => empty($_GET['nom']) || empty($options[$_GET['nom']]) ? 0 : $_GET['nom'],

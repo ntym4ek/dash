@@ -133,7 +133,7 @@ function dash_get_period_time_bounds($month_start, $year_shift = 0)
  */
 function dash_get_page_time_bounds($month_start)
 {
-  if ($_GET['q'] == 'td/department-2v-2g/closed' || $_GET['q'] == 'td/department-2v-2g/manager/closed') {
+  if (strpos($_GET['q'], 'period/closed') !== false) {
     $bounds = dash_get_year_time_bounds($month_start, -1);
   } else {
     $bounds = dash_get_year_time_bounds($month_start);
@@ -218,11 +218,13 @@ function dash_column_revenue_period_to_period($company, $time_from, $time_to, $r
     'yaxis' => [
       '#type' => 'chart_yaxis',
       '#min' => 0,
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']],
     ],
     '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
       'chartArea' => [
         'width' => '85%',
+        'height' => '70%',
         'left' => 50,
       ],
     ],
@@ -317,7 +319,7 @@ function dash_pie_revenue_year($company, $time_from, $time_to)
     '#tooltips' => TRUE,
     '#height' => '350',
     '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
       'legend' => ['textStyle' => ['fontSize' => '14', 'fontName' => '<global-font-name>']],
       'chartArea' => ['width' => '85%'],
     ],
@@ -417,13 +419,19 @@ function dash_column_revenue_by_types($company, $time_from, $time_to)
     'xaxis' => [
       '#type' => 'chart_xaxis',
       '#labels' => [],
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']],
+    ],
+    'yaxis' => [
+      '#type' => 'chart_yaxis',
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']],
     ],
     '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
       'bar' => ['groupWidth' => "61%"],
       'legend' => [ 'position' => 'bottom', 'textStyle' => ['fontSize' => '13', 'fontName' => '<global-font-name>'] ],
       'chartArea' => [
-        'width' => '85%',
+        'width' => '95%',
+        'height' => '70%',
         'left' => 50,
       ],
     ],
@@ -885,6 +893,7 @@ function dash_get_no_data_chart($title = null)
     ],
     '#raw_options' => [
       'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+      'textStyle' => ['fontName' => '<global-font-name>']
     ],
   ];
 }
@@ -980,3 +989,49 @@ function dash_get_form_options_from_taxonomy($voc_name, $default_options = null)
   return $options;
 }
 
+/**
+ * @param $tree - список терминов словаря
+ * @param $parent_term - термин, для которого определить значение (имя или массив с наследниками)
+ * @param $tids_include_only - отсутствующие в этом списке термины исключить из вывода
+ * @return array
+ *
+ * получить опции в иерархическом порядке
+ * вида:
+ *   $options = [
+ *    '11' => 'Родитель',
+ *    '15' => '-Потомок',
+ *    '15' => '--Потомок 2',
+ *    '15' => '--Потомок 2',
+ *    '16' => '-Потомок',
+ *    '17' => '-Потомок',
+ *    '11' => 'Родитель',
+ *  ];
+ *
+ */
+function dash_get_select_tree($tree, $parent_term = null, $tids_include_only = [])
+{
+  $option = false;
+  $child = [];
+  $tid = $parent_term->tid ?? 0;
+  foreach($tree as $term) {
+    if (in_array($tid, $term->parents)) {
+      if ($result = dash_get_select_tree($tree, $term, $tids_include_only)) {
+        $child += $result;
+      }
+    }
+  }
+  if ($child) {
+    if ($tid) {
+      $option[$tid] = str_repeat("-", $parent_term->depth) . $parent_term->name;
+      $option += $child;
+    }  else {
+      $option = $child;
+    }
+  } else {
+    if ($parent_term->name) {
+      if (!$tids_include_only || in_array($tid, $tids_include_only)) $option[$tid] = str_repeat("-", $parent_term->depth) . $parent_term->name;
+    }
+  }
+
+  return $option;
+}

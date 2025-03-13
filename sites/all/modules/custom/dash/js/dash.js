@@ -2,6 +2,7 @@
   Drupal.behaviors.dash = {
     attach: function (context, settings) {
 
+      // обработка блоков с отложенной загрузкой
       $(".charts").once(function(){
         $(".ajax-load").each(function() {
           var content = $(this).find(".row");

@@ -99,53 +99,6 @@ function dtheme_block__no_wrapper(&$vars)
   return $elements['#children'];
 }
 
-/**
- * @param $tree - список терминов словаря
- * @param $parent_term - термин, для которого определить значение (имя или массив с наследниками)
- * @param $tids_include_only - отсутствующие в этом списке термины исключить из вывода
- * @return array
- *
- * получить опции в иерархическом порядке
- * вида:
- *   $options = [
- *    '11' => 'Родитель',
- *    '15' => '-Потомок',
- *    '15' => '--Потомок 2',
- *    '15' => '--Потомок 2',
- *    '16' => '-Потомок',
- *    '17' => '-Потомок',
- *    '11' => 'Родитель',
- *  ];
- *
- */
-function dash_get_select_tree($tree, $parent_term = null, $tids_include_only = [])
-{
-  $option = false;
-  $child = [];
-  $tid = $parent_term->tid ?? 0;
-  foreach($tree as $term) {
-    if (in_array($tid, $term->parents)) {
-      if ($result = dash_get_select_tree($tree, $term, $tids_include_only)) {
-        $child += $result;
-      }
-    }
-  }
-  if ($child) {
-    if ($tid) {
-      $option[$tid] = str_repeat("-", $parent_term->depth) . $parent_term->name;
-      $option += $child;
-    }  else {
-      $option = $child;
-    }
-  } else {
-    if ($parent_term->name) {
-      if (!$tids_include_only || in_array($tid, $tids_include_only)) $option[$tid] = str_repeat("-", $parent_term->depth) . $parent_term->name;
-    }
-  }
-
-  return $option;
-}
-
 function dtheme_table_li($vars)
 {
   $caption = $vars['caption'];

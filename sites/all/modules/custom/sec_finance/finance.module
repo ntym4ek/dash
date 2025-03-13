@@ -52,10 +52,15 @@ function finance_page()
   // дата по умолчанию
   $params['date'] = gmmktime(0, 0, 0, date('n'), date('j')-1, date('Y'));
 
+  $output =   '<div class="section-title">' .
+                '<h3>Реестр банковских выписок</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
+
   $form = drupal_get_form('finance_filter_form', $params);
   $output .= '<div class="holding-balances">';
   $output .=   '<div class="row">';
-  $output .=     '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .=     '<div class="col-xs-6 col-md-2">' . drupal_render($form) . '</div>';
   $output .=   '</div>';
 
   $output .=   '<div id="table-wrapper">' . finance_get_table_output($params['date']) . '</div>';
@@ -93,6 +98,7 @@ function finance_get_table_output($filter_date = null)
           'list' => []
         ];
       }
+      ksort($companies_arr['list']);
 
       if ($doc_wr->field_bd_purpose->value() == 'balance') {
         if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_CASH) $companies_arr['list'][$company]['cash_start'] = $doc_wr->field_bd_income->value();
@@ -132,10 +138,10 @@ function finance_get_table_output($filter_date = null)
       ['data' => '', 'align' => 'center', 'class' => ['bd-toggle']],
       ['data' => 'Предприятие', 'align' => 'center'],
       ['data' => '', 'align' => 'center', 'class' => ['bd-type']],
-      ['data' => 'Остаток на начало', 'align' => 'center', 'class' => ['bd-start']],
+      ['data' => 'На начало дня', 'align' => 'center', 'class' => ['bd-start']],
       ['data' => 'Приход', 'align' => 'center', 'class' => ['bd-company-income']],
       ['data' => 'Расход', 'align' => 'center', 'class' => ['bd-company-outcome']],
-      ['data' => 'Остаток на конец дня', 'align' => 'center', 'class' => ['bd-end']],
+      ['data' => 'На конец дня', 'align' => 'center', 'class' => ['bd-end']],
     ];
 
     $rows = [];
@@ -143,9 +149,9 @@ function finance_get_table_output($filter_date = null)
       $index = 0;
       foreach ($companies_arr['list'] as $company) {
         $subheader = [
-          ['data' => 'Поступление', 'align' => 'center', 'class' => ['bd-income']],
-          ['data' => 'Списание', 'align' => 'center', 'class' => ['bd-outcome']],
           ['data' => 'Назначение', 'align' => 'center', 'class' => ['bd-purpose']],
+          ['data' => 'Приход', 'align' => 'center', 'class' => ['bd-income']],
+          ['data' => 'Расход', 'align' => 'center', 'class' => ['bd-outcome']],
           ['data' => 'Контрагент', 'align' => 'center', 'class' => ['bd-agent']],
         ];
 
@@ -154,9 +160,9 @@ function finance_get_table_output($filter_date = null)
           if ($doc['purpose'] != 'balance') {
             $subrows[] = [
               'data' => [
+                $doc['purpose'],
                 ['data' => helper_number_format($doc['income'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($doc['income']) ? '' : 'zero-value']],
                 ['data' => helper_number_format($doc['outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($doc['outcome']) ? '' : 'zero-value']],
-                $doc['purpose'],
                 $doc['agent'],
               ],
             ];
@@ -166,7 +172,7 @@ function finance_get_table_output($filter_date = null)
         $table = theme('table', [
           'header' => $subheader,
           'rows' => $subrows,
-          'attributes' => ['class' => ['table', 'table-bordered', 'table-sm']],
+          'attributes' => ['class' => ['table', 'table-intersect', 'table-sm']],
           'sticky' => false,
         ]);
 
@@ -225,7 +231,7 @@ function finance_get_table_output($filter_date = null)
     $output = theme('table', [
       'header' => $header,
       'rows' => $rows,
-      'attributes' => ['class' => ['table', 'table-bordered']],
+      'attributes' => ['class' => ['table', 'table-intersect']],
       'sticky' => false,
     ]);
   } else {

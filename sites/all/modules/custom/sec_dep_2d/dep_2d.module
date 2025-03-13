@@ -34,6 +34,7 @@ function dep_2d_remains_page()
 
   $output = '<div class="section-title">' .
               '<h3>Остатки требующие внимания</h3>' .
+              '<div class="underline"></div>' .
               '<p>На '. date('d.m.Y', $datetime) . '</p>' .
             '</div>';
 
@@ -45,6 +46,7 @@ function dep_2d_remains_page()
 
   $output .= '<div class="section-title">' .
               '<h3>Остатки с истекающим сроком</h3>' .
+              '<div class="underline"></div>' .
               '<p>На '. date('d.m.Y', $datetime) . '</p>' .
             '</div>';
 
@@ -54,6 +56,7 @@ function dep_2d_remains_page()
 
   $output .= '<div class="section-title">' .
               '<h3>Остатки просроченной продукции</h3>' .
+              '<div class="underline"></div>' .
               '<p>На '. date('d.m.Y', $datetime) . '</p>' .
             '</div>';
 
@@ -63,6 +66,7 @@ function dep_2d_remains_page()
 
   $output .= '<div class="section-title">' .
               '<h3>Остатки на складах</h3>' .
+              '<div class="underline"></div>' .
               '<p>На '. date('d.m.Y', $datetime) . '</p>' .
             '</div>';
 
@@ -76,7 +80,7 @@ function dep_2d_remains_page()
   $output .=  '</div>';
 
 
-  return $output;
+  return '<div class="charts">' . $output . '</div>';
 }
 
 function dep_2d_tables_remains_by_nom($datetime)
@@ -102,6 +106,7 @@ function dep_2d_tables_remains_by_nom($datetime)
     ['data' => '< ' . DEP_2D_WARNING_1_DAYS . ' дней', 'attributes' => ['class' => ['center']]],
     ['data' => '< ' . DEP_2D_WARNING_2_DAYS . ' дней', 'attributes' => ['class' => ['center']]],
     ['data' => 'Всего', 'attributes' => ['class' => ['center']]],
+    ['data' => 'v', 'attributes' => ['class' => ['center', 'col-select']]],
   ];
 
   $rows = [];
@@ -114,6 +119,7 @@ function dep_2d_tables_remains_by_nom($datetime)
           ['data' => $remain['totals'][DEP_2D_WARNING_1_DAYS] ?: '', 'attributes' => ['class' => ['right']]],
           ['data' => $remain['totals'][DEP_2D_WARNING_2_DAYS] ?: '', 'attributes' => ['class' => ['right']]],
           ['data' => $remain['totals']['total'], 'attributes' => ['class' => ['right']]],
+          ['data' => '', 'attributes' => ['class' => ['center', 'col-select']]],
         ],
         'attributes' => ['data-id' => $nom_tid]
       ];
@@ -161,6 +167,7 @@ function dep_2d_tables_remains_by_nom($datetime)
     'caption' => 'Склады',
     'header' => $header,
     'rows' => $rows,
+    'empty' => 'Выберите номенклатуру',
     'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
   ]);
 
@@ -191,6 +198,7 @@ function dep_2d_tables_remains_by_nom_expired($datetime)
     ['data' => 'Номенклатура', 'attributes' => ['class' => ['center']]],
     ['data' => 'Просрок', 'attributes' => ['class' => ['center']]],
     ['data' => 'Сумма', 'attributes' => ['class' => ['center']]],
+    ['data' => 'v', 'attributes' => ['class' => ['center', 'col-select']]],
   ];
 
   $rows = [];
@@ -203,6 +211,7 @@ function dep_2d_tables_remains_by_nom_expired($datetime)
           $remain['name'],
           ['data' => $remain['totals']['expired'], 'attributes' => ['class' => ['right']]],
           ['data' => $amount, 'attributes' => ['class' => ['right']]],
+          ['data' => '', 'attributes' => ['class' => ['center', 'col-select']]],
         ],
         'attributes' => ['data-id' => $nom_tid]
       ];
@@ -249,6 +258,7 @@ function dep_2d_tables_remains_by_nom_expired($datetime)
     'caption' => 'Склады',
     'header' => $header,
     'rows' => $rows,
+    'empty' => 'Выберите номенклатуру',
     'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
   ]);
 
@@ -279,6 +289,7 @@ function dep_2d_tables_remains_by_warehouse($datetime, $nom_filter_tid = null)
   $header[] = ['data' => 'Склад', 'attributes' => ['class' => ['center']]];
   if ($nom_filter_tid) $header[] = ['data' => 'Остаток', 'attributes' => ['class' => ['center', 'col-total']]];
   $header[] = ['data' => 'Сумма', 'attributes' => ['class' => ['center', 'col-amount']]];
+  $header[] = ['data' => 'v', 'attributes' => ['class' => ['center', 'col-select']]];
 
   $rows = []; $total_amount = $total_qty = 0;
   foreach ($sort_w as $tid_w) {
@@ -291,6 +302,7 @@ function dep_2d_tables_remains_by_warehouse($datetime, $nom_filter_tid = null)
     $row['data'][] = $remain['name'];
     if ($nom_filter_tid) $row['data'][] = ['data' => $remain['totals']['total'], 'attributes' => ['class' => ['right', 'col-total']]];
     $row['data'][] = ['data' => $amount, 'attributes' => ['class' => ['right', 'col-amount']]];
+    $row['data'][] = ['data' => '', 'attributes' => ['class' => ['center', 'col-select']]];
 
     $rows[] = $row;
 
@@ -304,6 +316,7 @@ function dep_2d_tables_remains_by_warehouse($datetime, $nom_filter_tid = null)
   $subheader[] = ['data' => 'Итого'];
   if ($nom_filter_tid) $subheader[] = ['data' => $total_qty, 'attributes' => ['class' => ['right', 'col-total']]];
   $subheader[] = ['data' => $total_amount_txt, 'attributes' => ['class' => ['right', 'col-amount']]];
+  $subheader[] = ['data' => '', 'attributes' => ['class' => ['center', 'col-select']]];
 
   $output .= theme('table_li', [
     'caption' => 'Склады',
@@ -350,6 +363,7 @@ function dep_2d_tables_remains_by_warehouse($datetime, $nom_filter_tid = null)
     'caption' => 'Номенклатура',
     'header' => $header,
     'rows' => $rows,
+    'empty' => 'Выберите склад',
     'attributes' => ['class' => ['table-siblings', 'col-xs-12', 'col-lg-6']]
   ]);
 
@@ -387,20 +401,19 @@ function dep_2d_column_remains_by_nom($datetime, $options = [])
     '#height' => '500',
     'xaxis' => [
       '#type' => 'chart_xaxis',
-      '#raw_options' => [
-        'textStyle' => ['fontName' => '<global-font-name>'],
-      ]
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
     ],
     'yaxis' => [
       '#type' => 'chart_yaxis',
       '#min' => 0,
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
     ],
     '#raw_options' => [
       'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
       'legend' => ['position' => 'top', 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
       'chartArea' => [
         'height' => '80%',
-        'width' => '95%',
+        'width' => '90%',
         'left' => 70,
       ],
       'bar' => ['width' => "60", 'groupWidth' => '85%'],
@@ -701,14 +714,13 @@ function dep_2d_remains_nom_filter_form($form, $form_state, $datetime)
 
   $noms = $dbr->execute()->fetchAllAssoc('tid');
 
-  $options = [null => '- Весь список -'];
+  $options = [null => '- Вся номенклатура -'];
   foreach ($noms as $item) {
     $options[$item->tid] = $item->name;
   }
 
   $form['#attributes'] = ['class' => ['dep_2d-remains-nom-filter-form']];
   $form['nom'] = [
-    '#title' => 'Номенклатура',
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => empty($_GET['nom']) || empty($options[$_GET['nom']]) ? 0 : $_GET['nom'],
