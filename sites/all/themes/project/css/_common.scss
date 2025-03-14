@@ -485,6 +485,8 @@ body {
     padding: 3px 8px;
   }
   td.table-wrapper { padding: 0; }
+
+  .tfoot td { background-color: #dbdbdb; }
 }
 
 .holding-balances {
@@ -515,3 +517,4 @@ body {
     margin: 0;
   }
 }
+

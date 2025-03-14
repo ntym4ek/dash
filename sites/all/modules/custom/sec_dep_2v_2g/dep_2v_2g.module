@@ -61,6 +61,15 @@ function dep_2v_2g_menu()
 }
 
 /**
+ * Implementation of hook_menu_alter().
+ */
+function dep_2v_2g_menu_alter(&$items)
+{
+  // выводить меню, если есть доступ к Управлению 4
+  $items['td']['access arguments'][0][] = DEP_2V2G_USER_RID;
+}
+
+/**
  * ----- Графики -------------------------------------------------------------------------------------------------------
  */
 

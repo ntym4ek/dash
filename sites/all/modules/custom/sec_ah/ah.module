@@ -14,7 +14,7 @@ function ah_menu()
     'type' => MENU_NORMAL_ITEM,
   );
   $items['ah/previous'] = array(
-    'title' => 'Предыдущий период',
+    'title' => 'Агрохимикат',
     'page callback' => 'ah_previous_tab',
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID]],
@@ -132,7 +132,7 @@ function ah_previous_tab()
 
     // производство период к периоду с октября по последний полный месяц
     $data_arr =   ah_column_prod_by_type_period_to_period($type, $period['from'], $time_current_month);
-    $output .=    '<div class="col-xs-12 col-lg-4">' . drupal_render($data_arr) . '</div>';
+    $output .=    '<div class="col-xs-12 col-lg-8">' . drupal_render($data_arr) . '</div>';
 
     $data_arr =   ah_pie_prod_clients($type, $period['from'], $time_current_month);
     $output .=    '<div class="col-xs-12 col-lg-4">' . drupal_render($data_arr) . '</div>';

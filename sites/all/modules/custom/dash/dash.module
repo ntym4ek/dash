@@ -46,7 +46,7 @@ function dash_menu()
   $items['td'] = array(
     'title' => 'Торговый Дом',
     'menu_name' => 'main-menu',
-    'page callback' => '<front>',
+    'page callback' => 'dash_frontpage',
     'expanded' => true,
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_2V2G_USER_RID]],
@@ -59,8 +59,15 @@ function dash_menu()
     'type' => MENU_CALLBACK,
   );
 
-
   return $items;
+}
+
+function dash_frontpage()
+{
+  // Используется при клике по корневому Торговый Дом в меню.
+  // Так как главная у всех разная за счёт модуля Home Links,
+  // отправляем на неё.
+  drupal_goto('<front>');
 }
 
 /** Вернуть начальное и конечное (не включительно) время Unix
@@ -916,12 +923,23 @@ function dash_ajax_load()
   drupal_exit();
 }
 
-function dash_preprocess_page()
+function dash_preprocess_page(&$vars)
 {
   // Для прорисовки графиков после загрузки их через ajax.
   // Подключаем вручную, тк стандартный модуль подключает её только при наличии графиков на странице,
   // а у нас одни обёртки
   drupal_add_library('charts_google', 'charts_google');
+
+  // установить заголовки для страниц
+  if (arg(0) == 'ah') {
+    $vars['banner_title'] = 'Агрохимикат';
+  }
+  if (arg(0) == 'td') {
+    $vars['banner_title'] = 'Торговый Дом';
+  }
+  if (arg(0) == 'fn') {
+    $vars['banner_title'] = 'Финансы';
+  }
 }
 
 /**

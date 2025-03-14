@@ -9,16 +9,8 @@ const FINANCE_DOC_TYPE_BANK_DEPOSIT = 3;
  */
 function finance_menu()
 {
-  $items['fn'] = array(
-    'title' => 'Финансы',
-    'menu_name' => 'main-menu',
-    'page callback' => 'finance_page',
-    'access callback' => 'ext_user_has_roles_by_name',
-    'access arguments' => [['administrator', 'finance_user']],
-    'type' => MENU_NORMAL_ITEM,
-  );
   $items['fn/bank-doc'] = array(
-    'title' => 'Реестр банковских документов',
+    'title' => 'Финансы',
     'menu_name' => 'main-menu',
     'weight' => 10,
     'page callback' => 'finance_page',
@@ -216,9 +208,10 @@ function finance_get_table_output($filter_date = null)
         ];
       }
 
-      $rows[] = [
+      $row = [
         'data' => [
-          ['data' => 'Итого', 'colspan' => 2],
+          '',
+          ['data' => 'По холдингу'],
           '',
           ['data' => helper_number_format($companies_arr['balance'], 2, ' ', false), 'align' => 'right'],
           ['data' => helper_number_format($companies_arr['income'], 2, ' ', false), 'align' => 'right'],
@@ -226,6 +219,8 @@ function finance_get_table_output($filter_date = null)
           ['data' => helper_number_format($companies_arr['balance'] + $companies_arr['income'] - $companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
         ], 'class' => ['tfoot'],
       ];
+
+      array_unshift($rows, $row);
 
     }
     $output = theme('table', [

@@ -2817,6 +2817,8 @@ body {
     padding: 3px 8px; }
   .table-intersect td.table-wrapper {
     padding: 0; }
+  .table-intersect .tfoot td {
+    background-color: #dbdbdb; }
 
 .holding-balances {
   padding-bottom: 4rem; }
