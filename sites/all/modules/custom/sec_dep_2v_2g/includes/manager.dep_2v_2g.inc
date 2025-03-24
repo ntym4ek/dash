@@ -5,7 +5,7 @@
  *
  * ----- Текущий период
  */
-function dep_2v_2g_manager_page()
+function dep_2v_2g_manager_period_page()
 {
   // страница разбита на сектора, загружаемые через ajax,
   // так как формирование всей страницы целиком занимает продолжительное время
@@ -15,6 +15,7 @@ function dep_2v_2g_manager_page()
   $time_yesterday = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to'])-1, date('Y', $period['to']));
   $output = '<div class="section-title">';
   $output .= '<h3>Отгрузка</h3>';
+  $output .= '<div class="underline"></div>';
   if (dash_is_current_season($period)) {
     $output .= '<p>Год к году за период с ' . date('d', $period['from']) . '.' . date('m', $period['from']) . ' по ' . date('d', $time_yesterday) . '.' . date('m', $time_yesterday) . '</p>';
   } else {
@@ -31,6 +32,7 @@ function dep_2v_2g_manager_page()
 
   $output .= '<div class="section-title">';
   $output .= '<h3>Отгрузка</h3>';
+  $output .= '<div class="underline"></div>';
   if (dash_is_current_season($period)) {
     $output .= '<p>За текущий период</p>';
   } else {
@@ -47,9 +49,10 @@ function dep_2v_2g_manager_page()
 
 
   $output .=  '<div class="section-title">' .
-    '<h3>Планы</h3>' .
-    '<p>На период  ' . date('Y', $period['from']) . '-' . date('Y', $period['end']) . '</p>' .
-    '</div>';
+                '<h3>Планы</h3>' .
+                '<div class="underline"></div>' .
+                '<p>На период  ' . date('Y', $period['from']) . '-' . date('Y', $period['end']) . '</p>' .
+              '</div>';
 
   // план-факт линейные
   $output .= '<div class="row">';
@@ -114,6 +117,7 @@ function dep_2v_2g_manager_6($period = null)
   // план-факт выручки помесячно линейный с подсветкой текущего значения к предыдущему на дату
   // фильтр по регионам невозможен, тк в плане нет детализации по клиентам
   $output .= '<div class="row">';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана поступления денежных средств (' . DASH_REV_SUFFIX . ')</h5></div>';
   $data_arr =   dep_2v_2g_line_revenue_plan_fact('plan_revenue', $period);
   $output .=    '<div id="plan-m-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';

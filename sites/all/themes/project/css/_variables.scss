@@ -1,0 +1,21 @@
+@import "../../cbtheme/css/variables"; // продублировано из styles.scss, чтобы переменные не подсвечивались
+
+$content-well-max-width:    1320px;
+
+// шрифт
+//
+$font-url:                  'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap';
+
+
+//- colors
+//
+$page-bkg:                  #eff2f7;
+$header-bkg:                transparent;
+
+$menu-item-color:           #fff;
+$menu-item-hover-color:     #ddd;
+$menu-item-active-color:    #fff;
+
+$brand-blue:                #6999ff;
+
+$label-color:               $gray-darkest;

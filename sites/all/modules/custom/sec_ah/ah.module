@@ -5,7 +5,7 @@
  */
 function ah_menu()
 {
-  $items['ah'] = array(
+  $items['ah/current'] = array(
     'title' => 'Агрохимикат',
     'menu_name' => 'main-menu',
     'page callback' => 'ah_current_tab',
@@ -13,17 +13,12 @@ function ah_menu()
     'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID]],
     'type' => MENU_NORMAL_ITEM,
   );
-  $items['ah/current'] = array(
-    'title' => 'Текущий период',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 0,
-  );
   $items['ah/previous'] = array(
-    'title' => 'Предыдущий период',
+    'title' => 'Агрохимикат',
     'page callback' => 'ah_previous_tab',
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID]],
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_CALLBACK,
     'weight' => 1,
   );
 
@@ -37,6 +32,7 @@ function ah_current_tab()
 
   $output = '<div class="section-title">' .
               '<h3>Отгрузка</h3>' .
+              '<div class="underline"></div>' .
               '<p>Год к году за период</p>' .
             '</div>';
 
@@ -49,22 +45,21 @@ function ah_current_tab()
 
   $output .=  '<div class="section-title">' .
                 '<h3>Производство</h3>' .
-                '<p></p>' .
+                '<div class="underline"></div>' .
               '</div>';
 
-  $output .= '<h4>Пестициды</h4>';
-  $form =       drupal_get_form('ah_clients_filter_form', 'Пестициды');
-  $output .=   '<div>' . drupal_render($form) . '</div>';
-
   $output .= '<div class="row">';
-  $data_arr = ah_line_prod_plan_fact_current_month_by_day('Пестициды', empty($_GET['client']) ? null : $_GET['client']);
-  $output .= '<div id="clients-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $output .=  '<div class="col-xs-12"><h5 class="chart-title">Пестициды</h5></div>';
+  $form =       drupal_get_form('ah_clients_filter_form', 'Пестициды');
+  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $data_arr =   ah_line_prod_plan_fact_current_month_by_day('Пестициды', empty($_GET['client']) ? null : $_GET['client']);
+  $output .=    '<div id="clients-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
-  $output .= '<h4>Смолы</h4>';
   $output .= '<div class="row">';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Смолы</h5></div>';
   $data_arr =   ah_line_prod_plan_fact_current_month_by_day('Смолы');
-  $output .=  '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
   return '<div class="charts" data-module="ah" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
@@ -97,20 +92,21 @@ function ah_previous_tab()
   $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_AH, -1);
 
   $output = '<div class="section-title">' .
-    '<h3>Отгрузка</h3>' .
-    '<p>' . DASH_HISTORY_START_YEAR_AH . '-' . date('Y', $period['from']) . '</p>' .
-    '</div>';
+              '<h3>Отгрузка</h3>' .
+              '<div class="underline"></div>' .
+              '<p>' . DASH_HISTORY_START_YEAR_AH . '-' . date('Y', $period['from']) . '</p>' .
+            '</div>';
 
   $output .= '<div class="row">';
-  $data_arr = dash_column_revenue_period_to_period('ah', $period['from'], $period['to']);
-  $output .= '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
+  $data_arr =   dash_column_revenue_period_to_period('ah', $period['from'], $period['to']);
+  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
 
-  $data_arr = dash_pie_revenue_year('ah', $period['from'], $period['to']);
-  $output .= '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
+  $data_arr =   dash_pie_revenue_year('ah', $period['from'], $period['to']);
+  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
 
   // отгрузка по основным видам продукции
-  $data_arr = dash_column_revenue_by_types('ah', $period['from'], $period['to']);
-  $output .= '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $data_arr =   dash_column_revenue_by_types('ah', $period['from'], $period['to']);
+  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
   // производство (текущий сезон, с октября)
@@ -118,10 +114,11 @@ function ah_previous_tab()
   // последний полный месяц
   $time_current_month = gmmktime(0, 0, 0, date('n'), 1, date('Y'));
 
-  $output .= '<div class="section-title">' .
-    '<h3>Производство</h3>' .
-    '<p>' . helper_month_label_ru(date('n', $period['from'])) . ' - ' . helper_month_label_ru(date('n', $time_current_month - 1)) . '</p>' .
-    '</div>';
+  $output .=  '<div class="section-title">' .
+                '<h3>Производство</h3>' .
+                '<div class="underline"></div>' .
+                '<p>' . helper_month_label_ru(date('n', $period['from'])) . ' - ' . helper_month_label_ru(date('n', $time_current_month - 1)) . '</p>' .
+              '</div>';
 
   // вывести набор графиков по типам продукции
   $dbr = db_select('field_data_field_nom_type', 'fnt');
@@ -130,20 +127,20 @@ function ah_previous_tab()
   $dbr->distinct();
   $types = $dbr->execute()->fetchCol();
   foreach ($types as $type) {
-    $output .= '<h4>' . $type . '</h4>';
+    $output .= '<div class="row">';
+    $output .=  '<div class="col-xs-12"><h5 class="chart-title">' . $type . '</h5></div>';
 
     // производство период к периоду с октября по последний полный месяц
-    $output .= '<div class="row">';
-    $data_arr = ah_column_prod_by_type_period_to_period($type, $period['from'], $time_current_month);
-    $output .= '<div class="col-xs-12 col-lg-4">' . drupal_render($data_arr) . '</div>';
+    $data_arr =   ah_column_prod_by_type_period_to_period($type, $period['from'], $time_current_month);
+    $output .=    '<div class="col-xs-12 col-lg-8">' . drupal_render($data_arr) . '</div>';
 
-    $data_arr = ah_pie_prod_clients($type, $period['from'], $time_current_month);
-    $output .= '<div class="col-xs-12 col-lg-4">' . drupal_render($data_arr) . '</div>';
+    $data_arr =   ah_pie_prod_clients($type, $period['from'], $time_current_month);
+    $output .=    '<div class="col-xs-12 col-lg-4">' . drupal_render($data_arr) . '</div>';
 
-    $data_arr = ah_lines_prod_plan_fact($type, $period['from'], $time_current_month);
+    $data_arr =   ah_lines_prod_plan_fact($type, $period['from'], $time_current_month);
     // если в отчёте >4 месяцев, то вывести в отдельной строке
     $class = count($data_arr["fact"]["#data"]) > 4 ? ' col-lg-12' : ' col-lg-4';
-    $output .= '<div class="col-xs-12' . $class . '">' . drupal_render($data_arr) . '</div>';
+    $output .=    '<div class="col-xs-12' . $class . '">' . drupal_render($data_arr) . '</div>';
     $output .= '</div>';
   }
 
@@ -173,14 +170,13 @@ function ah_clients_filter_form($form, $form_state, $type)
   $dbr->fields('t', ['tid', 'name']);
   $result = $dbr->execute()->fetchAllAssoc('tid');
 
-  $clients = ['0' => 'Все'];
+  $clients = ['0' => '- Все заказчики -'];
   foreach ($result as $item) {
     $clients[$item->tid] = $item->name;
   }
 
   $form['#attributes'] = ['class' => ['dash-filter-form']];
   $form['client'] = [
-    '#title' => 'Заказчик',
     '#type' => 'select',
     '#options' => $clients,
     '#default_value' => empty($_GET['client']) || empty($clients[$_GET['client']]) ? 0 : $_GET['client'],
@@ -255,10 +251,14 @@ function ah_line_prod_plan_fact_current_month_by_day($type, $client = null)
     '#height' => '350',
     '#legend_position' => 'bottom',
     '#colors' => ['#aaa', DASH_COLOR_RED],
-    'xaxis' => ['#type' => 'chart_xaxis'],
+    'xaxis' => [
+      '#type' => 'chart_xaxis',
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
+    ],
     'yaxis' => [
       '#type' => 'chart_yaxis',
       '#min' => 0,
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
     ],
     'plan' => [
       '#type' => 'chart_data',
@@ -269,7 +269,7 @@ function ah_line_prod_plan_fact_current_month_by_day($type, $client = null)
       '#title' => 'Факт'
     ],
     '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
       'crosshair' => ['trigger' => 'both'],
       'chartArea' => [
         'width' => '85%',
@@ -336,7 +336,6 @@ function ah_lines_prod_plan_fact($type, $time_from, $time_to)
     '#title' => 'Выполнение плана (тыс. ед.)',
     '#colors' => ['#aaa', DASH_COLOR_RED],
     '#height' => '350',
-//    '#width' => (string)(150*count($time_months_list)),
     '#legend_position' => 'bottom',
     'xaxis' => ['#type' => 'chart_xaxis'],
     'yaxis' => [
@@ -352,7 +351,7 @@ function ah_lines_prod_plan_fact($type, $time_from, $time_to)
       '#title' => 'Факт'
     ],
     '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
       'chartArea' => [
         'width' => '85%',
         'left' => 50,
@@ -409,7 +408,7 @@ function ah_pie_prod_clients($type, $time_from, $time_to)
     '#tooltips' => TRUE,
     '#height' => '350',
     '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
       'pieHole' => 0.5,
       'chartArea' => [
         'width' => '85%',
@@ -460,7 +459,6 @@ function ah_column_prod_by_type_period_to_period($type, $time_from, $time_to)
     '#chart_type' => 'column',
     '#title' => 'Выпуск (' . DASH_PROD_SUFFIX . ')',
     '#height' => '350',
-//    '#width' => (string)(count($amounts)*130),
     '#data_labels' => TRUE,
     '#legend_position' => 'bottom',
     'yaxis' => [
@@ -468,7 +466,7 @@ function ah_column_prod_by_type_period_to_period($type, $time_from, $time_to)
       '#min' => 0,
     ],
     '#raw_options' => [
-      'titleTextStyle' => ['bold' => 'true', 'fontName' => 'ubuntu', 'fontSize' => '16'],
+      'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
       'chartArea' => [
         'width' => '85%',
         'left' => 50,

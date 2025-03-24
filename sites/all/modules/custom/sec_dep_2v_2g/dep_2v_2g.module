@@ -1,6 +1,8 @@
 <?php
 
 // постоянное подключение, т.к в файле есть функции для ajax вызовов
+include ('includes/compare.dep_2v_2g.inc');
+include ('includes/period.dep_2v_2g.inc');
 include ('includes/manager.dep_2v_2g.inc');
 
 /**
@@ -8,369 +10,63 @@ include ('includes/manager.dep_2v_2g.inc');
  */
 function dep_2v_2g_menu()
 {
+  $items['td/department-2v-2g/head/compare'] = array(
+    'title' => 'Управления 2В и 2Г',
+    'page callback' => 'dep_2v_2g_head_compare_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_CALLBACK,
+  );
+  $items['td/department-2v-2g/head/period'] = array(
+    'title' => 'Управления 2В и 2Г',
+    'menu_name' => 'main-menu',
+    'weight' => 2,
+    'page callback' => 'dep_2v_2g_head_period_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['td/department-2v-2g/head/period/closed'] = array(
+    'title' => 'Управления 2В и 2Г',
+    'menu_name' => 'main-menu',
+    'weight' => 2,
+    'page callback' => 'dep_2v_2g_head_period_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_CALLBACK,
+  );
+
   // для пользователей DEP_2V2G_USER_RID создана отдельная страница с другим набором графиков,
   // отличных от TRADE_HOUSE_USER_RID
-
-  $items['td/department-2v-2g'] = array(
+  $items['td/department-2v-2g/manager/period'] = array(
     'title' => 'Управления 2В и 2Г',
     'menu_name' => 'main-menu',
     'weight' => 2,
-    'page callback' => 'dep_2v_2g_current_page',
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
-    'type' => MENU_NORMAL_ITEM,
-  );
-  $items['td/department-2v-2g/current'] = array(
-    'title' => 'Текущий период',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 10,
-  );
-  $items['td/department-2v-2g/closed'] = array(
-    'title' => 'Завершившийся сезон',
-    'page callback' => 'dep_2v_2g_current_page',
-    'page arguments' => [true],
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 1,
-  );
-  $items['td/department-2v-2g/previous'] = array(
-    'title' => 'Предыдущий период',
-    'page callback' => 'dep_2v_2g_previous_page',
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 0,
-  );
-
-  $items['td/department-2v-2g/manager'] = array(
-    'title' => 'Управления 2В и 2Г',
-    'menu_name' => 'main-menu',
-    'weight' => 2,
-    'page callback' => 'dep_2v_2g_manager_page',
+    'page callback' => 'dep_2v_2g_manager_period_page',
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, DEP_2V2G_USER_RID]],
     'type' => MENU_NORMAL_ITEM,
   );
-  $items['td/department-2v-2g/manager/current'] = array(
-    'title' => 'Текущий период',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 10,
-  );
-  $items['td/department-2v-2g/manager/closed'] = array(
-    'title' => 'Завершившийся сезон',
-    'page callback' => 'dep_2v_2g_manager_page',
-    'page arguments' => [true],
+  $items['td/department-2v-2g/manager/period/closed'] = array(
+    'title' => 'Управления 2В и 2Г',
+    'menu_name' => 'main-menu',
+    'weight' => 2,
+    'page callback' => 'dep_2v_2g_manager_period_page',
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, DEP_2V2G_USER_RID]],
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 1,
+    'type' => MENU_CALLBACK,
   );
-
 
   return $items;
 }
 
 /**
- * ----- Страницы ------------------------------------------------------------------------------------------------------
+ * Implementation of hook_menu_alter().
  */
-
-/**
- * ----- Текущий период
- */
-function dep_2v_2g_current_page()
+function dep_2v_2g_menu_alter(&$items)
 {
-  // Страница разбита на сектора, загружаемые через ajax,
-  // так как формирование всей страницы целиком занимает продолжительное время.
-  // Функция, отвечающая за содержимое, определяется атрибутом data-func
-
-  $period = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD);
-  $time_yesterday = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to'])-1, date('Y', $period['to']));
-
-  $output = '<div class="section-title">';
-  $output .= '<h3>Отгрузка</h3>';
-  if (dash_is_current_season($period)) {
-    $output .= '<p>Год к году за период</p>';
-  } else {
-    $output .= '<p>Год к году';
-  }
-  $output .= '</div>';
-
-  $output .= '<div class="row">';
-  $form =       drupal_get_form('dash_period_filter_form', ['wrapper' => 'summary-ship-td', 'callback' => 'dep_2v_2g_block_current_1', 'period' => $period]);
-  $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="block_current_1"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-  $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12"><h5 class="chart-title">Суммарная отгрузка</h5></div>';
-  $form =      drupal_get_form('dep_2v_2g_td_column_plan_ship_period_to_period_filter_form');
-  $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="block_current_2" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-  $output .= '<div class="section-title">';
-  $output .= '<h3>Отгрузка</h3>';
-  if (dash_is_current_season($period)) {
-    $output .= '<p>За текущий период</p>';
-  } else {
-    $output .= '<p>За период ' . date('Y', $period['from']) . ' - ' . date('Y', $period['end']) . '</p>';
-  }
-  $output .= '</div>';
-
-
-  $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Отгрузка по номенклатуре (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_column_ship_plan_by_nom_filter_form');
-  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="block_current_3" data-delay="500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-  $output .= '<div class="ajax-load" data-func="block_current_4" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-
-  $output .=  '<div class="section-title">' .
-    '<h3>Планы</h3>' .
-    '<p>На период ' . date('Y', $period['from']) . '-' . date('Y', $period['end']) . '</p>' .
-    '</div>';
-
-  // план-факт отгрузки по номенклатуре в литрах
-  $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по номенклатуре (шт/л/кг)</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_ship_plan_nom_filter_form');
-  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="block_current_5" data-delay="2000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-  // план-факт линейные
-  $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_line_ship_plan_fact_by_month_filter_form');
-  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="block_current_6" data-delay="3000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-  // отгрузка по регионам
-  $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по регионам (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_ship_plan_region_filter_form');
-  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
-  $output .= '</div>';
-  $output .= '<div class="ajax-load" data-func="block_current_7" data-delay="4000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-
-  return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
-}
-
-function dep_2v_2g_block_current_1($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  $output  = '<div id="summary-ship-td" class="row">';
-  $data_arr =   dash_column_revenue_period_to_period('td', $period['from'], $period['to']);
-  $data_arr['#title'] = 'Суммарная отгрузка за сезон по данным бухгалтерии (' . DASH_REV_SUFFIX . ')';
-  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-
-  $data_arr =   dash_pie_revenue_year('td', $period['from'], $period['to']);
-  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-
-function dep_2v_2g_block_current_2($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  // отчёт в млн
-  $output = '<div id="summary-target" class="row">';
-  $data_arr =   dep_2v_2g_td_column_plan_ship_period_to_period($period, 'amount');
-  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-
-  // отчёт в литрах
-  $data_arr =   dep_2v_2g_td_column_plan_ship_period_to_period($period, 'qty');
-  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-
-function dep_2v_2g_block_current_3($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  // выручка по номенклатуре
-  $output = '<div class="row">';
-  $data_arr =   dep_2v_2g_column_ship_plan_by_nom($period);
-  $output .=    '<div id="nom-r-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-
-function dep_2v_2g_block_current_4($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  // валовая прибыль, понедельно, из факта
-  $output = '<div class="row">';
-  $data_arr =   dep_2v_2g_column_ship_fact_gross_profit_by_week($period);
-  $output .=    '<div class="col-xs-12 col-md-12">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-
-function dep_2v_2g_block_current_5($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  // план-факт отгрузки по номенклатуре в литрах
-  $output = '<div class="row">';
-  $nom = empty($_GET['nom']) ? 0 : $_GET['nom'];
-  $data_arr =   dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom);
-  $output .=    '<div id="nom-target" class="col-xs-12 col-md-4">' . drupal_render($data_arr) . '</div>';
-
-  $options = ['range' => [0,7]];
-  $data_arr =   dep_2v_2g_column_ship_plan_fact_by_nom($period, $options);
-  $output .=    '<div class="col-xs-12 col-md-8">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  $output .= '<div class="row">';
-  $options = ['range' => [8, 30]];
-  $data_arr =   dep_2v_2g_column_ship_plan_fact_by_nom($period, $options);
-  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-
-function dep_2v_2g_block_current_6($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  // план-факт по отгрузкам помесячно линейный с подсветкой текущего значения к предыдущему на дату
-  $output = '<div class="row">';
-  $data_arr =   dep_2v_2g_line_ship_plan_fact_by_month($period);
-  $output .=    '<div id="plan-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  // план-факт выручки помесячно линейный с подсветкой текущего значения к предыдущему на дату
-  // фильтр по регионам невозможен, тк в плане нет детализации по клиентам
-  $output .= '<div class="row">';
-  $data_arr =   dep_2v_2g_line_revenue_plan_fact('plan_revenue', $period);
-  $output .=    '<div id="plan-m-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-
-function dep_2v_2g_block_current_7($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  // отгрузка по регионам
-  $output = '<div class="row">';
-  $region = empty($_GET['region']) ? 0 : $_GET['region'];
-  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $region);
-  $output .=    '<div id="region-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region($period, ['regions' => ['list' => [657]]]); // ЦО
-  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-
-  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region($period, ['regions' => ['exclude' => [657]]]);
-  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-
-/**
- * ----- Предыдущий период
- */
-function dep_2v_2g_previous_page()
-{
-  $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD, -1);
-
-  $output = '<div class="section-title">' .
-    '<h3>Отгрузка</h3>' .
-    '<p>Сезоны ' . DASH_HISTORY_START_YEAR_TD . '-' . date('Y', $period['from']) . '</p>' .
-    '</div>';
-
-  $output .= '<div class="ajax-load" data-func="previous_1"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-  // выручка по номенклатуре
-  $output .= '<div class="ajax-load" data-func="previous_2" data-delay="300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-  $output .=  '<div class="section-title">' .
-    '<h3>Планы</h3>' .
-    '<p>Сезон ' . date('Y', $period['from']) . '-' . date('Y', $period['to']) . '</p>' .
-    '</div>';
-
-  // план-факт по отгрузкам
-  $output .= '<div class="ajax-load" data-func="previous_3" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-  // план-факт выручки
-  $output .= '<div class="ajax-load" data-func="previous_4" data-delay="1200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-
-  return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
-}
-
-function dep_2v_2g_previous_1($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  $output = '<div class="row">';
-  $data_arr =   dash_column_revenue_period_to_period('td', $period['from'], $period['to']);
-  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-
-  $data_arr =   dash_pie_revenue_year('td', $period['from'], $period['to']);
-  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-
-  $data_arr =   dash_column_revenue_by_types('td', $period['from'], $period['to']);
-  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-
-//  $data_arr =   dep_2v_2g_pie_revenue_pay_plan($period['from'], $period['to']);
-//  $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-function dep_2v_2g_previous_2($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  // выручка по номенклатуре
-  $output  = '<div class="row">';
-  $data_arr =   dep_2v_2g_column_ship_plan_by_nom($period);
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Отгрузка по номенклатуре за прошлый период (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-function dep_2v_2g_previous_3($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  // план-факт по отгрузкам
-  $output  = '<div class="row">';
-  $data_arr =   dep_2v_2g_line_revenue_plan_fact('plan_ship', $period);
-  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
-}
-function dep_2v_2g_previous_4($period = null)
-{
-  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
-
-  // план-факт выручки
-  $output = '<div class="row">';
-  $data_arr =   dep_2v_2g_line_revenue_plan_fact('plan_revenue', $period);
-  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
-  $output .= '</div>';
-
-  return $output;
+  // выводить меню, если есть доступ к Управлению 4
+  $items['td']['access arguments'][0][] = DEP_2V2G_USER_RID;
 }
 
 /**
@@ -444,6 +140,7 @@ function dep_2v_2g_td_column_plan_ship_period_to_period($period, $field, $region
     'yaxis' => [
       '#type' => 'chart_yaxis',
       '#min' => 0,
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']],
     ],
     '#raw_options' => [
       'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
@@ -666,13 +363,10 @@ function dep_2v_2g_line_revenue_plan_fact($type, $period)
     }
     ksort($plan_fact_by_month);
 
-    $title = 'Выполнение плана поступления денежных средств (' . DASH_REV_SUFFIX . ')';
-
     $chart = array(
       '#type' => 'chart',
       '#chart_type' => 'line',
       '#chart_id' => 'dep_2v_2g_lines_revenue_plan_fact_' . $type,
-      '#title' => $title,
       '#height' => '350',
       '#colors' => ['#aaa', DASH_COLOR_BLUE],
       '#legend_position' => 'bottom',
@@ -769,199 +463,6 @@ function dep_2v_2g_line_revenue_plan_fact($type, $period)
 
   return $chart;
 }
-function dep_2v_2g_line_revenue_plan_fact_bak($type, $period, $regions = [])
-{
-  $chart = dash_get_no_data_chart();
-
-  $data = [];
-
-  // список месяцев, за которые выводим график
-  $time_months_list = [];
-  $time_month_start = $period['from'];
-  while($time_month_start < $period['end']) {
-    $time_months_list[] = $time_month_start;
-    $time_month_start = gmmktime(0, 0, 0, date('n', $time_month_start)+1, 1, date('Y', $time_month_start));
-  }
-
-  // собираем по месяцам
-  $has_data = false;
-  $total_p = $total_f = 0;
-  foreach($time_months_list as $time_month_start) {
-    $time_month_end = gmmktime(0, 0, 0, date('n', $time_month_start)+1, 1, date('Y', $time_month_start));
-    $dbr = db_select('eck_plan', 'p');
-    $dbr->condition('p.type', $type);
-
-    $dbr->innerJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
-    $dbr->condition('frt.bundle', $type);
-
-    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
-    $dbr->condition('frd.bundle', $type);
-    $dbr->condition('frd.field_date_value', $time_month_start, '>=');
-    $dbr->condition('frd.field_date_value', $time_month_end, '<');
-
-    if (!empty($regions)) {
-      $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
-      $dbr->condition('fct.bundle', $type);
-      $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
-      $dbr->condition('fr.field_region_tid', $regions, 'IN');
-    }
-
-    $dbr->innerJoin('field_data_field_amount', 'fa', 'fa.entity_id = p.id');
-    $dbr->condition('fa.bundle', $type);
-    $dbr->addExpression('SUM(fa.field_amount_value)', 'amount');
-
-    $dbr_f = clone($dbr);
-    $dbr->condition('frt.field_record_type_td_value', DASH_TYPE_PLAN);
-    $dbr_f->condition('frt.field_record_type_td_value', DASH_TYPE_FACT);
-
-    $amount_p = (int)$dbr->execute()->fetchField();
-    $amount_f = (int)$dbr_f->execute()->fetchField();
-    $total_p += $amount_p;
-    $total_f += $amount_f;
-
-    $data[$time_month_start] = [$total_p/DASH_REV_DIVIDER, $total_f/DASH_REV_DIVIDER];
-
-    if ($total_p || $total_f) $has_data = true;
-  }
-
-  if ($has_data) {
-
-    // для текущего периода получить данные до вчера включительно
-    $curr_amount_p = $curr_amount_f = 0;
-    if ($period['from'] <= REQUEST_TIME && REQUEST_TIME < $period['to']) {
-      $time_current_from = gmmktime(0, 0, 0, date('n', $period['from']), 1, date('Y', $period['from']));
-      $time_current_to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
-      $dbr = db_select('eck_plan', 'p');
-      $dbr->condition('p.type', $type);
-
-      $dbr->innerJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
-      $dbr->condition('frt.bundle', $type);
-      $dbr->condition('frt.field_record_type_td_value', DASH_TYPE_FACT);
-
-      $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
-      $dbr->condition('frd.bundle', $type);
-      $dbr->condition('frd.field_date_value', $time_current_from, '>=');
-      $dbr->condition('frd.field_date_value', $time_current_to, '<=');
-
-      if (!empty($regions)) {
-        $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
-        $dbr->condition('fct.bundle', $type);
-        $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
-        $dbr->condition('fr.field_region_tid', $regions, 'IN');
-      }
-
-      $dbr->innerJoin('field_data_field_amount', 'fa', 'fa.entity_id = p.id');
-      $dbr->condition('fa.bundle', $type);
-      $dbr->addExpression('SUM(fa.field_amount_value)', 'amount');
-
-      $curr_amount_f = (int)$dbr->execute()->fetchField() / DASH_REV_DIVIDER;
-    }
-
-    $title = '';
-    if ($type == 'plan_ship') $title = 'Выполнение плана по отгрузкам (' . DASH_REV_SUFFIX . ')';
-    if ($type == 'plan_revenue') {
-      $title = 'Выполнение плана поступления денежных средств (' . DASH_REV_SUFFIX . ')';
-    }
-
-    $chart = array(
-      '#type' => 'chart',
-      '#chart_type' => 'line',
-      '#chart_id' => 'dep_2v_2g_lines_revenue_plan_fact_' . $type,
-      '#title' => $title,
-      '#height' => '350',
-      '#colors' => ['#aaa', DASH_COLOR_BLUE],
-      '#legend_position' => 'bottom',
-      '#raw_options' => [
-        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
-        'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
-        'legend' => ['position' => 'top'],
-        'annotations' => [
-          'datum' => ['stem' => ['color' => '#ccc', 'length' => 40]],
-        ],
-        'chartArea' => [
-          'width' => '85%',
-          'left' => 50,
-        ],
-      ],
-      'xaxis' => [
-        '#type' => 'chart_xaxis',
-        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
-      ],
-      'yaxis' => [
-        '#type' => 'chart_yaxis',
-        '#min' => 0,
-        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
-      ],
-      'plan' => [
-        '#type' => 'chart_data',
-        '#title' => 'План',
-        '#data' => [],
-      ],
-      'fact' => [
-        '#type' => 'chart_data',
-        '#title' => 'Факт',
-        '#data' => [],
-      ],
-    );
-
-    foreach ($data as $month => $datum) {
-
-      $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month));
-      $plan = $datum[0];
-
-      // считаем и выводим накопительный факт только до месяца предстоящего текущему месяцу
-      $fact = ($month < gmmktime(0, 0, 0, date('n'), 1, date('Y'))) ? $datum[1] : null;
-
-      $chart['plan']['#data'][] = $plan;
-      $chart['fact']['#data'][] = $fact;
-
-      $delta = $datum[0] ? (int)($datum[1] / $datum[0] * 100 - 100) : 0;
-      $ratio = ($datum[1] > $datum[0] ? ' +' : ' ') . number_format($delta, 0, null, ' ') . '%';
-
-      $chart['fact'][] = array(
-        '#type' => 'chart_data_item',
-        '#raw_options' => [
-          'annotation' => $delta ? $ratio : null,
-        ],
-      );
-
-      // для текущего периода вставить текущую дату
-      // вставляем перед текущим месяцем
-//      if ($pos && $period['from'] <= REQUEST_TIME && REQUEST_TIME < $period['to'] && date('n', $month) == date('n')) {
-      // перед текущим месяцем вставить текущую дату
-      if (date('n', $month) == date('n') && date('n', $month['start']) == date('n')) {
-
-        $pos = count($chart['plan']['#data']) - 1;
-
-        // вычислить значение плана на текущую дату пропорционально кол-ву дней в месяце
-        $prev_amount_p = $chart['plan']['#data'][$pos - 1];
-        $next_amount_p = $chart['plan']['#data'][$pos];
-        $curr_month_days = date('t', $time_current_to);
-        $day = date('d', $time_current_to);
-        $curr_amount_p = $prev_amount_p + ($next_amount_p - $prev_amount_p) * ($day / $curr_month_days);
-
-        array_splice($chart['xaxis']['#labels'], $pos, 0, date('d.m', $time_current_to));
-        array_splice($chart['plan']['#data'], $pos, 0, $curr_amount_p);
-        array_splice($chart['fact']['#data'], $pos, 0, $curr_amount_f);
-
-        if ($curr_amount_p || $curr_amount_f) $no_data = false;
-
-        $delta = $curr_amount_p ? (int)($curr_amount_f / $curr_amount_p * 100 - 100) : '0';
-        $ratio = $delta ? (($curr_amount_f > $curr_amount_p ? ' +' : ' ') . number_format($delta, 0, null, ' ') . '%') : number_format($curr_amount_f, 1, null, ' ');
-
-        $pos = count($chart['fact']) - 1;
-        array_splice($chart['fact'], $pos, 0, [
-          ['#type' => 'chart_data_item',
-            '#raw_options' => [
-              'annotation' => $ratio,
-            ]
-          ]]);
-      }
-    }
-  }
-
-  return $chart;
-}
 
 function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $regions)
 {
@@ -1002,20 +503,19 @@ function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $regions)
       'xaxis' => [
         '#type' => 'chart_xaxis',
         '#raw_options' => [
+          'titleTextStyle' => ['fontName' => '<global-font-name>'],
           'textStyle' => ['fontName' => '<global-font-name>'],
-        ]
+        ],
       ],
       'yaxis' => [
         '#type' => 'chart_yaxis',
-        '#raw_options' => [
-          'textStyle' => ['fontName' => '<global-font-name>'],
-        ],
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']],
       ],
       '#raw_options' => [
         'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
         'bar' => ['groupWidth' => "100%"],
         'legend' => ['position' => 'top', 'height' => 100, 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
-        'chartArea' => ['width' => '80%', 'left' => 100],
+        'chartArea' => ['width' => '80%', 'left' => 120],
         'isStacked' => 'true',
         'tooltip' => ['isHtml' => true],
         'annotations' => [
@@ -1110,349 +610,6 @@ function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $regions)
 
   return $chart;
 }
-function dep_2v_2g_bar_ship_plan_fact_by_region_single_bak($period, $regions)
-{
-  $chart = dash_get_no_data_chart();
-
-  // выбрать препараты с наибольшим планом
-  $dbr = db_select('eck_plan', 'p');
-  $dbr->condition('p.type', 'plan_ship');
-
-  if ($regions) {
-    $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
-    $dbr->condition('fct.bundle', 'plan_ship');
-    $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
-    $dbr->condition('fr.field_region_tid', $regions, 'IN');
-    $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fr.field_region_tid');
-    $dbr->addField('t', 'tid');
-    $dbr->addField('t', 'name');
-//    $dbr->groupBy('tid');
-  }
-
-  $dbr->innerJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
-  $dbr->condition('frt.bundle', 'plan_ship');
-
-  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
-  $dbr->condition('frd.bundle', 'plan_ship');
-  $dbr->condition('frd.field_date_value', $period['from'], '>=');
-
-  $dbr->innerJoin('field_data_field_amount', 'fra', 'fra.entity_id = p.id');
-  $dbr->condition('fra.bundle', 'plan_ship');
-  $dbr->addExpression('SUM(fra.field_amount_value)', 'amount');
-
-  // для вычисления плана на текущую дату
-  // запросим план по прошлый и текущий месяц
-  $dbr_c1 = clone($dbr);
-  $dbr_c2 = clone($dbr);
-  $time_prev_month_start = gmmktime(0, 0, 0, date('n')-1, date('j'), date('Y'));
-  $time_curr_month_start = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
-  $dbr_c1->condition('frt.field_record_type_td_value', DASH_TYPE_PLAN);
-  $dbr_c2->condition('frt.field_record_type_td_value', DASH_TYPE_PLAN);
-  $dbr_c1->condition('frd.field_date_value', $time_prev_month_start, '<');
-  $dbr_c2->condition('frd.field_date_value', $time_curr_month_start, '<');
-
-  $dbr_f = clone($dbr);
-  $dbr->condition('frd.field_date_value', $period['to'], '<');
-
-  // факт по текущую дату (почему-то за весь год факт больше)
-  $time_current_to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
-  $dbr_f->condition('frd.field_date_value', $time_current_to, '<=');
-
-  $dbr_d = clone($dbr);
-  $dbr->condition('frt.field_record_type_td_value', DASH_TYPE_PLAN);
-  $dbr_f->condition('frt.field_record_type_td_value', DASH_TYPE_FACT);
-  $dbr_d->condition('frt.field_record_type_td_value', DASH_TYPE_DEAL);
-
-  $result_plan = $dbr->execute()->fetchAll();
-  $result_plan_c1 = $dbr_c1->execute()->fetchAll();
-  $result_plan_c2 = $dbr_c2->execute()->fetchAll();
-  $result_fact = $dbr_f->execute()->fetchAll();
-  $result_deal = $dbr_d->execute()->fetchAll();
-
-  $amount_p =  $result_plan[0]->amount/DASH_REV_DIVIDER;
-  $amount_pc1 = $result_plan_c1[0]->amount/DASH_REV_DIVIDER;
-  $amount_pc2 = $result_plan_c2[0]->amount/DASH_REV_DIVIDER;
-  $amount_f =  $result_fact[0]->amount/DASH_REV_DIVIDER;
-  $amount_d =  $result_deal[0]->amount/DASH_REV_DIVIDER;
-
-  if ($amount_p || $amount_d || $amount_f) {
-    $chart = array(
-      '#type' => 'chart',
-      '#chart_type' => 'bar',
-      '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#bbb', '#ccc'],
-      'xaxis' => [
-        '#type' => 'chart_xaxis',
-        '#raw_options' => [
-          'textStyle' => ['fontName' => '<global-font-name>'],
-        ]
-      ],
-      'yaxis' => [
-        '#type' => 'chart_yaxis',
-        '#raw_options' => [
-          'textStyle' => ['fontName' => '<global-font-name>'],
-        ],
-      ],
-      '#raw_options' => [
-        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
-        'bar' => ['groupWidth' => "100%"],
-        'legend' => ['position' => 'top', 'height' => 100, 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
-        'chartArea' => ['width' => '80%', 'left' => 100],
-        'isStacked' => 'true',
-        'tooltip' => ['isHtml' => true],
-        'annotations' => [
-          'textStyle' => ['color' => '#000'],
-          'datum' => ['stem' => ['color' => '#ccc', 'length' => 20]],
-        ],
-      ],
-      'fact' => [
-        '#type' => 'chart_data',
-        '#title' => 'Факт',
-        '#data' => [],
-      ],
-      'deal' => [
-        '#type' => 'chart_data',
-        '#title' => 'Неотгруженные контракты',
-        '#data' => [],
-      ],
-      'plan_curr' => [
-        '#type' => 'chart_data',
-        '#title' => 'Текущий план',
-        '#data' => [],
-      ],
-      'plan' => [
-        '#type' => 'chart_data',
-        '#title' => 'План на сезон',
-        '#data' => [],
-      ],
-    );
-
-    $curr_month_days = date('t', $time_curr_month_start);
-    $day = date('d', $time_curr_month_start);
-
-    // пространство сверху
-    $chart['fact']['#data'][] = $chart['deal']['#data'][] = $chart['plan_curr']['#data'][] = $chart['plan']['#data'][] = 0;
-    $chart['plan_curr'][] = $chart['plan'][] = $chart['fact'][] = $chart['deal'][] = ['#type' => 'chart_data_item'];
-
-    // первая строка
-    $amount_pc = $amount_pc1 + ($amount_pc2 - $amount_pc1) * ($day / $curr_month_days);
-    $chart['fact']['#data'][] = 0;
-    $chart['deal']['#data'][] = 0;
-    $chart['plan_curr']['#data'][] = $amount_pc;
-    $chart['plan']['#data'][] = $amount_p - $amount_pc;
-    // вторая строка
-    $chart['fact']['#data'][] = $amount_f;
-    $chart['deal']['#data'][] = $amount_d;
-    $chart['plan_curr']['#data'][] = 0;
-    $chart['plan']['#data'][] = 0;
-
-    $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-      '<div><div style="display:inline-block; width: 180px;">Текущий план:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_pc, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-      '<div><div style="display:inline-block; width: 180px;">План на сезон:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_p, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-      '</div>';
-
-    $chart['plan_curr'][] = array(
-      '#type' => 'chart_data_item',
-      '#title' => $tooltip,
-    );
-    $chart['plan'][] = array(
-      '#type' => 'chart_data_item',
-      '#title' => $tooltip,
-    );
-    $chart['fact'][] = $chart['deal'][] = ['#type' => 'chart_data_item'];
-
-    $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-      '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_f, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-      '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_d, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-      '</div>';
-
-    $chart['fact'][] = array(
-      '#type' => 'chart_data_item',
-      '#title' => $tooltip,
-    );
-    $chart['deal'][] = array(
-      '#type' => 'chart_data_item',
-      '#title' => $tooltip,
-    );
-
-    // пространство снизу
-    $chart['fact']['#data'][] = $chart['deal']['#data'][] = $chart['plan_curr']['#data'][] = $chart['plan']['#data'][] = 0;
-
-    $title = $regions ? taxonomy_term_load($regions[0])->name : 'Все регионы';
-    $chart['xaxis']['#title'] = $title;
-  }
-
-  return $chart;
-}
-
-function dep_2v_2g_bar_ship_plan_fact_by_region_bak($period, $options = [])
-{
-  $chart = dash_get_no_data_chart();
-
-  // сумма Отгрузки по Регионам
-  $dbr = db_select('eck_plan', 'p');
-  $dbr->condition('p.type', 'plan_ship');
-
-  $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
-  $dbr->condition('fct.bundle', 'plan_ship');
-  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
-  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fr.field_region_tid');
-  if (!empty($options['regions']['list'])) {
-    $dbr->condition('t.tid', $options['regions']['list'], 'IN');
-  }
-  if (!empty($options['regions']['exclude'])) {
-    $dbr->condition('t.tid', $options['regions']['exclude'], 'NOT IN');
-  }
-  $dbr->addField('t', 'tid');
-  $dbr->addField('t', 'name');
-  $dbr->groupBy('tid');
-
-  $dbr->innerJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
-  $dbr->condition('frt.bundle', 'plan_ship');
-
-  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
-  $dbr->condition('frd.bundle', 'plan_ship');
-  $dbr->condition('frd.field_date_value', $period['from'], '>=');
-  $dbr->condition('frd.field_date_value', $period['to'], '<');
-
-  $dbr->innerJoin('field_data_field_amount', 'fra', 'fra.entity_id = p.id');
-  $dbr->condition('fra.bundle', 'plan_ship');
-  $dbr->addExpression('SUM(fra.field_amount_value)', 'amount');
-
-  $dbr_d = clone($dbr);
-  $dbr_f = clone($dbr);
-
-  $dbr->condition('frt.field_record_type_td_value', DASH_TYPE_PLAN);
-  $dbr_f->condition('frt.field_record_type_td_value', DASH_TYPE_FACT);
-  $dbr_d->condition('frt.field_record_type_td_value', DASH_TYPE_DEAL);
-
-  $regions_plan = $dbr->execute()->fetchAllAssoc('tid');
-  $regions_fact = $dbr_f->execute()->fetchAllAssoc('tid');
-  $regions_deal = $dbr_d->execute()->fetchAllAssoc('tid');
-
-  $tids = array_keys($regions_plan) + array_keys($regions_fact) + array_keys($regions_deal);
-
-  $plan_fact = [];
-  $sort_p = $sort_f = $sort_d = [];
-  foreach($tids as $tid) {
-    $name = $regions_plan[$tid]->name ?? ($regions_fact[$tid]->name ?? $regions_deal[$tid]->name);
-    $plan_fact[$tid] = [
-      'plan' => $regions_plan[$tid]->amount ?? 0,
-      'fact' => $regions_fact[$tid]->amount ?? 0,
-      'deal' => $regions_deal[$tid]->amount ?? 0,
-      'tid' => $tid,
-      'name' => $name,
-    ];
-  }
-
-  // подготовим к сортировке по сумме
-  foreach ($plan_fact as $item) {
-    if ($item['plan']) {
-      $sort_p[$item['plan']] = $item['tid'];
-    } elseif ($item['fact']) {
-      $sort_f[$item['fact']] = $item['tid'];
-    } else {
-      $sort_d[$item['deal']] = $item['tid'];
-    }
-  }
-
-  // сначала сортировка по плану
-  krsort($sort_p);
-  // если план = 0, то сортировка по факту
-  krsort($sort_f);
-  // в конце по контрактам
-  krsort($sort_d);
-  $sort = $sort_p + $sort_f + $sort_d;
-
-  if ($sort) {
-    $chart = array(
-      '#type' => 'chart',
-      '#chart_type' => 'bar',
-      '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#ccc'],
-      'xaxis' => [
-        '#type' => 'chart_xaxis',
-        '#raw_options' => [
-          'textStyle' => ['fontName' => '<global-font-name>'],
-        ]
-      ],
-      'yaxis' => [
-        '#type' => 'chart_yaxis',
-        '#raw_options' => [
-          'textStyle' => ['fontName' => '<global-font-name>'],
-        ],
-      ],
-      '#raw_options' => [
-        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
-        'bar' => ['groupWidth' => "60%"],
-        'legend' => ['position' => 'top', 'height' => 100, 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
-        'chartArea' => ['width' => '80%', 'left' => 100],
-        'isStacked' => 'true',
-        'tooltip' => ['isHtml' => true],
-        'annotations' => [
-          'textStyle' => ['color' => '#000'],
-          'datum' => ['stem' => ['color' => '#ccc', 'length' => 20]],
-//        'alwaysOutside' => true,
-        ],
-      ],
-      'fact' => [
-        '#type' => 'chart_data',
-        '#title' => 'Факт',
-        '#data' => [],
-      ],
-      'deal' => [
-        '#type' => 'chart_data',
-        '#title' => 'Неотгруженные контракты',
-        '#data' => [],
-      ],
-      'plan' => [
-        '#type' => 'chart_data',
-        '#title' => 'План',
-        '#data' => [],
-      ],
-    );
-
-    foreach ($sort as $tid) {
-      if ($plan_fact[$tid]['fact'] || $plan_fact[$tid]['plan'] || $plan_fact[$tid]['deal']) {
-        $chart['xaxis']['#labels'][] = $plan_fact[$tid]['name'];
-        $amount_p = (float)$plan_fact[$tid]['plan'] / DASH_REV_DIVIDER;
-        $amount_d = (float)$plan_fact[$tid]['deal'] / DASH_REV_DIVIDER;
-        $amount_f = (float)$plan_fact[$tid]['fact'] / DASH_REV_DIVIDER;
-
-        $chart['fact']['#data'][] = $amount_f;
-        $chart['deal']['#data'][] = $amount_d;
-        $chart['plan']['#data'][] = max($amount_p - $amount_d - $amount_f, 0);
-
-        $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:180px;white-space: nowrap;">' .
-          '<div><div style="display:inline-block; width: 170px;">План:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_p, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 170px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_d, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 170px;">Факт:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($amount_f, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-          '</div>';
-        $chart['plan'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-          '#raw_options' => [
-            'annotation' => $amount_p > $amount_f + $amount_d ? number_format($amount_p, 2, ',', ' ') : '',
-          ],
-        );
-        $chart['deal'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-        );
-        $chart['fact'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-          '#raw_options' => [
-            'annotation' => ($amount_f > $amount_p) ? number_format($amount_f, 2, ',', ' ') : '',
-          ],
-        );
-      }
-    }
-
-    $chart['#height'] = 45 * count($chart['fact']['#data']) + 120;
-    $chart['#raw_options']['chartArea']['height'] = 45 * count($chart['fact']['#data']);
-  }
-
-  return $chart;
-}
 function dep_2v_2g_bar_ship_plan_fact_by_region($period, $options = [])
 {
   $chart = dash_get_no_data_chart();
@@ -1524,21 +681,17 @@ function dep_2v_2g_bar_ship_plan_fact_by_region($period, $options = [])
       '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#ccc'],
       'xaxis' => [
         '#type' => 'chart_xaxis',
-        '#raw_options' => [
-          'textStyle' => ['fontName' => '<global-font-name>'],
-        ]
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
       ],
       'yaxis' => [
         '#type' => 'chart_yaxis',
-        '#raw_options' => [
-          'textStyle' => ['fontName' => '<global-font-name>'],
-        ],
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']],
       ],
       '#raw_options' => [
         'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
         'bar' => ['groupWidth' => "60%"],
         'legend' => ['position' => 'top', 'height' => 100, 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
-        'chartArea' => ['width' => '80%', 'left' => 100],
+        'chartArea' => ['width' => '80%', 'left' => 120],
         'isStacked' => 'true',
         'tooltip' => ['isHtml' => true],
         'annotations' => [
@@ -1902,12 +1055,17 @@ function dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom)
       'xaxis' => [
         '#type' => 'chart_xaxis',
         '#raw_options' => [
+          'titleTextStyle' => ['fontName' => '<global-font-name>'],
           'textStyle' => ['fontName' => '<global-font-name>'],
         ]
       ],
       'yaxis' => [
         '#type' => 'chart_yaxis',
         '#min' => 0,
+        '#raw_options' => [
+          'titleTextStyle' => ['fontName' => '<global-font-name>'],
+          'textStyle' => ['fontName' => '<global-font-name>']
+        ]
       ],
       '#raw_options' => [
         'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
@@ -2067,6 +1225,7 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
     $sort = $sort_p + $sort_f + $sort_d;
 
     $chart = array(
+      '#title' => 'Отгрузка по номенклатуре. ' . 'Места с ' . ($options['range'][0]+1) . ' по ' . ($options['range'][1]+1) . '.',
       '#type' => 'chart',
       '#chart_type' => 'column',
       '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_LIGHT_BLUE, '#ccc'],
@@ -2074,12 +1233,17 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
       'xaxis' => [
         '#type' => 'chart_xaxis',
         '#raw_options' => [
-          'textStyle' => ['fontName' => '<global-font-name>'],
+          'titleTextStyle' => ['fontName' => '<global-font-name>'],
+          'textStyle' => ['fontName' => '<global-font-name>']
         ]
       ],
       'yaxis' => [
         '#type' => 'chart_yaxis',
         '#min' => 0,
+        '#raw_options' => [
+          'titleTextStyle' => ['fontName' => '<global-font-name>'],
+          'textStyle' => ['fontName' => '<global-font-name>']
+        ]
       ],
       '#raw_options' => [
         'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
@@ -2253,6 +1417,7 @@ function dep_2v_2g_column_ship_plan_fact_by_nom1($period, $options = [])
       'yaxis' => [
         '#type' => 'chart_yaxis',
         '#min' => 0,
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']],
       ],
       '#raw_options' => [
         'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
@@ -2331,7 +1496,7 @@ function dep_2v_2g_column_ship_plan_fact_by_nom1($period, $options = [])
 
 function dep_2v_2g_column_ship_fact_gross_profit_by_week($period)
 {
-  $chart = dash_get_no_data_chart('Валовая прибыль (%)');
+  $chart = dash_get_no_data_chart('');
 
   // выбрать препараты с наибольшим планом
   if ($fact = dash_get_ship_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period])) {
@@ -2360,20 +1525,18 @@ function dep_2v_2g_column_ship_fact_gross_profit_by_week($period)
 
     $chart = array(
       '#type' => 'chart',
-      '#title' => 'Валовая прибыль (%)',
       '#chart_type' => 'column',
       '#colors' => [DASH_COLOR_BLUE],
       '#height' => '500',
       'xaxis' => [
         '#type' => 'chart_xaxis',
-        '#raw_options' => [
-          'textStyle' => ['fontName' => '<global-font-name>'],
-        ]
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
       ],
       'yaxis' => [
         '#type' => 'chart_yaxis',
         '#min' => 0,
         '#max' => 55,
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']],
       ],
       '#raw_options' => [
         'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
@@ -2583,14 +1746,14 @@ function dep_2v_2g_ship_plan_nom_filter_form($form, &$form_state)
   $dbr->orderBy('name');
   $nom = $dbr->execute()->fetchAllAssoc('tid');
 
-  $options = ['0' => 'Сумма по всей номенклатуре'];
+  $options = ['0' => '- Сумма по всей номенклатуре -'];
   foreach ($nom as $item) {
     $options[$item->tid] = $item->name;
   }
 
   $form['#attributes'] = ['class' => ['dash-filter-form']];
   $form['nom'] = [
-    '#title' => 'Номенклатура',
+//    '#title' => 'Номенклатура',
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => empty($_GET['nom']) || empty($options[$_GET['nom']]) ? 0 : $_GET['nom'],
@@ -2630,7 +1793,7 @@ function dep_2v_2g_ship_plan_region_filter_form($form, &$form_state)
   $dbr->addField('fr', 'field_region_tid');
   $regions = $dbr->execute()->fetchCol();
 
-  $options = ['0' => 'Сумма по всем регионам'];
+  $options = ['0' => '- Сумма по всем регионам -'];
 
   $vid = taxonomy_vocabulary_machine_name_load('regions')->vid;
   $tree = taxonomy_get_tree($vid, 0, 4);
@@ -2639,7 +1802,6 @@ function dep_2v_2g_ship_plan_region_filter_form($form, &$form_state)
 
   $form['#attributes'] = ['class' => ['dash-filter-form']];
   $form['region'] = [
-    '#title' => 'Регион',
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => empty($_GET['region']) || empty($options[$_GET['region']]) ? 0 : $_GET['region'],
@@ -2682,7 +1844,7 @@ function dep_2v_2g_column_ship_plan_by_nom_filter_form($form, &$form_state)
   $dbr->addField('fr', 'field_region_tid');
   $regions = $dbr->execute()->fetchCol();
 
-  $options = ['0' => 'Сумма по всем регионам'];
+  $options = ['0' => '- Сумма по всем регионам -'];
 
   $vid = taxonomy_vocabulary_machine_name_load('regions')->vid;
   $tree = taxonomy_get_tree($vid, 0, 4);
@@ -2691,7 +1853,7 @@ function dep_2v_2g_column_ship_plan_by_nom_filter_form($form, &$form_state)
 
   $form['#attributes'] = ['class' => ['dash-filter-form']];
   $form['region'] = [
-    '#title' => 'Регион',
+//    '#title' => 'Регион',
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => empty($_GET['region-n']) || empty($options[$_GET['region-n']]) ? 0 : $_GET['region-n'],
@@ -2737,7 +1899,7 @@ function dep_2v_2g_td_column_plan_ship_period_to_period_filter_form($form, &$for
   $dbr->addField('fr', 'field_region_tid');
   $regions = $dbr->execute()->fetchCol();
 
-  $options = ['0' => 'Сумма по всем регионам'];
+  $options = ['0' => '- Сумма по всем регионам -'];
 
   $vid = taxonomy_vocabulary_machine_name_load('regions')->vid;
   $tree = taxonomy_get_tree($vid, 0, 4);
@@ -2746,7 +1908,7 @@ function dep_2v_2g_td_column_plan_ship_period_to_period_filter_form($form, &$for
 
   $form['#attributes'] = ['class' => ['dash-filter-form']];
   $form['region'] = [
-    '#title' => 'Регион',
+//    '#title' => 'Регион',
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => empty($_GET['region-s']) || empty($options[$_GET['region-s']]) ? 0 : $_GET['region-s'],
@@ -2792,7 +1954,7 @@ function dep_2v_2g_line_ship_plan_fact_by_month_filter_form($form, &$form_state)
   $dbr->addField('fr', 'field_region_tid');
   $regions = $dbr->execute()->fetchCol();
 
-  $options = ['0' => 'Сумма по всем регионам'];
+  $options = ['0' => '- Сумма по всем регионам -'];
 
   $vid = taxonomy_vocabulary_machine_name_load('regions')->vid;
   $tree = taxonomy_get_tree($vid, 0, 4);
@@ -2801,7 +1963,7 @@ function dep_2v_2g_line_ship_plan_fact_by_month_filter_form($form, &$form_state)
 
   $form['#attributes'] = ['class' => ['dash-filter-form']];
   $form['region'] = [
-    '#title' => 'Регион',
+//    '#title' => 'Регион',
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => empty($_GET['region-p']) || empty($options[$_GET['region-p']]) ? 0 : $_GET['region-p'],

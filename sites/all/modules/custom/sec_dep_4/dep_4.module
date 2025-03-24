@@ -52,20 +52,16 @@ function dep_4_page()
   $period = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD);
   $form   = drupal_get_form('dep_4_analog_prices_filters_form');
 
-  $output =  '<div id="analog-prices" class="row">';
-  $output .=   '<div class="col-xs-12"><h5 class="chart-title">Цены на китайское производство</h5></div>';
-  $output .=   '<div class="col-xs-12"><div class="filters">' . drupal_render($form) . '</div>';
-  $output .=   '<div class="col-xs-12"><div class="content">';
-  $output .=     '<div class="ajax-load" data-func="analog_prices" data-delay="100">' .
-                   '<div class="ajax-progress ajax-progress-throbber">' .
-                     '<div class="throbber">&nbsp;</div>' .
-                     '<div class="message">Пожалуйста, подождите...</div>' .
-                   '</div>' .
-                 '</div>';
-  $output .=   '</div></div>';
-  $output .= '</div>';
+  $output =   '<div class="section-title">' .
+                '<h3>Цены на производство в Китае</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
 
 
+  $output .=  '<div class="row">';
+  $output .=    '<div class="col-xs-12">' . drupal_render($form) . '</div>';
+  $output .=  '</div>';
+  $output .=  '<div class="ajax-load" data-func="analog_prices" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   return '<div class="charts" data-module="dep_4" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
 }
@@ -142,7 +138,6 @@ function dep_4_analog_prices($filters = null)
       ],
       'yaxis' => [
         '#type' => 'chart_yaxis',
-        '#min' => 0,
         '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
       ],
       'price' => [
@@ -184,9 +179,9 @@ function dep_4_analog_prices($filters = null)
     $chart['xaxis']['#labels'][] = date('d.m.Y');
     $chart['price']['#data'][] = $price_now;
 
-    $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-      '<div><div style="display:inline-block; width: 150px;">Стоимость на сегодня:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . helper_number_format($price_now, 2) . '</b>&nbsp;' . $curr_set . '</div></div>' .
-      '</div>';
+    $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+                  '<div><div style="display:inline-block; width: 150px;">Стоимость на сегодня:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . helper_number_format($price_now, 2) . '</b>&nbsp;' . $curr_set . '</div></div>' .
+                '</div>';
 
     $chart['price'][] = array(
       '#type' => 'chart_data_item',
@@ -195,8 +190,8 @@ function dep_4_analog_prices($filters = null)
 
   }
 
-  $output   = '<div class="row">';
-  $output  .=    '<div id="analog-prices" class="col-xs-12">' . drupal_render($chart) . '</div>';
+  $output   = '<div id="analog_prices" class="row">';
+  $output  .=    '<div class="col-xs-12">' . drupal_render($chart) . '</div>';
   $output  .= '</div>';
 
   return $output;
@@ -271,6 +266,9 @@ function dash_4_get_currency_rate_on_date($date = REQUEST_TIME, $currency_name =
  */
 function dep_4_analog_prices_filters_form($form, $form_state)
 {
+  $form = [
+    '#attributes' => ['class' => ['analog-prices-filter-form']],
+  ];
   $form['filters'] = [
     '#type' => 'container',
     '#attributes' => ['class' => ['row']],
@@ -324,10 +322,10 @@ function dep_4_analog_prices_filters_form_submit($form, &$form_state)
 function dep_4_analog_prices_filters_form_ajax($form, $form_state)
 {
   // отправить новую форму
-  $commands[] = ajax_command_html('#analog-prices .filters', drupal_render($form));
+  $commands[] = ajax_command_replace('.analog-prices-filter-form', drupal_render($form));
 
   // отправить новое содержимое страницы
-  $commands[] = ajax_command_html('#analog-prices .content', dep_4_analog_prices($form['#data']['filters']));
+  $commands[] = ajax_command_replace('#analog_prices', dep_4_analog_prices($form['#data']['filters']));
 
   return ['#type' => 'ajax', '#commands' => $commands];
 }

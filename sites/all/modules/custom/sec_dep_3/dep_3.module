@@ -25,12 +25,14 @@ function dep_3_page()
 //            '</div>';
 
   $output =  '<div class="row">';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Поступление денежных средств, год к году (' . DASH_REV_SUFFIX . ')</h5></div>';
   $data_arr =   dep_3_line_revenue_fact_year_to_year_by_month();
   $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .=  '</div>';
 
 
   $output .=  '<div class="row">';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Поступление денежных средств по неделям (' . DASH_REV_SUFFIX . ')</h5></div>';
   $data_arr =   dep_3_line_revenue_fact_by_week();
   $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .=  '</div>';
@@ -90,7 +92,6 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
   $chart = array(
     '#type' => 'chart',
     '#chart_type' => 'line',
-    '#title' => 'Поступление денежных средств, год к году (' . DASH_REV_SUFFIX . ')',
     '#height' => '350',
     '#colors' => ['#aaa', DASH_COLOR_BLUE],
     '#legend_position' => 'bottom',
@@ -143,7 +144,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
 
     $chart['fact_prev']['#data'][] = $total_fact_prev/DASH_REV_DIVIDER;
 
-    $chart['fact_curr']['#data'][] = $total_fact_curr/DASH_REV_DIVIDER;
+    $chart['fact_curr']['#data'][] = $total_fact_curr ? $total_fact_curr/DASH_REV_DIVIDER : null;
     if ($total_fact_curr) {
       $delta = $total_fact_prev ? (int)($total_fact_curr/$total_fact_prev*100-100) : 0;
       $ratio = ($total_fact_curr > $total_fact_prev ? ' +' : ' ') . number_format($delta, 0, null, ' ') . '%';
@@ -255,19 +256,17 @@ function dep_3_line_revenue_fact_by_week()
 
   $chart = array(
     '#type' => 'chart',
-    '#title' => 'Поступление денежных средств по неделям (' . DASH_REV_SUFFIX . ')',
     '#chart_type' => 'line',
     '#colors' => [DASH_COLOR_BLUE],
     '#height' => '500',
     'xaxis' => [
       '#type' => 'chart_xaxis',
-      '#raw_options' => [
-        'textStyle' => ['fontName' => '<global-font-name>'],
-      ]
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
     ],
     'yaxis' => [
       '#type' => 'chart_yaxis',
       '#min' => 0,
+      '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
     ],
     '#raw_options' => [
       'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
@@ -292,7 +291,7 @@ function dep_3_line_revenue_fact_by_week()
     $amount = $week['amount'] / DASH_REV_DIVIDER;
 
     $chart['xaxis']['#labels'][] = $label;
-    $chart['fact']['#data'][] = $amount;
+    $chart['fact']['#data'][] = REQUEST_TIME > $week['end'] ? $amount : null;
     if ($week['amount']) {
       $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
         '<div><div style="display:inline-block; width: 160px;">Выручка за неделю:</div><div style="display:inline-block; text-align: right; width: 100px;"><b>' . number_format($week['amount'], 0, ',', ' ') . '</b> руб.</div></div>' .
