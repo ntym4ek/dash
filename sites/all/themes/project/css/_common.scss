@@ -470,6 +470,7 @@ body {
 .table-intersect {
   width: 100%;
 
+  tbody { border-top: none; }
   tr, th, td, td:last-child {
     border-color: $page-bkg;
     border-width: 5px;
@@ -487,23 +488,11 @@ body {
   td.table-wrapper { padding: 0; }
 
   .tfoot td { background-color: #dbdbdb; }
-}
 
-.holding-balances {
-  padding-bottom: 4rem;
-  .tfoot { font-weight: 600; }
-  .bd-toggle { width: 40px; }
-  .bd-type { width: 110px; }
-  .bd-start { width: 200px; }
-  .bd-company-income { width: 150px; }
-  .bd-company-outcome { width: 150px; }
-  .bd-end { width: 250px; }
-
-  .bd-income,
-  .bd-outcome { width: 150px; }
-  .bd-agent { width: 250px; }
-  .zero-value { color: $text-muted; }
-
+  .sub-table table {
+    font-size: $font-size-small;
+    margin: 0;
+  }
   .table-row-toggle {
     cursor: pointer;
     &:hover {
@@ -511,10 +500,18 @@ body {
       transition: all 200ms;
     }
   }
-
-  .sub-table table {
-    font-size: $font-size-small;
-    margin: 0;
-  }
 }
 
+
+
+.ui-widget-overlay {
+  background: #000;
+  opacity: .7;
+}
+.ui-widget { font-size: initial; font-family: inherit; }
+.ui-dialog {
+  .ui-dialog-content {
+    overflow: hidden;
+    padding: 1.5rem;
+  }
+}

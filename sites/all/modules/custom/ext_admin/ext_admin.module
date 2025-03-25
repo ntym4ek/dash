@@ -48,6 +48,7 @@ function ext_admin_menu()
   return $items;
 }
 
+
 /**
  * Implements hook_cron_queue_info().
  */
@@ -163,7 +164,6 @@ function ext_admin_queue_database_processing()
       $queue->createItem($term->tid);
     }
   }
-
 }
 
 function ext_admin_database_process_record($old_term_id)

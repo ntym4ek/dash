@@ -1,3 +1,79 @@
 @import "variables"; // чтобы переменные не подсвечивались
 
 // секция оформления отдельных страниц
+
+
+// Департамент 2А
+.tracker-links {
+  padding-bottom: 2rem;
+  //.tl-toggle { width: 40px; }
+  .tl-source { width: 200px; }
+  .tl-medium { width: 200px; }
+  .tl-count { width: 150px; }
+  .tl-last { width: 180px; }
+  .tl-add {
+    text-align: right;
+    margin-bottom: 2rem;
+  }
+  .tl-actions {
+    text-align: center;
+    width: 200px;
+  }
+  table a { color: inherit; }
+
+  @media #{$tablet} {
+    padding-bottom: 4rem;
+  }
+}
+
+.entity-tracker-link {
+  padding-bottom: 2rem;
+
+  .entity-title {
+    font-size: $font-size-h1;
+    padding-bottom: 2rem;
+  }
+  .entity-settings,
+  .entity-outgoing {
+    .field {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    .field-label {
+      color: $brand-blue; font-weight: 400; text-align: right;
+      margin: 0 1rem 0 0;
+      flex: 0 0 200px;
+    }
+    .field-value a {
+      color: inherit;
+      &:hover { text-decoration: underline; }
+    }
+  }
+  .entity-divider {
+    background-color: $brand-blue;
+    height: 2px; width: 200px;
+    margin: 1rem 0;
+  }
+
+  @media #{$tablet} {
+    padding-bottom: 4rem;
+  }
+}
+
+// Департамент 7
+.holding-balances {
+  padding-bottom: 4rem;
+  .tfoot { font-weight: 600; }
+  .bd-toggle { width: 40px; }
+  .bd-type { width: 110px; }
+  .bd-start { width: 200px; }
+  .bd-company-income { width: 150px; }
+  .bd-company-outcome { width: 150px; }
+  .bd-end { width: 250px; }
+
+  .bd-income,
+  .bd-outcome { width: 150px; }
+  .bd-agent { width: 250px; }
+  .zero-value { color: $text-muted; }
+
+}

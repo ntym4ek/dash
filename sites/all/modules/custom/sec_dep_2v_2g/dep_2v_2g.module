@@ -1725,7 +1725,7 @@ function dep_2v_2g_ship_plan_nom_filter_form($form, &$form_state)
     $form_state['period'] = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD);
   }
 
-  // период, за который вибирается номенклатура должен совпадать с выводимым периодом
+  // период, за который выбирается номенклатура должен совпадать с выводимым периодом
   $years_shift = dash_get_years_shift();
   $bounds_start = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD, -$years_shift);
   $bounds_end = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);

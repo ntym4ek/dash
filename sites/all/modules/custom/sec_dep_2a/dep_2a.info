@@ -1,0 +1,4 @@
+name = Раздел 'Департамент 2А'
+description = Отдел маркетинга
+package = Custom
+core = 7.x

@@ -48,8 +48,8 @@ function dash_menu()
     'menu_name' => 'main-menu',
     'page callback' => 'dash_frontpage',
     'expanded' => true,
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_2V2G_USER_RID]],
+    'access callback' => true,
+//    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_2V2G_USER_RID]],
   );
 
   $items['ajax-load'] = array(

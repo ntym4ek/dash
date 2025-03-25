@@ -3,6 +3,8 @@
 define('ADMIN_RID', 3);
 define('TRADE_HOUSE_USER_RID', 4);
 define('AGROHIMIKAT_USER_RID', 5);
+define('FINANCE_USER_RID', 8);
+define('DEP_2A_USER_RID', 9);
 define('DEP_2V2G_USER_RID', 7);
 define('DEP_4_USER_RID', 4);
 define('DEP_7_USER_RID', 6);
@@ -93,7 +95,7 @@ function ext_user_form_user_profile_form_alter(&$form, &$form_state)
   }
 }
 
-function ext_user_user_profile_form_submit ($form, &$form_state)
+function ext_user_user_profile_form_submit($form, &$form_state)
 {
   // после смены пароля редирект на главную
   $form_state['redirect'] = '<front>';

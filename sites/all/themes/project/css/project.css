@@ -2800,6 +2800,8 @@ body {
 
 .table-intersect {
   width: 100%; }
+  .table-intersect tbody {
+    border-top: none; }
   .table-intersect tr, .table-intersect th, .table-intersect td, .table-intersect td:last-child {
     border-color: #eff2f7;
     border-width: 5px; }
@@ -2819,6 +2821,79 @@ body {
     padding: 0; }
   .table-intersect .tfoot td {
     background-color: #dbdbdb; }
+  .table-intersect .sub-table table {
+    font-size: 0.889rem;
+    margin: 0; }
+  .table-intersect .table-row-toggle {
+    cursor: pointer; }
+    .table-intersect .table-row-toggle:hover {
+      background-color: #ddd;
+      transition: all 200ms; }
+
+.ui-widget-overlay {
+  background: #000;
+  opacity: .7; }
+
+.ui-widget {
+  font-size: initial;
+  font-family: inherit; }
+
+.ui-dialog .ui-dialog-content {
+  overflow: hidden;
+  padding: 1.5rem; }
+
+.tracker-links {
+  padding-bottom: 2rem; }
+  .tracker-links .tl-source {
+    width: 200px; }
+  .tracker-links .tl-medium {
+    width: 200px; }
+  .tracker-links .tl-count {
+    width: 150px; }
+  .tracker-links .tl-last {
+    width: 180px; }
+  .tracker-links .tl-add {
+    text-align: right;
+    margin-bottom: 2rem; }
+  .tracker-links .tl-actions {
+    text-align: center;
+    width: 200px; }
+  .tracker-links table a {
+    color: inherit; }
+  @media only screen and (min-width: 1024px) {
+    .tracker-links {
+      padding-bottom: 4rem; } }
+
+.entity-tracker-link {
+  padding-bottom: 2rem; }
+  .entity-tracker-link .entity-title {
+    font-size: 2.33rem;
+    padding-bottom: 2rem; }
+  .entity-tracker-link .entity-settings .field,
+  .entity-tracker-link .entity-outgoing .field {
+    display: flex;
+    margin-bottom: 10px; }
+  .entity-tracker-link .entity-settings .field-label,
+  .entity-tracker-link .entity-outgoing .field-label {
+    color: #6999ff;
+    font-weight: 400;
+    text-align: right;
+    margin: 0 1rem 0 0;
+    flex: 0 0 200px; }
+  .entity-tracker-link .entity-settings .field-value a,
+  .entity-tracker-link .entity-outgoing .field-value a {
+    color: inherit; }
+    .entity-tracker-link .entity-settings .field-value a:hover,
+    .entity-tracker-link .entity-outgoing .field-value a:hover {
+      text-decoration: underline; }
+  .entity-tracker-link .entity-divider {
+    background-color: #6999ff;
+    height: 2px;
+    width: 200px;
+    margin: 1rem 0; }
+  @media only screen and (min-width: 1024px) {
+    .entity-tracker-link {
+      padding-bottom: 4rem; } }
 
 .holding-balances {
   padding-bottom: 4rem; }
@@ -2843,13 +2918,5 @@ body {
     width: 250px; }
   .holding-balances .zero-value {
     color: #aaa; }
-  .holding-balances .table-row-toggle {
-    cursor: pointer; }
-    .holding-balances .table-row-toggle:hover {
-      background-color: #ddd;
-      transition: all 200ms; }
-  .holding-balances .sub-table table {
-    font-size: 0.889rem;
-    margin: 0; }
 
 /*# sourceMappingURL=project.css.map */

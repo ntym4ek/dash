@@ -1,0 +1,179 @@
+<?php
+
+function dep_2a_menu()
+{
+  $items['td/department-2a'] = array(
+    'title' => 'Управление 2А',
+    'menu_name' => 'main-menu',
+    'weight' => 3,
+    'page callback' => 'dep_2a_tracker_link_list_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_2A_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['tracker/%'] = array(
+    'page callback' => 'dep_2a_tracker_callback',
+    'page arguments' => [1],
+    'access callback' => true,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+
+function dep_2a_tracker_link_list_page()
+{
+  $output =   '<div class="section-title">' .
+                '<h3>Отслеживаемые ссылки</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
+
+  $output .= '<div class="tracker-links">';
+  $output .=   '<div class="row">';
+  $output .=       '<div class="col-xs-12"><div class="tl-add"><a href="/admin/structure/entity-type/tracker_link/tracker_link/add" class="btn btn-brand autodialog" data-dialog-ajax="true">Добавить ссылку</a></div></div>';
+  $output .=   '</div>';
+
+  $output .=   '<div class="table-wrapper">' . dep_2a_tracker_link_table_get() . '</div>';
+  $output .= '</div>';
+
+  return $output;
+}
+
+function dep_2a_tracker_link_table_get()
+{
+  // получить таблицу ссылок
+  $rows = [];
+  if ($links_ids = dep_2a_tracker_link_get_ids()) {
+    foreach ($links_ids as $link_id) {
+      $link_wr = entity_metadata_wrapper('tracker_link', $link_id);
+      $stat = dash_2a_tracker_link_get_stat($link_id);
+
+      $rows[] = [
+        'data' => [
+          ['data' => '<a href="/tracker_link/tracker_link/' . $link_id . '">' . $link_wr->label() . '</a>'],
+          ['data' => $link_wr->field_tl_source->label()],
+          ['data' => $stat['count'] ?? 0, 'align' => 'center'],
+          ['data' => $stat['last'] ? format_date($stat['last'],'custom', 'd.m.Y H:i', drupal_get_user_timezone()) : '-', 'align' => 'center'],
+        ],
+      ];
+    }
+  }
+
+  // вывести таблицу ссылок
+  $header = [
+    ['data' => 'Название', 'align' => 'center'],
+    ['data' => 'Размещение', 'align' => 'center', 'class' => ['tl-source']],
+    ['data' => 'Переходов', 'align' => 'center', 'class' => ['tl-count']],
+    ['data' => 'Последний', 'align' => 'center', 'class' => ['tl-last']],
+  ];
+
+  return theme('table', [
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table', 'table-intersect']],
+    'sticky' => false,
+  ]);
+}
+
+function dep_2a_tracker_link_get_ids()
+{
+  $dbr = db_select('eck_tracker_link', 'tl');
+  $dbr->condition('tl.type', 'tracker_link');
+  $dbr->addField('tl', 'id');
+
+  return $dbr->execute()->fetchCol();
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function dep_2a_form_eck__entity__form_add_tracker_link_tracker_link_alter(&$form, &$form_state)
+{
+  dep_2a_tracker_link_form_alter($form, $form_state);
+}
+function dep_2a_form_eck__entity__form_edit_tracker_link_tracker_link_alter(&$form, &$form_state)
+{
+  dep_2a_tracker_link_form_alter($form, $form_state);
+}
+function dep_2a_tracker_link_form_alter(&$form, &$form_state)
+{
+  $form["title"]["#title"] = 'Название ссылки';
+  $form["title"]["#description"] = 'Краткое описание, чтобы в списке отличить ссылку от других';
+}
+
+/**
+ * Обработчик клика по ссылке или скана QR
+ * @param $tl_id
+ */
+function dep_2a_tracker_callback($tl_id)
+{
+  $tl_wr = entity_metadata_wrapper('tracker_link', $tl_id);
+  if ($tl_wr->value()) {
+    // добавить клик в статистику
+    $stat = entity_create('field_collection_item', ['field_name' => 'field_tl_stat']);
+    $stat->setHostEntity('node', $tl_wr->value());
+
+    $stat_wr = entity_metadata_wrapper('field_collection_item', $stat);
+    $stat_wr->field_tls_date = REQUEST_TIME;
+    $stat_wr->field_tls_referer = $_SERVER['HTTP_REFERER'];
+    $stat_wr->field_tls_user_agent = $_SERVER['HTTP_USER_AGENT'];
+    $stat_wr->save();
+
+    // перенаправить по целевой ссылке
+    drupal_goto(url($tl_wr->field_tl_outbound_link->value(), ['external' => true]));
+  } else {
+    drupal_goto('https://kccc.group');
+  }
+}
+
+function dash_2a_tracker_link_get_stat($tl_id)
+{
+  $stat = [
+    'count' => 0,
+    'last' => 0,
+  ];
+
+  $tl_wr = entity_metadata_wrapper('tracker_link', $tl_id);
+  foreach($tl_wr->field_tl_stat->getIterator() as $click_wr) {
+    if ($stat['last'] == 0 || $stat['last'] < $click_wr->field_tls_date->value()) $stat['last'] = $click_wr->field_tls_date->value();
+    $stat['count']++;
+  }
+
+  return $stat;
+}
+
+function dep_2a_preprocess_page(&$vars)
+{
+  if (arg(0) == 'tracker_link') {
+    $vars['is_banner_on'] = true;
+    $vars['is_title_on'] = false;
+    $vars['banner_title'] = 'Отслеживаемая ссылка';
+    $banner_uri = '/sites/default/files/images/page-banners/td.jpg';
+    $vars['banner_url'] = file_create_url($banner_uri);
+    $vars['banner_mobile_url'] = image_style_url('banner_mobile', $banner_uri);
+  }
+}
+
+function dep_2a_preprocess_tracker_link(&$vars)
+{
+  if (isset($vars["elements"]["#view_mode"]) && $vars["elements"]["#view_mode"] == 'full') {
+    $inbound_link = url('tracker/' . $vars["elements"]["#entity"]->id, ['absolute' => true]);
+    $vars['inbound_link'] = $inbound_link;
+    $qr_uri = qr_codes_generate($inbound_link, 1000, 1000);
+    $vars['qr_url'] = file_create_url($qr_uri);
+    $vars['qr_image'] = theme('qr_codes', ['data' => $inbound_link, 'width' => 300, 'height' => 300, 'margin' => 0, 'image_style' => '']);
+  }
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function dep_2a_menu_local_tasks_alter(&$data, $router_item, $root_path)
+{
+  if ($root_path == 'tracker_link/tracker_link/%') {
+    $data["tabs"][0]["output"][1]["#link"]["localized_options"]['attributes'] = ['class' => ['autodialog']];
+    $data["tabs"][0]["output"][2]["#link"]["localized_options"]['query'] = ['destination' => 'td/department-2a'];
+    $data["tabs"][0]["output"][2]["#link"]["localized_options"]['attributes'] = ['class' => ['autodialog']];
+  }
+}
