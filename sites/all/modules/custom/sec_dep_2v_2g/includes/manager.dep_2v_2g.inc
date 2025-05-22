@@ -65,7 +65,7 @@ function dep_2v_2g_manager_period_page()
   // отгрузка по регионам
   $output .= '<div class="row">';
   $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по регионам (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_ship_plan_region_filter_form');
+  $form =       drupal_get_form('dep_2v_2g_ship_plan_amount_region_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
   $output .= '<div class="ajax-load" data-func="manager_7" data-delay="4000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
@@ -131,9 +131,9 @@ function dep_2v_2g_manager_7($period = null)
 
   // отгрузка по регионам
   $output = '<div class="row">';
-  $region = empty($_GET['region']) ? 0 : $_GET['region'];
-  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $region);
-  $output .=    '<div id="region-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $regions = empty($_GET['region']) ? [] : [$_GET['region']];
+  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region_single($period, ['regions' => ['list' => $regions]]);
+  $output .=    '<div id="region-amount-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region($period, ['regions' => ['list' => [657]]]); // ЦО
   $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
 

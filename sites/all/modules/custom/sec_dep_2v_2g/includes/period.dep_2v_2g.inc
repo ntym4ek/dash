@@ -84,13 +84,21 @@ function dep_2v_2g_head_period_page()
   $output .= '</div>';
   $output .= '<div class="ajax-load" data-func="block_period_6" data-delay="3000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
-  // отгрузка по регионам
+  // отгрузка по регионам в деньгах
   $output .= '<div class="row">';
   $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по регионам (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $form =       drupal_get_form('dep_2v_2g_ship_plan_region_filter_form');
+  $form =       drupal_get_form('dep_2v_2g_ship_plan_amount_region_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
   $output .= '<div class="ajax-load" data-func="block_period_7" data-delay="4000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
+  // отгрузка по регионам в объёмах
+  $output .= '<div class="row">';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по регионам (шт/л/кг)</h5></div>';
+  $form =       drupal_get_form('dep_2v_2g_ship_plan_qty_region_filter_form');
+  $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
+  $output .= '</div>';
+  $output .= '<div class="ajax-load" data-func="block_period_8" data-delay="4000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
 
   return '<div class="charts" data-module="dep_2v_2g" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
@@ -207,13 +215,32 @@ function dep_2v_2g_block_period_7($period = null)
 
   // отгрузка по регионам
   $output = '<div class="row">';
-  $region = empty($_GET['region']) ? 0 : $_GET['region'];
-  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $region);
-  $output .=    '<div id="region-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $regions = empty($_GET['region']) ? [] : [$_GET['region']];
+  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region_single($period, ['regions' => ['list' => $regions]]);
+  $output .=    '<div id="region-amount-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region($period, ['regions' => ['list' => [657]]]); // ЦО
   $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
 
   $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region($period, ['regions' => ['exclude' => [657]]]);
+  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $output .= '</div>';
+
+  return $output;
+}
+
+function dep_2v_2g_block_period_8($period = null)
+{
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
+
+  // отгрузка по регионам
+  $output = '<div class="row">';
+  $regions = empty($_GET['region']) ? [] : [$_GET['region']];
+  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region_single($period, ['regions' => ['list' => $regions], 'data_type' => 'quantity']);
+  $output .=    '<div id="region-qty-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region($period, ['regions' => ['list' => [657]], 'data_type' => 'quantity']); // ЦО
+  $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+
+  $data_arr =   dep_2v_2g_bar_ship_plan_fact_by_region($period, ['regions' => ['exclude' => [657]], 'data_type' => 'quantity']);
   $output .=    '<div class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 

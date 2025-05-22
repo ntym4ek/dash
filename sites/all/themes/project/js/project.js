@@ -1,9 +1,10 @@
 (function ($) {
   Drupal.behaviors.project = {
     attach: function (context, settings) {
+      const menuHideWidth = settings.theme.nav_mobile_hide_width;
 
       // --- Страница регистраций ----------------------------------------------
-      if ($(window).width() >= menuHide) {
+      if ($(window).width() >= menuHideWidth) {
         // для пустых таблиц на десктопе показать сообщение
         $('.table-li-responsive').each(function (i, table) {
           var isTableEmpty = true;
@@ -29,13 +30,13 @@
             turnOffSiblings(el, 'clicked');
           });
           $parent.find(".table-row .col-select").text("");
-          if ($(window).width() < menuHide) $parent.find('.table-base li:not(.table-header)').removeClass('not-clicked');
+          if ($(window).width() < menuHideWidth) $parent.find('.table-base li:not(.table-header)').removeClass('not-clicked');
 
           // если клик был по отключенной строке, включаем её
           if (!clicked) {
             turnOnSiblings(this, 'clicked');
             $(this).addClass('clicked').find(".col-select").text("v");
-            if ($(window).width() < menuHide) $parent.find('.table-base li:not(.table-header):not(.clicked)').addClass('not-clicked');
+            if ($(window).width() < menuHideWidth) $parent.find('.table-base li:not(.table-header):not(.clicked)').addClass('not-clicked');
           }
         });
 
