@@ -77,7 +77,7 @@ function dep_2d_import_remains($file_arr)
     }
 
     if ($import_arr) {
-      // удалить старый остатки за период
+      // удалить старые остатки за период
       $date_arr   = explode('.', $file_arr['start_date']);
       $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
       $date_arr   = explode('.', $file_arr['end_date']);

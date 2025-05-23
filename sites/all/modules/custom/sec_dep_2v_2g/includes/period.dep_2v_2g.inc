@@ -48,7 +48,7 @@ function dep_2v_2g_head_period_page()
 
 
   $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Отгрузка по номенклатуре (' . DASH_REV_SUFFIX . ')</h5></div>';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Отгрузка по номенклатуре (выручка в ' . DASH_REV_SUFFIX . ')</h5></div>';
   $form =       drupal_get_form('dep_2v_2g_column_ship_plan_by_nom_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
@@ -70,7 +70,7 @@ function dep_2v_2g_head_period_page()
 
   // план-факт отгрузки по номенклатуре в литрах
   $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по номенклатуре (шт/л/кг)</h5></div>';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по номенклатуре (объёмы в шт/л/кг)</h5></div>';
   $form =       drupal_get_form('dep_2v_2g_ship_plan_nom_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
@@ -78,7 +78,7 @@ function dep_2v_2g_head_period_page()
 
   // план-факт линейные
   $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (' . DASH_REV_SUFFIX . ')</h5></div>';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки (выручка в ' . DASH_REV_SUFFIX . ')</h5></div>';
   $form =       drupal_get_form('dep_2v_2g_line_ship_plan_fact_by_month_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
@@ -86,7 +86,7 @@ function dep_2v_2g_head_period_page()
 
   // отгрузка по регионам в деньгах
   $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по регионам (' . DASH_REV_SUFFIX . ')</h5></div>';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по регионам (выручка в ' . DASH_REV_SUFFIX . ')</h5></div>';
   $form =       drupal_get_form('dep_2v_2g_ship_plan_amount_region_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
@@ -94,7 +94,7 @@ function dep_2v_2g_head_period_page()
 
   // отгрузка по регионам в объёмах
   $output .= '<div class="row">';
-  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по регионам (шт/л/кг)</h5></div>';
+  $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана отгрузки по регионам (объёмы в шт/л/кг)</h5></div>';
   $form =       drupal_get_form('dep_2v_2g_ship_plan_qty_region_filter_form');
   $output .=    '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
