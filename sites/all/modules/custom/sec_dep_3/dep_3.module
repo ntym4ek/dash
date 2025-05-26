@@ -292,16 +292,13 @@ function dep_3_line_revenue_fact_by_week()
 
     $chart['xaxis']['#labels'][] = $label;
     $chart['fact']['#data'][] = REQUEST_TIME > $week['end'] ? $amount : null;
-    if ($week['amount']) {
-      $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-        '<div><div style="display:inline-block; width: 160px;">Выручка за неделю:</div><div style="display:inline-block; text-align: right; width: 100px;"><b>' . number_format($week['amount'], 0, ',', ' ') . '</b> руб.</div></div>' .
-        '</div>';
-      $chart['fact'][] = [
-        '#type' => 'chart_data_item',
-        '#title' => $tooltip,
-      ];
-
-    }
+    $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      '<div><div style="display:inline-block; width: 160px;">Выручка за неделю:</div><div style="display:inline-block; text-align: right; width: 100px;"><b>' . number_format($week['amount'], 0, ',', ' ') . '</b> руб.</div></div>' .
+      '</div>';
+    $chart['fact'][] = [
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+    ];
   }
 
   return $chart;
