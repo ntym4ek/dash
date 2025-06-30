@@ -462,7 +462,7 @@ function dep_2d_column_remains_by_nom($datetime, $options = [])
         $delta_t2 = $qty_t2 ? (number_format(($qty_t2 / $qty_t * 100), 0, null, ' ') . '%') : '';
       }
 
-      $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      $tooltip =  '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
         '<div><div style="display:inline-block; width: 180px;">Всего:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_t, 0, ',', ' ') . '</b></div></div>' .
         '<div><div style="display:inline-block; width: 180px;">Менее ' . DEP_2D_WARNING_2_DAYS . ' дней:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_t2, 0, ',', ' ') . '</b></div></div>' .
         '<div><div style="display:inline-block; width: 180px;">Менее ' . DEP_2D_WARNING_1_DAYS . ' дней:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_t1, 0, ',', ' ') . '</b></div></div>' .

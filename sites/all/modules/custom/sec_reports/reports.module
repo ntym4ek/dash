@@ -1,0 +1,314 @@
+<?php
+
+/**
+ * Implementation of hook_menu().
+ */
+function reports_menu()
+{
+  $items['rep'] = array(
+    'title' => 'Отчёты',
+    'menu_name' => 'main-menu',
+    'expanded' => true,
+    'weight' => 15,
+    'page callback' => 'reports_td_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+
+  );
+  $items['rep/td'] = array(
+    'title' => 'Торговый Дом',
+    'menu_name' => 'main-menu',
+    'page callback' => 'reports_td_page',
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+function reports_td_page()
+{
+  $period = dash_get_year_time_bounds(1);
+
+  $output =   '<div class="section-title">' .
+                '<h3>План-факт поступления денежных средств</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
+
+  // план-факт поступления денежных средств с начала календарного года
+  $output .= '<div class="ajax-load" data-func="block_1"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
+  // динамика поступления денежных средств год к году
+  $output .=   '<div class="section-title">' .
+    '<h3>Динамика поступления денежных средств год к году (в ' . DASH_REV_SUFFIX . ')</h3>' .
+    '<div class="underline"></div>' .
+    '</div>';
+  $output .= '<div class="row">';
+  $output .=   '<div class="col-xs-12 col-md-6">';
+  $output .=     '<h5 class="chart-title">' . helper_month_label_ru(date('n')-1) . '</h5>';
+  $output .=     '<div class="ajax-load" data-func="block_2" data-delay="400"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .=   '<div class="col-xs-12 col-md-6">';
+  $output .=     '<h5 class="chart-title">' . helper_month_label_ru(1) . ' - ' . helper_month_label_ru(date('n')-1) . '</h5>';
+  $output .=     '<div class="ajax-load" data-func="block_3" data-delay="400"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .= '</div>';
+
+  return '<div class="charts" data-module="reports" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
+}
+
+function reports_block_1($period = null)
+{
+  $period = $period ?? ['from' => $_GET['period_from'], 'to' => $_GET['period_to'], 'end' => $_GET['period_end']];
+
+  // план-факт выручки помесячно линейный
+  $output = '<div class="row">';
+//  $output .=    '<div class="col-xs-12"><h5 class="chart-title">План-факт поступления денежных средств (в ' . DASH_REV_SUFFIX . ')</h5></div>';
+  $data_arr =   reports_line_revenue_plan_fact($period);
+  $output .=    '<div id="plan-fact-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
+  $output .= '</div>';
+
+  return $output;
+}
+
+function reports_block_2()
+{
+  // период с начала предыдущего месяца по начало текущего месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, date('n')-1, 1, date('Y')),
+    'to' => gmmktime(0, 0, 0, date('n'), 1, date('Y'))
+  ];
+
+  // факт поступления выручки за последний полный месяц
+  $data_arr = reports_column_revenue_fact_compare($period);
+
+  return drupal_render($data_arr);
+}
+
+function reports_block_3()
+{
+  // период с начала года по начало текущего месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
+    'to' => gmmktime(0, 0, 0, date('n'), 1, date('Y'))
+  ];
+
+  // факт поступления выручки за последний полный месяц
+  $data_arr = reports_column_revenue_fact_compare($period);
+
+  return drupal_render($data_arr);
+}
+
+/**
+ * ----- Формы --------------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * ----- Подготовка графика --------------------------------------------------------------------------------------------
+ */
+function reports_line_revenue_plan_fact($period)
+{
+  $chart = dash_get_no_data_chart();
+
+  $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
+
+  // собрать все записи за период
+  $plan = dash_get_revenue_plan_fact_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds]);
+  $fact = dash_get_revenue_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period]);
+
+  if ($plan || $fact) {
+    // сгруппировать помесячно
+    $plan_fact_by_month = [];
+    foreach (dash_get_months_list($period) as $month) {
+      $plan_fact_by_month[$month['start']] = [
+        'plan_amount' => 0,
+        'fact_amount' => 0,
+        'start' => $month['start'],
+        'end' => $month['end'],
+      ];
+
+      foreach ($plan as $record) {
+        if ($record->date >= $month['start'] && $record->date < $month['end']) {
+          $plan_fact_by_month[$month['start']]['plan_amount'] += $record->amount;
+        }
+      }
+      foreach ($fact as $record) {
+        if ($record->date >= $month['start'] && $record->date < $month['end']) {
+          $plan_fact_by_month[$month['start']]['fact_amount'] += $record->amount;
+        }
+      }
+    }
+    ksort($plan_fact_by_month);
+
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'line',
+      '#chart_id' => 'reports_line_revenue_plan_fact',
+      '#height' => '350',
+      '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_DARK_RED],
+      '#legend_position' => 'bottom',
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+        'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
+        'legend' => ['position' => 'top'],
+        'annotations' => [
+          'datum' => ['stem' => ['color' => 'transparent', 'length' => 30]],
+          'textStyle' => ['fontName' => '<global-font-name>', 'fontSize' => 14, 'bold' => 'true'],
+        ],
+        'chartArea' => [
+          'width' => '90%',
+          'left' => 70,
+        ],
+        'tooltip' => ['isHtml' => true],
+      ],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+        '#raw_options' => ['textStyle' => ['fontName' => '<global-font-name>']]
+      ],
+      'plan' => [
+        '#type' => 'chart_data',
+        '#title' => 'План',
+        '#data' => [],
+      ],
+      'fact' => [
+        '#type' => 'chart_data',
+        '#title' => 'Факт',
+        '#data' => [],
+      ],
+    );
+
+    $total_plan = $total_fact = 0;
+    foreach ($plan_fact_by_month as $month) {
+      $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
+
+      $plan = $month['plan_amount'] / DASH_REV_DIVIDER;
+      $fact = $month['fact_amount'] / DASH_REV_DIVIDER;
+      $total_plan += $plan;
+      $total_fact += $fact;
+      // если это текущий период,
+      // то считаем и выводим накопительный факт только до месяца предстоящего текущему месяцу
+      $total_fact = ($month['start'] < gmmktime(0, 0, 0, date('n'), 1, date('Y'))) ? $total_fact : null;
+
+      $chart['plan']['#data'][] = $total_plan;
+      $chart['fact']['#data'][] = $total_fact;
+
+      $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+        '<div><div style="display:inline-block; text-decoration: underline;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
+        '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
+        '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
+        '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact/$plan*100, 0, ',', ' ') . '</b>&nbsp;%</div></div>' .
+        '<div>&nbsp;</div>' .
+        '<div><div style="display:inline-block; text-decoration: underline;">Накопительный итог</div></div>' .
+        '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($total_plan, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
+        '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($total_fact, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
+        '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($total_fact/$total_plan*100, 0, ',', ' ') . '</b>&nbsp;%</div></div>' .
+        '</div>';
+
+      $chart['fact'][] = array(
+        '#type' => 'chart_data_item',
+        '#title' => $tooltip,
+        '#raw_options' => [
+          'annotation' => $total_fact ? number_format($total_fact, 0, null, ' ') : null,
+        ],
+      );
+      $chart['plan'][] = array(
+        '#type' => 'chart_data_item',
+        '#raw_options' => [
+          'annotation' => $total_plan ? number_format($total_plan, 0, null, ' ') : null,
+        ],
+      );
+    }
+  }
+
+  return $chart;
+}
+
+function reports_column_revenue_fact_compare($period)
+{
+  $chart = dash_get_no_data_chart();
+
+  // собрать данные периодов с DASH_YEAR_HISTORY_START года
+  $data = [];
+  foreach (dash_get_years_shift_list($period, 1) as $shift) {
+    $period_shifted = dash_get_period_shifted($period, $shift);
+
+    $fact = dash_get_revenue_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
+
+    $amount = 0;
+    if ($fact) foreach ($fact as $record) {
+      $amount += $record->amount;
+    }
+
+    if ($amount) {
+    $data[date('Y', $period_shifted['from'])] = [
+      'amount' => $amount / DASH_REV_DIVIDER,
+    ];
+    }
+  }
+
+  if ($data) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'column',
+//      '#colors' => [DASH_COLOR_LIGHT_GREEN, DASH_COLOR_LIGHT_BLUE, DASH_COLOR_LIGHT_ORANGE],
+      '#height' => '500',
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+        '#raw_options' => [
+          'titleTextStyle' => ['fontName' => '<global-font-name>'],
+          'textStyle' => ['fontName' => '<global-font-name>'],
+        ]
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+//        '#max' => 3000,
+        '#raw_options' => [
+          'titleTextStyle' => ['fontName' => '<global-font-name>'],
+          'textStyle' => ['fontName' => '<global-font-name>']
+        ]
+      ],
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontName' => '<global-font-name>', 'fontSize' => '16'],
+        'legend' => ['position' => 'top', 'textStyle' => ['fontSize' => '12', 'fontName' => '<global-font-name>']],
+        'chartArea' => ['height' => '80%', 'width' => '85%', 'left' => 70],
+        'tooltip' => ['isHtml' => true],
+        'bar' => ['groupWidth' => "70%"],
+        'isStacked' => 'true',
+      ],
+    );
+
+    // пустое пространство слева
+
+    foreach ($data as $year_1 => $item_1) {
+      $chart[$year_1] = [
+        '#type' => 'chart_data',
+        '#title' => (string)$year_1,
+        '#data' => [],
+      ];
+
+      foreach ($data as $year_2 => $item_2) {
+        if ($year_1 == $year_2) {
+          $chart['xaxis']['#labels'][] = (string)$year_1;
+          $chart[$year_1]['#data'][] = $item_1['amount'];
+        } else {
+          $chart[$year_1]['#data'][] = null;
+        }
+        $chart[$year_1][] = array(
+          '#type' => 'chart_data_item',
+          '#raw_options' => [
+            'annotation' => number_format($item_1['amount'], 1, ',', ' '),
+          ],
+        );
+      }
+    }
+  }
+
+  return $chart;
+}

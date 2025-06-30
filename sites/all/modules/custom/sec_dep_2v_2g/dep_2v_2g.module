@@ -581,7 +581,7 @@ function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $options)
     $chart['plan_curr']['#data'][] = 0;
     $chart['plan']['#data'][] = 0;
 
-    $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+    $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
       '<div><div style="display:inline-block; width: 210px;">Текущий план:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($amount_pc, 2, ',', ' ') . '</b>&nbsp;' . $suffix . '</div></div>' .
       '<div><div style="display:inline-block; width: 210px;">План на сезон:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($amount_p, 2, ',', ' ') . '</b>&nbsp;' . $suffix . '</div></div>' .
       '</div>';
@@ -599,7 +599,7 @@ function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $options)
     );
     $chart['fact'][] = $chart['deal'][] = ['#type' => 'chart_data_item'];
 
-    $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+    $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
       '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($amount_f, 2, ',', ' ') . '</b>&nbsp;' . $suffix . '</div></div>' .
       '<div><div style="display:inline-block; width: 210px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($amount_d, 2, ',', ' ') . '</b>&nbsp;' . $suffix . '</div></div>' .
       '</div>';
@@ -767,7 +767,7 @@ function dep_2v_2g_bar_ship_plan_fact_by_region($period, $options = [])
         $chart['deal']['#data'][] = $amount_d;
         $chart['plan']['#data'][] = max($amount_p - $amount_d - $amount_f, 0);
 
-        $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:180px;white-space: nowrap;">' .
+        $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:180px;white-space: nowrap;">' .
           '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($amount_p, 2, ',', ' ') . '</b>&nbsp;' . $suffix . '</div></div>' .
           '<div><div style="display:inline-block; width: 210px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($amount_d, 2, ',', ' ') . '</b>&nbsp;' . $suffix . '</div></div>' .
           '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($amount_f, 2, ',', ' ') . '</b>&nbsp;' . $suffix . '</div></div>' .
@@ -1018,7 +1018,7 @@ function dep_2v_2g_pie_revenue_pay_plan($time_from, $time_to)
 //    if ($qty_p) {
 //      $delta = ($qty_f > $qty_p ? '(+' : '(') . number_format(($qty_f / $qty_p * 100) - 100, 0, null, ' ') . '%)';
 //    }
-//    $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+//    $tooltip =  '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
 //      ($print ? '<div><div style="display:inline-block; width: 180px;">План:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_p, 0, ',', ' ') . '</b></div></div>' : '') .
 //      ($print ? '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_d, 0, ',', ' ') . '</b></div></div>' : '') .
 //      '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_f, 0, ',', ' ') . '</b></div></div>' .
@@ -1159,7 +1159,7 @@ function dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom)
       if ($qty_p) {
         $delta = ($qty_f > $qty_p ? '(+' : '(') . number_format(($qty_f / $qty_p * 100) - 100, 0, null, ' ') . '%)';
       }
-      $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      $tooltip =  '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
         ($print ? '<div><div style="display:inline-block; width: 180px;">План:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_p, 0, ',', ' ') . '</b></div></div>' : '') .
         ($print ? '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_d, 0, ',', ' ') . '</b></div></div>' : '') .
         '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_f, 0, ',', ' ') . '</b></div></div>' .
@@ -1344,7 +1344,7 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
             $delta = ($qty_f > $qty_p ? '(+' : '(') . number_format(($qty_f / $qty_p * 100) - 100, 0, null, ' ') . '%)';
           }
 
-          $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+          $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
             '<div><div style="display:inline-block; width: 180px;">План:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_p, 0, ',', ' ') . '</b></div></div>' .
             '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_d, 0, ',', ' ') . '</b></div></div>' .
             '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_f, 0, ',', ' ') . '</b></div></div>' .
@@ -1523,7 +1523,7 @@ function dep_2v_2g_column_ship_plan_fact_by_nom1($period, $options = [])
             $delta = ($qty_f > $qty_p ? '(+' : '(') . number_format(($qty_f / $qty_p * 100) - 100, 0, null, ' ') . '%)';
           }
 
-          $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+          $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
             '<div><div style="display:inline-block; width: 180px;">План:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_p, 0, ',', ' ') . '</b></div></div>' .
             '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_d, 0, ',', ' ') . '</b></div></div>' .
             '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_f, 0, ',', ' ') . '</b></div></div>' .
@@ -1652,7 +1652,7 @@ function dep_2v_2g_column_ship_fact_gross_profit_by_week($period)
         $total_net_amount += $week['net_amount'];
         $total_formula = ($total_amount - $total_net_amount) / ($total_amount) * 100;
 
-        $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+        $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
           '<div><div style="display:inline-block; width: 180px;">Выручка за неделю (без НДС):</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($week['amount'], 0, ',', ' ') . '</b></div></div>' .
           '<div><div style="display:inline-block; width: 180px;">Себестоимость:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($week['net_amount'], 0, ',', ' ') . '</b></div></div>' .
           '<div><div style="display:inline-block; width: 180px;">Прибыль:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($week['amount'] - $week['net_amount'], 0, ',', ' ') . '</b></div></div>' .
@@ -1667,7 +1667,7 @@ function dep_2v_2g_column_ship_fact_gross_profit_by_week($period)
         ];
 
         $chart['line']['#data'][] = 28;
-        $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+        $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
           '28%' .
           '</div>';
         $chart['line'][] = [
@@ -1675,7 +1675,7 @@ function dep_2v_2g_column_ship_fact_gross_profit_by_week($period)
           '#title' => $tooltip,
         ];
         $chart['line_year']['#data'][] = $total_formula;
-        $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+        $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
           '<div><div style="display:inline-block; width: 180px;">Суммарная выручка (без НДС):</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($total_amount, 0, ',', ' ') . '</b></div></div>' .
           '<div><div style="display:inline-block; width: 180px;">Себестоимость:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($total_net_amount, 0, ',', ' ') . '</b></div></div>' .
           '<div><div style="display:inline-block; width: 180px;">Суммарная прибыль:</div><div style="display:inline-block; text-align: right; width: 80px;"><b>' . number_format($total_amount - $total_net_amount, 0, ',', ' ') . '</b></div></div>' .

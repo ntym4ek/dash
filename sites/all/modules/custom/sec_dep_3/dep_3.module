@@ -149,7 +149,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
       $delta = $total_fact_prev ? (int)($total_fact_curr/$total_fact_prev*100-100) : 0;
       $ratio = ($total_fact_curr > $total_fact_prev ? ' +' : ' ') . number_format($delta, 0, null, ' ') . '%';
 
-      $tooltip = '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
                    '<div><div style="display:inline-block; width: 100px;">Выручка:</div><div style="display:inline-block; text-align: right; width: 100px;"><b>' . number_format($total_fact_curr, 0, ',', ' ') . '</b> руб.</div></div>' .
                   '</div>';
 
@@ -162,7 +162,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
       );
     }
 
-    $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+    $tooltip =  '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
                   '<div><div style="display:inline-block; width: 100px;">Выручка:</div><div style="display:inline-block; text-align: right; width: 100px;"><b>' . number_format($total_fact_prev, 0, ',', ' ') . '</b> руб.</div></div>' .
                 '</div>';
 
@@ -198,7 +198,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
       $delta = $curr_amount_p ? (int)($fact_curr_today_amount/$curr_amount_p*100-100) : '0';
       $ratio = $delta ? (($fact_curr_today_amount > $fact_prev_today_amount ? ' +' : ' ') . number_format($delta, 0, null, ' ') . '%') : number_format($fact_curr_today_amount, 1, null, ' ');
 
-      $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      $tooltip =  '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
                     '<div><div style="display:inline-block; width: 100px;">Выручка:</div><div style="display:inline-block; text-align: right; width: 100px;"><b>' . number_format($fact_curr_today_amount, 0, ',', ' ') . '</b> млн руб.</div></div>' .
                   '</div>';
 
@@ -209,7 +209,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
             'annotation' => $ratio,
           ]
         ]]);
-      $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      $tooltip =  '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
                     '<div><div style="display:inline-block; width: 100px;">Выручка:</div><div style="display:inline-block; text-align: right; width: 100px;"><b>' . number_format($curr_amount_p, 0, ',', ' ') . '</b> млн руб.</div></div>' .
                   '</div>';
 
@@ -292,7 +292,7 @@ function dep_3_line_revenue_fact_by_week()
 
     $chart['xaxis']['#labels'][] = $label;
     $chart['fact']['#data'][] = REQUEST_TIME > $week['end'] ? $amount : null;
-    $tooltip =  '<div style="font-family: sans-serif; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+    $tooltip =  '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
       '<div><div style="display:inline-block; width: 160px;">Выручка за неделю:</div><div style="display:inline-block; text-align: right; width: 100px;"><b>' . number_format($week['amount'], 0, ',', ' ') . '</b> руб.</div></div>' .
       '</div>';
     $chart['fact'][] = [

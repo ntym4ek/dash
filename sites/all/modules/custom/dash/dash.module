@@ -71,27 +71,27 @@ function dash_frontpage()
 }
 
 /** Вернуть начальное и конечное (не включительно) время Unix
- * 12-и месячного периода начиная с месяца $month_start
+ * 12-и месячного периода начиная с месяца $month_num
  * и смещением $year_shift лет от текущего периода.
  * from - начало 12и месячного периода
  * to   - == end для прошлых периодов и == now для текущего
  * end  - конец 12и месячного периода
  * $year_shift = 0 - текущий период
  */
-function dash_get_year_time_bounds($month_start, $year_shift = 0)
+function dash_get_year_time_bounds($month_num_start, $year_shift = 0)
 {
   // получить начало текущего периода
-  $time_month_start = gmmktime(0, 0, 0, $month_start, 1, date('Y'));
+  $time_month_start = gmmktime(0, 0, 0, $month_num_start, 1, date('Y'));
   $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
 
   // применить смещение
   $year_start = $year_start + $year_shift;
 
-  $from = gmmktime(0, 0, 0, $month_start, 1, $year_start);
-  $end = gmmktime(0, 0, 0, $month_start+12, 1, $year_start);
+  $from = gmmktime(0, 0, 0, $month_num_start, 1, $year_start);
+  $end = gmmktime(0, 0, 0, $month_num_start+12, 1, $year_start);
   // для предыдущих берем весь сезон
   if ($year_shift) {
-    $to = gmmktime(0, 0, 0, $month_start+12, 1, $year_start);
+    $to = gmmktime(0, 0, 0, $month_num_start+12, 1, $year_start);
   }
   // для текущего по сегодняшнюю дату
   else {
@@ -108,24 +108,37 @@ function dash_get_year_time_bounds($month_start, $year_shift = 0)
 /**
  * Вернуть начальное и конечное (не включительно) время Unix
  * для периода:
- * с месяца $month_start и смещением $year_shift (0 - текущий) лет от текущего периода
- * до текущей даты в заданном сезоне
+ *   с месяца $month_num и смещением $year_shift (0 - текущий) лет от текущего периода
+ *   до текущей даты в заданном сезоне
  *
  * from - начало 12и месячного периода
  * to   - == end для прошлых периодов и == now для текущего
- * end  - конец 12и месячного периода
  */
-function dash_get_period_time_bounds($month_start, $year_shift = 0)
+function dash_get_period_time_bounds($month_num_start, $year_shift = 0)
 {
   // получить начало текущего периода
-  $time_month_start = gmmktime(0, 0, 0, $month_start, 1, date('Y'));
+  $time_month_start = gmmktime(0, 0, 0, $month_num_start, 1, date('Y'));
   $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
 
   // применить смещение
   $year_start = $year_start + $year_shift;
 
-  $from = gmmktime(0, 0, 0, $month_start, 1, $year_start);
+  $from = gmmktime(0, 0, 0, $month_num_start, 1, $year_start);
   $to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y') + $year_shift);
+
+  return [
+    'from' => $from,
+    'to' => $to,
+  ];
+}
+
+/**
+ * Вернуть смещение заданного периода на заданное количество лет
+ */
+function dash_get_period_shifted($period, $year_shift = 0)
+{
+  $from = gmmktime(0, 0, 0, date('n', $period['from']), date('j', $period['from']), date('Y', $period['from']) + $year_shift);
+  $to = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to']), date('Y', $period['to']) + $year_shift);
 
   return [
     'from' => $from,
@@ -957,14 +970,14 @@ function dash_get_years_shift($period = null)
  * Вернуть список смещений с заданного периода до DASH_YEAR_HISTORY_START года, но не более DASH_HISTORY_LENGTH
  * (например, за 3 года с текущего = [-2, -1, 0])
  */
-function dash_get_years_shift_list($period = null)
+function dash_get_years_shift_list($period = null, $month_num_start = DASH_PERIOD_START_MONTH_TD)
 {
-  if (!$period) $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  if (!$period) $period = dash_get_year_time_bounds($month_num_start);
 
-  $period_current = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  $period_current = dash_get_year_time_bounds($month_num_start);
 
   $shift = (date('Y', $period_current['from']) - date('Y', $period['from'])) * (-1);
-  $count = date('Y', $period['from']) - DASH_HISTORY_START_YEAR_TD;
+  $count = date('Y', $period['from']) - $month_num_start;
   $count = $count > DASH_HISTORY_LENGTH ? DASH_HISTORY_LENGTH : $count;
 
   $shifts = [];
