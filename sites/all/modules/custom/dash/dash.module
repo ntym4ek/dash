@@ -1,7 +1,7 @@
 <?php
 
 define ('DASH_REV_DIVIDER', 1000000);       // делитель для единиц выручки
-define ('DASH_REV_SUFFIX', 'млн');          // суффикс (ед. изм.) для отгрузки
+define ('DASH_REV_SUFFIX', 'млн руб.');     // суффикс (ед. изм.) для отгрузки
 define ('DASH_PROD_SUFFIX', 'тыс. ед.');    // суффикс (ед. изм.) для производства
 
 define ('DASH_TYPE_PLAN', 0);               // тип План
