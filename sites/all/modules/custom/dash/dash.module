@@ -2,6 +2,7 @@
 
 define ('DASH_REV_DIVIDER', 1000000);       // делитель для единиц выручки
 define ('DASH_REV_SUFFIX', 'млн руб.');     // суффикс (ед. изм.) для отгрузки
+define ('DASH_PROD_DIVIDER', 1000);         // делитель для единиц выручки
 define ('DASH_PROD_SUFFIX', 'тыс. ед.');    // суффикс (ед. изм.) для производства
 
 define ('DASH_TYPE_PLAN', 0);               // тип План
@@ -497,6 +498,20 @@ function dash_column_revenue_by_types($company, $time_from, $time_to)
 /**
  * ----- Выборка данных ------------------------------------------------------------------------------------------------
  */
+
+/**
+ *  Вернуть данные по ОТГРУЗКЕ продукции (сущность plan/plan_ship)
+ *  с учётом заданных параметров
+ * @param $conditions
+ *   - type - тип записи (план, факт, неотгруженные контракты)
+ *   - period - массив ['from' => , 'to' => не включительно]
+ *   - noms - массив ID номенклатуры, которые нужно отобрать
+ *   - regions - массив ID регионов, которые нужно отобрать
+ *   - exclude - массив условий, которые нужно исключить
+ *     - noms - массив ID номенклатуры, которые нужно исключить
+ *     - regions - массив ID регионов, которые нужно исключить
+ * @return array|mixed|null
+ */
 function dash_get_ship_plan_fact_by_conditions($conditions)
 {
   $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
@@ -565,6 +580,14 @@ function dash_get_ship_plan_fact_by_conditions($conditions)
   return $result;
 }
 
+/**
+ *  Вернуть данные по ВЫРУЧКЕ за продукцию (сущность plan/plan_revenue)
+ *  с учётом заданных параметров
+ * @param $conditions
+ *   - type - тип записи (план, факт, неотгруженные контракты)
+ *   - period - массив ['from' => , 'to' => не включительно]
+ * @return array|mixed|null
+ */
 function dash_get_revenue_plan_fact_by_conditions($conditions)
 {
   $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
@@ -588,6 +611,64 @@ function dash_get_revenue_plan_fact_by_conditions($conditions)
     $dbr->condition('frd.field_date_value', $conditions['period']['from'], '>=');
     $dbr->condition('frd.field_date_value', $conditions['period']['to'], '<');
     $dbr->addField('frd', 'field_date_value', 'date');
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+/**
+ * Вернуть данные по ПРОИЗВОДСТВУ продукции (сущность plan/plan)
+ * с учётом заданных параметров
+ *
+ * @param $conditions
+ *  - fact (bool) - план или факт
+ *  - period - массив ['from' => , 'to' => не включительно]
+ *  - noms - массив ID, которые нужно отобрать
+ *  - exclude - массив условий, которые нужно исключить
+ *    - noms - массив ID, которые нужно исключить
+ * @return array|mixed|null
+ */
+function dash_get_production_plan_fact_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_plan', 'p');
+    $dbr->condition('p.type', 'plan');
+
+    $dbr->innerJoin('field_data_field_is_fact', 'ff', 'ff.entity_id = p.id');
+    $dbr->condition('ff.bundle', 'plan');
+    if (isset($conditions['fact'])) {
+      $dbr->condition('ff.field_is_fact_value', $conditions['fact']);
+    }
+    $dbr->addField('ff', 'field_is_fact_value', 'fact');
+
+    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
+    $dbr->condition('frd.bundle', 'plan');
+    if (isset($conditions['period'])) {
+      $dbr->condition('frd.field_date_value', $conditions['period']['from'], '>=');
+      $dbr->condition('frd.field_date_value', $conditions['period']['to'], '<');
+    }
+    $dbr->addField('frd', 'field_date_value', 'date');
+
+    $dbr->leftJoin('field_data_field_nomenklatura', 'fn', 'fn.entity_id = p.id');
+    $dbr->condition('fn.bundle', 'plan');
+    $dbr->leftJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklatura_tid');
+    if (!empty($conditions['noms'])) {
+      $dbr->condition('fn.field_nomenklatura_tid', $conditions['noms'], 'IN');
+    }
+    if (!empty($conditions['exclude']['noms'])) {
+      $dbr->condition('fn.field_nomenklatura_tid', $conditions['exclude']['noms'], 'NOT IN');
+    }
+    $dbr->fields('t', ['tid', 'name']);
+
+    $dbr->innerJoin('field_data_field_output', 'fo', 'fo.entity_id = p.id');
+    $dbr->condition('fo.bundle', 'plan');
+    $dbr->addField('fo', 'field_output_value', 'output');
+
     $dbr->orderBy('date');
     $result = $dbr->execute()->fetchAll();
   }
