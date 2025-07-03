@@ -529,9 +529,19 @@ body {
       background: $gray-dark;
       &, &::placeholder {color: #fff; }
     }
-    label { color: #fff; }
+    label {
+      color: #fff; font-size: $font-size-small;
+    }
     .form-select option { background: $gray-dark; }
+
+    // для чисел сделать выравнивание
   }
+  .form-item-volume,
+  .form-item-qty,
+  .form-item-amount {
+    input { text-align: right; }
+  }
+
   .ui-dialog-titlebar {
     background: none;
     border: none;

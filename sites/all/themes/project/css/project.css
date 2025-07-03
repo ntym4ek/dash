@@ -3025,9 +3025,14 @@ body {
     .ui-dialog .form-item .form-select::placeholder {
       color: #fff; }
   .ui-dialog .form-item label {
-    color: #fff; }
+    color: #fff;
+    font-size: 0.889rem; }
   .ui-dialog .form-item .form-select option {
     background: #7D7C7C; }
+  .ui-dialog .form-item-volume input,
+  .ui-dialog .form-item-qty input,
+  .ui-dialog .form-item-amount input {
+    text-align: right; }
   .ui-dialog .ui-dialog-titlebar {
     background: none;
     border: none;

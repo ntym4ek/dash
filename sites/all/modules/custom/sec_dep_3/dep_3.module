@@ -48,8 +48,8 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
   $period_curr = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
 
   // собрать все записи за период
-  $fact_prev = dash_get_revenue_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period_prev]);
-  $fact_curr = dash_get_revenue_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period_curr]);
+  $fact_prev = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period_prev]);
+  $fact_curr = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period_curr]);
 
   // сгруппировать помесячно
   $facts_by_month = [];
@@ -234,7 +234,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
 function dep_3_line_revenue_fact_by_week()
 {
   $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
-  $fact = dash_get_revenue_plan_fact_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period]);
+  $fact = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period]);
 
   // сгруппировать понедельно
   $fact_by_week = [];
