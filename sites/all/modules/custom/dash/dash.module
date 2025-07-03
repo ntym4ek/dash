@@ -624,6 +624,7 @@ function dash_get_revenue_plan_fact_by_conditions($conditions)
  *
  * @param $conditions
  *  - fact (bool) - план или факт
+ *  - manual (bool) - данные из 1с или ручной ввод
  *  - period - массив ['from' => , 'to' => не включительно]
  *  - noms - массив ID, которые нужно отобрать
  *  - exclude - массив условий, которые нужно исключить
@@ -638,6 +639,7 @@ function dash_get_production_plan_fact_by_conditions($conditions)
   if (!isset($result)) {
     $dbr = db_select('eck_plan', 'p');
     $dbr->condition('p.type', 'plan');
+    $dbr->addField('p', 'id');
 
     $dbr->innerJoin('field_data_field_is_fact', 'ff', 'ff.entity_id = p.id');
     $dbr->condition('ff.bundle', 'plan');
@@ -645,6 +647,24 @@ function dash_get_production_plan_fact_by_conditions($conditions)
       $dbr->condition('ff.field_is_fact_value', $conditions['fact']);
     }
     $dbr->addField('ff', 'field_is_fact_value', 'fact');
+
+    // для полей, добавленных позже нужно учитывать, что данные могут быть не заданы
+    $dbr->leftJoin('field_data_field_is_manual', 'fm', 'fm.entity_id = p.id');
+    $dbr->condition(db_or()
+      ->isNull('fm.bundle')
+      ->condition('fm.bundle', 'plan')
+    );
+    if (isset($conditions['manual'])) {
+      if ($conditions['manual']) {
+        $dbr->condition('fm.field_is_manual_value', 1);
+      } else {
+        $dbr->condition(db_or()
+            ->isNull('fm.field_is_manual_value')
+            ->condition('fm.field_is_manual_value', 0)
+          );
+      }
+    }
+    $dbr->addField('fm', 'field_is_manual_value', 'manual');
 
     $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
     $dbr->condition('frd.bundle', 'plan');

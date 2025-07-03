@@ -5,7 +5,7 @@
  */
 function reports_menu()
 {
-  $items['rep'] = array(
+  $items['reports'] = array(
     'title' => 'Отчёты',
     'menu_name' => 'main-menu',
     'expanded' => true,
@@ -15,7 +15,7 @@ function reports_menu()
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
 
   );
-  $items['rep/td'] = array(
+  $items['reports/td'] = array(
     'title' => 'Торговый Дом',
     'menu_name' => 'main-menu',
     'page callback' => 'reports_td_page',
@@ -23,6 +23,14 @@ function reports_menu()
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
     'type' => MENU_NORMAL_ITEM,
   );
+  $items['data/production/edit'] = [
+    'title' => 'Редактирование данных',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['reports_production_data_edit_form'],
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  ];
 
   return $items;
 }
@@ -63,8 +71,10 @@ function reports_td_page()
 
   $output .= '<div class="section-title">' .
                '<h3>План-факт производства продукции за ' . date('Y') . ' (в ' . DASH_PROD_SUFFIX . ')</h3>' .
+               '<a class="edit-link autodialog" data-dialog-width="450" href="/data/production/edit">Редактировать данные</a>' .
                '<div class="underline"></div>' .
              '</div>';
+  $output .= '';
   $output .= '<div class="ajax-load" data-func="block_6" data-delay="800"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
 
@@ -142,10 +152,6 @@ function reports_block_6()
 
   return drupal_render($data_arr);
 }
-
-/**
- * ----- Формы --------------------------------------------------------------------------------------------------------
- */
 
 /**
  * ----- Подготовка графика --------------------------------------------------------------------------------------------
@@ -536,7 +542,7 @@ function reports_column_production_plan_fact($period)
   $chart = dash_get_no_data_chart();
 
   // собрать все записи за период
-  if ($data = dash_get_production_plan_fact_by_conditions(['period' => $period])) {
+  if ($data = dash_get_production_plan_fact_by_conditions(['period' => $period, 'manual' => 1])) {
     // сгруппировать помесячно
     $plan_fact_by_month = [];
     foreach (dash_get_months_list($period) as $month) {
@@ -630,4 +636,203 @@ function reports_column_production_plan_fact($period)
   }
 
   return $chart;
+}
+
+
+/**
+ * ----- Формы --------------------------------------------------------------------------------------------------------
+ */
+
+function reports_production_data_edit_form($form, &$form_state)
+{
+  $form = [
+    '#prefix' => '<div id="data-production-edit-wrapper" class="data-production-edit-wrapper">',
+    '#suffix' => '</div>',
+  ];
+
+  $intro = '<p>Форма позволяет добавлять новые и&nbsp;редактировать ранее введённые данные</p>';
+
+  $form['intro'] = [
+    '#markup' => '<div class="intro">' . $intro . '</div>',
+    '#attached' => ['js' => [[
+      'data' => ['messages' => ['position' => 'inline']],
+      'type' => 'setting',
+    ]]],
+  ];
+
+  $options_m = [0 => ' - Месяц - '];
+  for($i = 1; $i <= 12; $i++) {
+    $options_m[$i] = helper_month_label_ru($i);
+  }
+  $form['month']['month'] = [
+    '#type' => 'select',
+    '#options' => $options_m,
+    '#default_value' => 0,
+    '#prefix' => '<div class="row"><div class="col-xs-7">',
+    '#suffix' => '</div>',
+    '#ajax' => [
+      'callback' => 'reports_production_data_edit_form_callback',
+      'wrapper' => 'data-production-edit-wrapper',
+    ],
+  ];
+
+  $options_y = [0 => ' - Год - '];
+  for($i = DASH_HISTORY_START_YEAR_TD; $i <= date('Y'); $i++) {
+    $options_y[$i] = $i;
+  }
+  $form['month']['year'] = [
+    '#type' => 'select',
+    '#options' => $options_y,
+    '#default_value' => 0,
+    '#prefix' => '<div class="col-xs-5">',
+    '#suffix' => '</div>',
+    '#ajax' => [
+      'callback' => 'reports_production_data_edit_form_callback',
+      'wrapper' => 'data-production-edit-wrapper',
+    ],
+  ];
+
+  $form['fact'] = [
+    '#type' => 'select',
+    '#title' => 'Тип записи',
+    '#options' => [0 => 'План', 1 => 'Факт'],
+    '#prefix' => '<div class="col-xs-6">',
+    '#suffix' => '</div>',
+    '#ajax' => [
+      'callback' => 'reports_production_data_edit_form_callback',
+      'wrapper' => 'data-production-edit-wrapper',
+    ],
+  ];
+
+  // если изменены месяц/год, определить наличие данных
+  $is_month_selected = false;
+  $record_id = 0;
+  if (isset($form_state['triggering_element']['#name']) && in_array($form_state['triggering_element']['#name'], ['month', 'year', 'fact'])) {
+    $volume_default = 0;
+    if ($form_state['values']['month'] && $form_state['values']['year']) $is_month_selected = true;
+
+    if ($is_month_selected) {
+      $period = [
+        'from' => gmmktime(0, 0, 0, (int)$form_state['values']['month'], 1, (int)$form_state['values']['year']),
+        'to' => gmmktime(0, 0, 0, (int)$form_state['values']['month']+1, 1, (int)$form_state['values']['year']),
+      ];
+      if ($data = dash_get_production_plan_fact_by_conditions(['period' => $period, 'manual' => 1, 'fact' => $form_state['values']['fact']])) {
+        $record = reset($data);
+        $volume_default = $record->output;
+        $record_id = $record->id;
+      }
+    }
+    $form_state['input']['volume'] = $volume_default;
+    $form_state['values']['volume'] = $volume_default;
+  }
+
+
+  // id записи, если найдена существующая
+  $form['record'] = [
+    '#type' => 'hidden',
+    '#value' => $record_id,
+  ];
+
+  $form['volume'] = [
+    '#type' => 'textfield',
+    '#size' => 20,
+    '#title' => 'Объём (л/кг/шт)',
+    '#required' => true,
+    '#default_value' => 0,
+    '#disabled' => !$is_month_selected,
+    '#prefix' => '<div class="col-xs-6">',
+    '#suffix' => '</div></div>',
+  ];
+
+  $form['actions'] = ['#type' => 'actions'];
+  $form['actions']['submit'] = [
+    '#type' => 'submit',
+    '#value' => 'Отправить',
+    '#attributes' => ['class' => ['btn-primary', 'btn-wide']],
+    '#disabled' => !$is_month_selected,
+    '#ajax' => [
+      'callback' => 'reports_production_data_edit_form_callback',
+      'wrapper' => 'data-production-edit-wrapper',
+    ],
+  ];
+
+  return $form;
+}
+function reports_production_data_edit_form_callback($form, $form_state)
+{
+  return $form;
+}
+function reports_production_data_edit_form_submit($form, $form_state)
+{
+  $month_start = gmmktime(0, 0, 0, (int)$form_state['values']['month'], 1, (int)$form_state['values']['year']);
+
+  // todo удалить старые записи за месяц
+  if ($form_state['values']['record']) {
+    entity_delete('plan', $form_state['values']['record']);
+  }
+
+  // добавить Запись плана
+  $record = dash_plan_plan_create([
+    'created' => REQUEST_TIME,
+    'month_ts' => $month_start,
+    'nom_id' => 0,
+    'fact' => $form_state['values']['fact'],
+    'manual' => 1,
+    'volume' => $form_state['values']['volume'],
+  ]);
+
+  // todo обновление графика
+  ctools_include('ajax');
+  ctools_add_js('ajax-responder');
+  $output = '<div class="ajax-load" data-func="block_6"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $commands[] = ajax_command_invoke('.autodialog-content', 'dialog', array('close'));
+  $commands[] = ajax_command_replace('[data-func="block_6"]', $output);
+  print ajax_render($commands);
+  drupal_exit();
+}
+
+/**
+ * Создать Запись плана типа plan
+ */
+function dash_plan_plan_create($params)
+{
+  $transaction = db_transaction();
+  try {
+    $plan = entity_create('plan', [
+      'type' => 'plan',
+      'created' => $params['created'],
+    ]);
+    entity_save('plan', $plan);
+
+    $plan_wr = entity_metadata_wrapper('plan', $plan);
+    $plan_wr->field_date = $params['month_ts'];
+    $plan_wr->field_nomenklatura = $params['nom_id'];
+    $plan_wr->field_is_fact = $params['fact'];
+    $plan_wr->field_is_manual = $params['manual'];
+    $plan_wr->field_output = $params['volume'];
+    $plan_wr->save();
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('migration', $e);
+  }
+
+  return $plan ?? false;
+}
+
+/**
+ * Удалить Записи План (план), все или за месяц
+ * @param $month_ts
+ */
+function dash_plan_plan_delete_all($month_ts = null)
+{
+  $efquery = new EntityFieldQuery();
+  $efquery->entityCondition('entity_type', 'plan');
+  $efquery->entityCondition('bundle', 'plan');
+  if ($month_ts) {
+    $efquery->fieldCondition('field_date', 'value', $month_ts);
+  }
+  $result = $efquery->execute();
+  if ($result) {
+    entity_delete_multiple('plan', array_keys($result['plan']));
+  }
 }

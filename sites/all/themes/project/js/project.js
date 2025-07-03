@@ -100,6 +100,14 @@
         $("#table-wrapper").css("min-height", wrHeight + brBottom - wrBottom - wrPosBottom+14);
       });
 
+      //  установить текущую высоту графика как их минимальную,
+      //  чтобы экран не прыгал на ajax-обновлении редактируемых страниц
+      $(context).find(".chart").each(function() {
+        var wrapper = $(this).closest(".page-main");
+        setTimeout(function() {
+          wrapper.css("min-height", wrapper.height());
+        }, 1000);
+      });
     }
   };
 })(jQuery);

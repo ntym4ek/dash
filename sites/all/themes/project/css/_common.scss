@@ -233,6 +233,11 @@ body {
     margin: .2rem auto;
   }
   p { margin: 0; }
+  .edit-link {
+    display: block;
+    color: $text-muted; font-size: $font-size-small;
+    margin: 5px 0;
+  }
 
   @media #{$tablet} {
     &:not(.invert) { padding-bottom: 2rem; }
@@ -502,16 +507,52 @@ body {
   }
 }
 
-
-
+// - Диалог ------------------------------------------------------------------------------------------------------------
 .ui-widget-overlay {
   background: #000;
   opacity: .7;
 }
 .ui-widget { font-size: initial; font-family: inherit; }
 .ui-dialog {
+  color: #fff;
+  background-color: $gray-dark;
+  background-image: none;
+  border: none;
+  max-width: 90%;
+  .btn {
+    @include button-variant($text-color, #fff, #fff);
+  }
+  .form-item {
+    .form-text,
+    .form-textarea,
+    .form-select {
+      background: $gray-dark;
+      &, &::placeholder {color: #fff; }
+    }
+    label { color: #fff; }
+    .form-select option { background: $gray-dark; }
+  }
+  .ui-dialog-titlebar {
+    background: none;
+    border: none;
+    color: inherit; font-size: $font-size-large; text-transform: uppercase;
+    padding: 1rem 2rem;
+  }
   .ui-dialog-content {
+    background: none;
+    color: inherit;
     overflow: hidden;
-    padding: 1.5rem;
+    padding: 0 2rem 1rem;
+  }
+  .ui-dialog-titlebar-close {
+    background-image: none;
+    color: inherit;
+    right: 1rem; top: 45%;
+  }
+
+  .intro p { margin: 0 0 1.5rem; }
+
+  @media #{$pad} {
+    max-width: initial;
   }
 }
