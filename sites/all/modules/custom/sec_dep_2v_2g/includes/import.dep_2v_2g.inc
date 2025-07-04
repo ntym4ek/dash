@@ -263,6 +263,12 @@ function dep_2v_2g_import_pay_plan_td($array)
   }
 }
 
+/**
+ * Удалить записи за период, кроме введённых вручную
+ * @param $month_start
+ * @param $record_type
+ * @return void
+ */
 function dep_2v_2g_shipplan_td_month_delete($month_start, $record_type)
 {
   if ($month_start || $record_type == 2) {
@@ -272,7 +278,8 @@ function dep_2v_2g_shipplan_td_month_delete($month_start, $record_type)
     $efquery
       ->entityCondition('entity_type', 'plan')
       ->entityCondition('bundle', 'plan_ship')
-      ->fieldCondition('field_record_type_td', 'value', $record_type);
+      ->fieldCondition('field_record_type_td', 'value', $record_type)
+      ->fieldCondition('field_is_manual', 'value', 1, '!=');
 
     if ($record_type != 2) {
       $efquery

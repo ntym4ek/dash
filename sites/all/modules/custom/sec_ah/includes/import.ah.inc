@@ -179,6 +179,13 @@ function ah_import_production_plan($array)
 /**
  * -- вспомогательные функции
  */
+
+/**
+ *  Удалить записи за период, кроме введённых вручную
+ * @param $month_start
+ * @param $is_fact
+ * @return void
+ */
 function ah_plan_month_delete($month_start, $is_fact)
 {
   if ($month_start) {
@@ -190,7 +197,8 @@ function ah_plan_month_delete($month_start, $is_fact)
       ->entityCondition('bundle', 'plan')
       ->fieldCondition('field_date', 'value', $month_start, '>=')
       ->fieldCondition('field_date', 'value', $next_month_start, '<')
-      ->fieldCondition('field_is_fact', 'value', $is_fact);
+      ->fieldCondition('field_is_fact', 'value', $is_fact)
+      ->fieldCondition('field_is_manual', 'value', 1, '!=');
 
     $result = $efquery->execute();
     if ($result) {

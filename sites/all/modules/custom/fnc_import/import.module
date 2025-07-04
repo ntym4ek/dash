@@ -47,7 +47,7 @@ function import_queue_incoming_exchange_files()
     'first_queue' => [],
     // вторая очередь
     'last_queue' => [
-      ['mask' => '/^scrum_revenue.*\.json/',          'func' => 'import_import_revenue'],         // -- Выручка
+      ['mask' => '/^scrum_revenue.*\.json/',          'func' => 'import_import_revenue', 'archive' => 'dash/common'],         // -- Выручка
     ],
   ];
 
