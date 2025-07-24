@@ -71,98 +71,6 @@ function dash_frontpage()
   drupal_goto('<front>');
 }
 
-/** Вернуть начальное и конечное (не включительно) время Unix
- * 12-и месячного периода начиная с месяца $month_num
- * и смещением $year_shift лет от текущего периода.
- * from - начало 12и месячного периода
- * to   - == end для прошлых периодов и == now для текущего
- * end  - конец 12и месячного периода
- * $year_shift = 0 - текущий период
- */
-function dash_get_year_time_bounds($month_num_start, $year_shift = 0)
-{
-  // получить начало текущего периода
-  $time_month_start = gmmktime(0, 0, 0, $month_num_start, 1, date('Y'));
-  $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
-
-  // применить смещение
-  $year_start = $year_start + $year_shift;
-
-  $from = gmmktime(0, 0, 0, $month_num_start, 1, $year_start);
-  $end = gmmktime(0, 0, 0, $month_num_start+12, 1, $year_start);
-  // для предыдущих берем весь сезон
-  if ($year_shift) {
-    $to = gmmktime(0, 0, 0, $month_num_start+12, 1, $year_start);
-  }
-  // для текущего по сегодняшнюю дату
-  else {
-    $to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
-  }
-
-  return [
-    'from' => $from,
-    'to' => $to,
-    'end' => $end,
-  ];
-}
-
-/**
- * Вернуть начальное и конечное (не включительно) время Unix
- * для периода:
- *   с месяца $month_num и смещением $year_shift (0 - текущий) лет от текущего периода
- *   до текущей даты в заданном сезоне
- *
- * from - начало 12и месячного периода
- * to   - == end для прошлых периодов и == now для текущего
- */
-function dash_get_period_time_bounds($month_num_start, $year_shift = 0)
-{
-  // получить начало текущего периода
-  $time_month_start = gmmktime(0, 0, 0, $month_num_start, 1, date('Y'));
-  $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
-
-  // применить смещение
-  $year_start = $year_start + $year_shift;
-
-  $from = gmmktime(0, 0, 0, $month_num_start, 1, $year_start);
-  $to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y') + $year_shift);
-
-  return [
-    'from' => $from,
-    'to' => $to,
-  ];
-}
-
-/**
- * Вернуть смещение заданного периода на заданное количество лет
- */
-function dash_get_period_shifted($period, $year_shift = 0)
-{
-  $from = gmmktime(0, 0, 0, date('n', $period['from']), date('j', $period['from']), date('Y', $period['from']) + $year_shift);
-  $to = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to']), date('Y', $period['to']) + $year_shift);
-
-  return [
-    'from' => $from,
-    'to' => $to,
-  ];
-}
-
-/**
- * Вернуть для страницы период по-умолчанию
- * @param $month_start
- * @return array
- */
-function dash_get_page_time_bounds($month_start)
-{
-  if (strpos($_GET['q'], 'period/closed') !== false) {
-    $bounds = dash_get_year_time_bounds($month_start, -1);
-  } else {
-    $bounds = dash_get_year_time_bounds($month_start);
-  }
-
-  return $bounds;
-}
-
 function dash_chart_definition_alter(&$element, $chart)
 {
   if (isset($element["options"]["series"])) {
@@ -294,7 +202,7 @@ function dash_pie_revenue_year($company, $time_from, $time_to)
 
   $total = 0;
   $rev_by_types = [];
-  $types_to_unite = dash_get_types_to_merge();
+  $types_to_unite = dash_types_to_merge_get();
   foreach($results as $item) {
     $total += $item->amount;
     $type = $types_to_unite[$item->type] ?? $item->type;
@@ -357,7 +265,7 @@ function dash_pie_revenue_year($company, $time_from, $time_to)
 
 function dash_column_revenue_by_types($company, $time_from, $time_to)
 {
-  $types_to_unite = dash_get_types_to_merge();
+  $types_to_unite = dash_types_to_merge_get();
 
   // получаем возможные типы продукции
   $dbr = db_select('eck_revenue', 'r');
@@ -728,6 +636,110 @@ function dash_plan_prod_get_by_conditions($conditions)
 }
 
 /**
+ *  Вернуть данные по Расходу денежных средств (сущность cash_outcome/cash_outcome)
+ *  с учётом заданных параметров
+ * @param $conditions
+ *   - period - массив ['from' =>, 'to' => не включительно] * - обязателен
+ *   - company_id - tid компании
+ *   - type - тип записи (план, факт)
+ *   - category_ids - массив статей расходов
+ * @return array|mixed|null
+ */
+function dash_cash_outcome_get_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_cash_outcome', 'p');
+    $dbr->condition('p.type', 'cash_outcome');
+
+    $dbr->innerJoin('field_data_field_co_company', 'fc', 'fc.entity_id = p.id');
+    if (!empty($conditions['company_id'])) {
+      $dbr->condition('fc.field_co_company_tid', $conditions['company_id']);
+    }
+    $dbr->addField('fc', 'field_co_company_tid', 'company');
+
+    $dbr->innerJoin('field_data_field_co_category', 'fct', 'fct.entity_id = p.id');
+    if (!empty($conditions['category_ids'])) {
+      $dbr->condition('fct.field_co_category_tid', $conditions['category_ids'], 'IN');
+    }
+    $dbr->addField('fct', 'field_co_category_tid', 'category');
+
+    $dbr->innerJoin('field_data_field_co_type', 'ft', 'ft.entity_id = p.id');
+    if (!empty($conditions['type'])) {
+      $dbr->condition('ft.field_co_type_value', $conditions['type']);
+    }
+    $dbr->addField('ft', 'field_co_type_value', 'type');
+
+    $dbr->innerJoin('field_data_field_co_date', 'fd', 'fd.entity_id = p.id');
+    $dbr->condition('fd.field_co_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('fd.field_co_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('fd', 'field_co_date_value', 'date');
+
+    $dbr->innerJoin('field_data_field_co_amount', 'fa', 'fa.entity_id = p.id');
+    $dbr->addField('fa', 'field_co_amount_value', 'amount');
+
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+/**
+ *  Вернуть данные по Кредитам и задолженностям (сущность debt/debt)
+ *  с учётом заданных параметров
+ * @param $conditions
+ *   - period - массив ['from' =>, 'to' => не включительно] * - обязателен
+ *   - company_id - tid компании
+ *   - type - тип записи (план, факт)
+ *   - category_ids - массив статей расходов
+ * @return array|mixed|null
+ */
+function dash_debt_get_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_debt', 'd');
+    $dbr->condition('d.type', 'debt');
+
+    $dbr->innerJoin('field_data_field_co_company', 'fc', 'fc.entity_id = d.id');
+    if (!empty($conditions['company_id'])) {
+      $dbr->condition('fc.field_co_company_tid', $conditions['company_id']);
+    }
+    $dbr->addField('fc', 'field_co_company_tid', 'company');
+
+    $dbr->innerJoin('field_data_field_co_category', 'fct', 'fct.entity_id = d.id');
+    if (!empty($conditions['category_ids'])) {
+      $dbr->condition('fct.field_co_category_tid', $conditions['category_ids'], 'IN');
+    }
+    $dbr->addField('fct', 'field_co_category_tid', 'category');
+
+    $dbr->innerJoin('field_data_field_co_type', 'ft', 'ft.entity_id = d.id');
+    if (!empty($conditions['type'])) {
+      $dbr->condition('ft.field_co_type_value', $conditions['type']);
+    }
+    $dbr->addField('ft', 'field_co_type_value', 'type');
+
+    $dbr->innerJoin('field_data_field_co_date', 'fd', 'fd.entity_id = d.id');
+    $dbr->condition('fd.field_co_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('fd.field_co_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('fd', 'field_co_date_value', 'date');
+
+    $dbr->innerJoin('field_data_field_co_amount', 'fa', 'fa.entity_id = d.id');
+    $dbr->addField('fa', 'field_co_amount_value', 'amount');
+
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+/**
  * ----- Формы ---------------------------------------------------------------------------------------------------------
  */
 function dash_period_filter_form($form, &$form_state, $params)
@@ -786,8 +798,99 @@ function dash_period_filter_form_ajax_callback($form, $form_state)
 /**
  * ----- Вспомогательные функции ---------------------------------------------------------------------------------------
  */
+/** Вернуть начальное и конечное (не включительно) время Unix
+ * 12-и месячного периода начиная с месяца $month_num
+ * и смещением $year_shift лет от текущего периода.
+ * from - начало 12и месячного периода
+ * to   - == end для прошлых периодов и == now для текущего
+ * end  - конец 12и месячного периода
+ * $year_shift = 0 - текущий период
+ */
+function dash_year_time_bounds_get($month_num_start, $year_shift = 0)
+{
+  // получить начало текущего периода
+  $time_month_start = gmmktime(0, 0, 0, $month_num_start, 1, date('Y'));
+  $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
 
-function dash_get_types_to_merge()
+  // применить смещение
+  $year_start = $year_start + $year_shift;
+
+  $from = gmmktime(0, 0, 0, $month_num_start, 1, $year_start);
+  $end = gmmktime(0, 0, 0, $month_num_start+12, 1, $year_start);
+  // для предыдущих берем весь сезон
+  if ($year_shift) {
+    $to = gmmktime(0, 0, 0, $month_num_start+12, 1, $year_start);
+  }
+  // для текущего по сегодняшнюю дату
+  else {
+    $to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
+  }
+
+  return [
+    'from' => $from,
+    'to' => $to,
+    'end' => $end,
+  ];
+}
+
+/**
+ * Вернуть начальное и конечное (не включительно) время Unix
+ * для периода:
+ *   с месяца $month_num и смещением $year_shift (0 - текущий) лет от текущего периода
+ *   до текущей даты в заданном сезоне
+ *
+ * from - начало 12и месячного периода
+ * to   - == end для прошлых периодов и == now для текущего
+ */
+function dash_period_time_bounds_get($month_num_start, $year_shift = 0)
+{
+  // получить начало текущего периода
+  $time_month_start = gmmktime(0, 0, 0, $month_num_start, 1, date('Y'));
+  $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
+
+  // применить смещение
+  $year_start = $year_start + $year_shift;
+
+  $from = gmmktime(0, 0, 0, $month_num_start, 1, $year_start);
+  $to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y') + $year_shift);
+
+  return [
+    'from' => $from,
+    'to' => $to,
+  ];
+}
+
+/**
+ * Вернуть смещение заданного периода на заданное количество лет
+ */
+function dash_period_shifted_get($period, $year_shift = 0)
+{
+  $from = gmmktime(0, 0, 0, date('n', $period['from']), date('j', $period['from']), date('Y', $period['from']) + $year_shift);
+  $to = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to']), date('Y', $period['to']) + $year_shift);
+
+  return [
+    'from' => $from,
+    'to' => $to,
+  ];
+}
+
+/**
+ * Вернуть для страницы период по-умолчанию
+ * @param $month_start
+ * @return array
+ */
+function dash_page_time_bounds_get($month_start)
+{
+  if (strpos($_GET['q'], 'period/closed') !== false) {
+    $bounds = dash_year_time_bounds_get($month_start, -1);
+  } else {
+    $bounds = dash_year_time_bounds_get($month_start);
+  }
+
+  return $bounds;
+}
+
+function dash_types_to_merge_get()
 {
   return [
     'Продукция Интер Групп' => 'Собственная регистрация',
@@ -803,7 +906,7 @@ function dash_get_types_to_merge()
  * @param $period
  * @return array
  */
-function dash_get_months_list($period)
+function dash_months_list_get($period)
 {
   // список месяцев, за которые выводим график
   $time_months_list = [];
@@ -825,7 +928,7 @@ function dash_get_months_list($period)
  * @param $period
  * @return array
  */
-function dash_get_weeks_list($period)
+function dash_weeks_list_get($period)
 {
   $time_weeks_list = [];
 
@@ -855,7 +958,7 @@ function dash_get_weeks_list($period)
  * @param $parent_tid
  * @return array
  */
-function dash_get_term_siblings($parent_tid)
+function dash_term_siblings_get($parent_tid)
 {
   $result = [$parent_tid];
 
@@ -873,9 +976,9 @@ function dash_get_term_siblings($parent_tid)
  * Создаёт и возвращает пустую новую, если запись не найдена.
  * @param $voc - vid словаря или его наименование
  * @param $record_1c_id
- * @return false|int|mixed
+ * @return false|object
  */
-function dash_get_term_by_1c_id($voc, $record_1c_id)
+function dash_term_get_by_1c_id($voc, $record_1c_id)
 {
   $vid = is_numeric($voc) ? $voc : taxonomy_vocabulary_machine_name_load($voc)->vid;
 
@@ -898,10 +1001,10 @@ function dash_get_term_by_1c_id($voc, $record_1c_id)
     }
     $entities = entity_load('taxonomy_term', [$term->tid]);
   }
-  return empty($entities) ? 0: current($entities);
+  return empty($entities) ? false: current($entities);
 }
 
-function dash_get_nomenklatura_by_1c_artikul($company, $artikul)
+function dash_nomenklatura_get_by_1c_artikul($company, $artikul)
 {
   $vid = null;
   if ($company == 'ah') {
@@ -924,8 +1027,7 @@ function dash_get_nomenklatura_by_1c_artikul($company, $artikul)
   return empty($entities) ? 0 : current($entities);
 }
 
-
-function dash_get_client_by_1c_id($company, $client_id)
+function dash_client_get_by_1c_id($company, $client_id)
 {
   $vid = null;
   if ($company == 'ah') {
@@ -955,7 +1057,7 @@ function dash_get_client_by_1c_id($company, $client_id)
   return empty($entities) ? 0: current($entities);
 }
 
-function dash_get_region_by_1c_id($region_1c_id)
+function dash_region_get_by_1c_id($region_1c_id)
 {
   if ($region_1c_id) {
     $vid = taxonomy_vocabulary_machine_name_load('regions')->vid;
@@ -1004,7 +1106,7 @@ function dash_remains_period_delete($date_start, $date_end)
 
 }
 
-function dash_get_registration_by_1c_id($reg_1c_id)
+function dash_registration_get_by_1c_id($reg_1c_id)
 {
   if ($reg_1c_id) {
     $query = new EntityFieldQuery();
@@ -1029,7 +1131,7 @@ function dash_get_registration_by_1c_id($reg_1c_id)
 /**
  * Вернуть график по-умолчанию
  */
-function dash_get_no_data_chart($title = null)
+function dash_no_data_chart_get($title = null)
 {
   return [
     '#type' => 'chart',
@@ -1090,9 +1192,9 @@ function dash_preprocess_page(&$vars)
 /**
  * Вернуть смещение с заданного периода до DASH_YEAR_HISTORY_START года, но не более DASH_HISTORY_LENGTH
  */
-function dash_get_years_shift($period = null)
+function dash_years_shift_get($period = null)
 {
-  if (!$period) $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  if (!$period) $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
 
   $years_shift = date('Y', $period['from']) - (DASH_HISTORY_START_YEAR_TD+1);
   return abs($years_shift)+1 > DASH_HISTORY_LENGTH ? DASH_HISTORY_LENGTH : $years_shift;
@@ -1102,11 +1204,11 @@ function dash_get_years_shift($period = null)
  * Вернуть список смещений с заданного периода до DASH_YEAR_HISTORY_START года, но не более DASH_HISTORY_LENGTH
  * (например, за 3 года с текущего = [-2, -1, 0])
  */
-function dash_get_years_shift_list($period = null, $month_num_start = DASH_PERIOD_START_MONTH_TD)
+function dash_years_shift_list_get($period = null, $month_num_start = DASH_PERIOD_START_MONTH_TD)
 {
-  if (!$period) $period = dash_get_year_time_bounds($month_num_start);
+  if (!$period) $period = dash_year_time_bounds_get($month_num_start);
 
-  $period_current = dash_get_year_time_bounds($month_num_start);
+  $period_current = dash_year_time_bounds_get($month_num_start);
 
   $shift = (date('Y', $period_current['from']) - date('Y', $period['from'])) * (-1);
   $count = date('Y', $period['from']) - $month_num_start;
@@ -1133,7 +1235,7 @@ function dash_is_current_season($period)
  * @param $voc_name - имя словаря
  * @param $default_options - начальные опции, например 'all' => 'Все'
  */
-function dash_get_form_options_from_taxonomy($voc_name, $default_options = null)
+function dash_form_options_get_from_taxonomy($voc_name, $default_options = null)
 {
   if ($voc = taxonomy_vocabulary_machine_name_load($voc_name)) {
     if ($terms = taxonomy_get_tree($voc->vid)) {
@@ -1171,14 +1273,14 @@ function dash_get_form_options_from_taxonomy($voc_name, $default_options = null)
  *  ];
  *
  */
-function dash_get_select_tree($tree, $parent_term = null, $tids_include_only = [])
+function dash_select_tree_get($tree, $parent_term = null, $tids_include_only = [])
 {
   $option = false;
   $child = [];
   $tid = $parent_term->tid ?? 0;
   foreach($tree as $term) {
     if (in_array($tid, $term->parents)) {
-      if ($result = dash_get_select_tree($tree, $term, $tids_include_only)) {
+      if ($result = dash_select_tree_get($tree, $term, $tids_include_only)) {
         $child += $result;
       }
     }

@@ -85,7 +85,7 @@ function dep_2d_remains_page()
 
 function dep_2d_tables_remains_by_nom($datetime)
 {
-  $result_by_nom = dash_get_remains_by_nom(['date' => $datetime]);
+  $result_by_nom = dash_remains_get_by_nom(['date' => $datetime]);
 
   // сортировка по границам,
   // так как нужно видеть продукты с предупреждениями
@@ -179,7 +179,7 @@ function dep_2d_tables_remains_by_nom($datetime)
 
 function dep_2d_tables_remains_by_nom_expired($datetime)
 {
-  $result_by_nom = dash_get_remains_by_nom(['date' => $datetime]);
+  $result_by_nom = dash_remains_get_by_nom(['date' => $datetime]);
 
   // сортировка по границам,
   // так как нужно видеть продукты с предупреждениями
@@ -383,7 +383,7 @@ function dep_2d_column_remains_by_nom($datetime, $options = [])
 {
   $output = ['#markup' => 'На дату нет остатков с истекающим сроком годности'];
 
-  $result_by_nom = dash_get_remains_by_nom(['date' => $datetime]);
+  $result_by_nom = dash_remains_get_by_nom(['date' => $datetime]);
 
   // сортировка по границам,
   // так как нужно видеть продукты с предупреждениями
@@ -503,7 +503,7 @@ function dep_2d_column_remains_by_nom($datetime, $options = [])
 /**
  * ----- Выборка данных ------------------------------------------------------------------------------------------------
  */
-function dash_get_remains_by_nom($conditions)
+function dash_remains_get_by_nom($conditions)
 {
   $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
   $result = &drupal_static($fid);
@@ -691,7 +691,7 @@ function dash_get_remains_by_warehouse($conditions)
  */
 function dep_2d_date_remains_actual()
 {
-  $period = dash_get_year_time_bounds(10);
+  $period = dash_year_time_bounds_get(10);
 
   return gmmktime(0,0,0, date('n', $period['from'])+21, 1, date('Y', $period['from']));
 }

@@ -7,8 +7,8 @@ function dep_2v_2g_import_regions($array)
     foreach ($array['load'] as $region) {
       if ($region['id'] && $region['name']) {
 
-        $term = dash_get_region_by_1c_id($region['id']);
-        $parent_term = empty($region['parent_id']) ? 0 : dash_get_region_by_1c_id($region['parent_id']);
+        $term = dash_region_get_by_1c_id($region['id']);
+        $parent_term = empty($region['parent_id']) ? 0 : dash_region_get_by_1c_id($region['parent_id']);
 
         $term_wr = entity_metadata_wrapper('taxonomy_term', $term);
         $term_wr->field_1c_id = $region['id'];
@@ -37,11 +37,11 @@ function dep_2v_2g_import_clients_td($array)
     foreach ($array['load'] as $client) {
       if ($client['id'] && $client['name']) {
 
-        if ($term = dash_get_client_by_1c_id('td', $client['id'])) {
+        if ($term = dash_client_get_by_1c_id('td', $client['id'])) {
           $client_wr = entity_metadata_wrapper('taxonomy_term', $term);
           $client_wr->name = $client['name'];
           $client_wr->field_status = 1;
-          if ($region_tid = dash_get_region_by_1c_id($client['region_id'])) {
+          if ($region_tid = dash_region_get_by_1c_id($client['region_id'])) {
             $client_wr->field_region = $region_tid;
           } else {
             watchdog('import', 'Не найден регион ' . $client['region_id'] . ' при импорте клиентов ТД', [], WATCHDOG_ERROR);
@@ -86,10 +86,10 @@ function dep_2v_2g_import_nomenklatura_td($array)
     foreach($array['load'] as $nom) {
       if ($nom['id'] && $nom['name'] && $nom['art']) {
         // проверить наличие записи Номенклатуры по артикулу (тк не у всех прописан ID)
-        $term = dash_get_nomenklatura_by_1c_artikul('td', $nom['art']);
+        $term = dash_nomenklatura_get_by_1c_artikul('td', $nom['art']);
         // если нет по артикулу, искать по ID или создать
         if (!$term) {
-          $term = dash_get_term_by_1c_id('nomenklatura_td', $nom['id']);
+          $term = dash_term_get_by_1c_id('nomenklatura_td', $nom['id']);
         }
 
         if ($term) {
@@ -146,10 +146,10 @@ function dep_2v_2g_import_ship_plan_td($array)
     // подготовка Плана на месяц
     $plan = [];
     foreach ($array['load'] as $load_item) {
-      $client = dash_get_client_by_1c_id('td', $load_item['clients_id']);
+      $client = dash_client_get_by_1c_id('td', $load_item['clients_id']);
       if (isset($client->tid)) {
         // todo перейти на поиск по nom_id
-        $nom = dash_get_nomenklatura_by_1c_artikul('td', $load_item['artikul_1c']);
+        $nom = dash_nomenklatura_get_by_1c_artikul('td', $load_item['artikul_1c']);
         if (isset($nom->tid)) {
           $date_arr = explode('.', $load_item['date']);
           $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);

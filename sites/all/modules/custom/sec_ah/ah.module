@@ -28,7 +28,7 @@ function ah_menu()
 
 function ah_current_tab()
 {
-  $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_AH);
+  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_AH);
 
   $output = '<div class="section-title">' .
               '<h3>Отгрузка</h3>' .
@@ -89,7 +89,7 @@ function ah_block_current_1($period = null)
 
 function ah_previous_tab()
 {
-  $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_AH, -1);
+  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_AH, -1);
 
   $output = '<div class="section-title">' .
               '<h3>Отгрузка</h3>' .
@@ -110,7 +110,7 @@ function ah_previous_tab()
   $output .= '</div>';
 
   // производство (текущий сезон, с октября)
-  $period = dash_get_year_time_bounds(10);
+  $period = dash_year_time_bounds_get(10);
   // последний полный месяц
   $time_current_month = gmmktime(0, 0, 0, date('n'), 1, date('Y'));
 

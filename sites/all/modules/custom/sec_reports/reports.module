@@ -64,12 +64,29 @@ function reports_td_page()
   $output .=     '<h5 class="chart-title">С начала года: ' . helper_month_label_ru(1) . ' - ' . helper_month_label_ru(date('n')-1) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="block_3" data-delay="400"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
-  $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
   $output .=   '<div class="col-xs-12 col-md-8">';
   $output .=     '<h5 class="chart-title">За сезон: ' . helper_month_label_ru(DASH_PERIOD_START_MONTH_TD) . ' ' . date('Y', $period['from']) . ' - ' . helper_month_label_ru(date('n')-1) . ' ' . date('Y', $period['to']) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="block_4" data-delay="600"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
+
+  // слайд 3
+  $output .= '<div class="section-title">' .
+                '<h3>Отгрузки + контракты на 1 ... в сравнении по сезонам ... / ...</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
+  $output .= '<div class="row">';
+  $output .=   '<div class="col-xs-12 col-md-6">';
+  $output .=     '<h5 class="chart-title">В млрд рублей с ндс</h5>';
+  $output .=     '<div class="ajax-load" data-func="block_31" data-delay="310"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .=   '<div class="col-xs-12 col-md-6">';
+  $output .=     '<h5 class="chart-title">В млн литров</h5>';
+  $output .=     '<div class="ajax-load" data-func="block_32" data-delay="320"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .= '</div>';
+
 
   $output .= '<div class="section-title">' .
                '<h3>План-факт отгрузки продукции (в ' . DASH_REV_SUFFIX . ')</h3>' .
@@ -92,7 +109,7 @@ function reports_td_page()
 
 function reports_block_1()
 {
-  $period = dash_get_year_time_bounds(1);
+  $period = dash_year_time_bounds_get(1);
 
   // план-факт выручки помесячно линейный
   $output = '<div class="row">';
@@ -136,7 +153,7 @@ function reports_block_3()
 function reports_block_4()
 {
   // период с начала сезона по начало месяца
-  $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
   $period['to'] = gmmktime(0, 0, 0, date('n'), 1, date('Y'));
 
   // факт поступления выручки
@@ -163,10 +180,22 @@ function reports_block_5()
 function reports_block_6()
 {
   // период с начала года по текущую дату
-  $period = dash_get_year_time_bounds(1);
+  $period = dash_year_time_bounds_get(1);
 
   // план-факт отгрузки продукции
   $data_arr = reports_column_production_plan_fact($period);
+
+  return drupal_render($data_arr);
+}
+
+function reports_block_31()
+{
+  // период с начала сезона по начало месяца
+  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+  $period['to'] = gmmktime(0, 0, 0, date('n'), 1, date('Y'));
+
+  // сравнение выручки по отгрузке (план и факт+контракты) по годам
+  $data_arr = reports_column_ship_plan_fact_compare_revenue($period);
 
   return drupal_render($data_arr);
 }
@@ -176,7 +205,7 @@ function reports_block_6()
  */
 function reports_line_revenue_plan_fact($period)
 {
-  $chart = dash_get_no_data_chart();
+  $chart = dash_no_data_chart_get();
 
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
@@ -187,7 +216,7 @@ function reports_line_revenue_plan_fact($period)
   if ($plan || $fact) {
     // сгруппировать помесячно
     $plan_fact_by_month = [];
-    foreach (dash_get_months_list($period) as $month) {
+    foreach (dash_months_list_get($period) as $month) {
       $plan_fact_by_month[$month['start']] = [
         'plan_amount' => 0,
         'fact_amount' => 0,
@@ -321,12 +350,12 @@ function reports_line_revenue_plan_fact($period)
 
 function reports_column_revenue_fact_compare($period)
 {
-  $chart = dash_get_no_data_chart();
+  $chart = dash_no_data_chart_get();
 
   // собрать данные периодов с DASH_YEAR_HISTORY_START года
   $data = [];
-  foreach (dash_get_years_shift_list($period, date('n', $period['from'])) as $shift) {
-    $period_shifted = dash_get_period_shifted($period, $shift);
+  foreach (dash_years_shift_list_get($period, date('n', $period['from'])) as $shift) {
+    $period_shifted = dash_period_shifted_get($period, $shift);
 
     $fact = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
 
@@ -420,7 +449,7 @@ function reports_column_revenue_fact_compare($period)
 
 function reports_line_ship_plan_fact($period)
 {
-  $chart = dash_get_no_data_chart();
+  $chart = dash_no_data_chart_get();
 
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
@@ -431,7 +460,7 @@ function reports_line_ship_plan_fact($period)
   if ($plan || $fact) {
     // сгруппировать помесячно
     $plan_fact_by_month = [];
-    foreach (dash_get_months_list($period) as $month) {
+    foreach (dash_months_list_get($period) as $month) {
       $plan_fact_by_month[$month['start']] = [
         'plan_amount' => 0,
         'fact_amount' => 0,
@@ -566,13 +595,13 @@ function reports_line_ship_plan_fact($period)
 
 function reports_column_production_plan_fact($period)
 {
-  $chart = dash_get_no_data_chart();
+  $chart = dash_no_data_chart_get();
 
   // собрать все записи за период
   if ($data = dash_plan_prod_get_by_conditions(['period' => $period, 'manual' => 1])) {
     // сгруппировать помесячно
     $plan_fact_by_month = [];
-    foreach (dash_get_months_list($period) as $month) {
+    foreach (dash_months_list_get($period) as $month) {
       $plan_fact_by_month[$month['start']] = [
         'plan_output' => 0,
         'fact_output' => 0,
@@ -665,6 +694,134 @@ function reports_column_production_plan_fact($period)
   return $chart;
 }
 
+function reports_column_ship_plan_fact_compare_revenue($period)
+{
+  $chart = dash_no_data_chart_get();
+
+  // собрать данные периодов за предыдущий и текущий сезоны
+  $data = [];
+  foreach ([-1, 0] as $shift) {
+    $period_shifted = dash_period_shifted_get($period, $shift);
+
+    // план за весь год
+    $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => ['from' => $period_shifted['from'], 'to' => $period_shifted['end']]]);
+    // остальное по текущий месяц
+    $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
+    $deal = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL, 'period' => $period_shifted]);
+
+    $plan_amount = 0;
+    if ($plan) foreach ($plan as $record) $plan_amount += $record->amount;
+    $fact_amount = 0;
+    if ($fact) foreach ($fact as $record) $fact_amount += $record->amount;
+    $deal_amount = 0;
+    if ($deal) foreach ($deal as $record) $deal_amount += $record->amount;
+
+    // в факт включаем контракты
+    $data[date('Y', $period_shifted['from'])] = [
+      'plan_amount' => $plan_amount / 1000000000,
+      'fact_amount' => ($fact_amount + $deal_amount) / 1000000000,
+    ];
+  }
+
+  if ($data) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'column',
+      '#font' => 'Montserrat',
+      '#height' => '500',
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+      ],
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontSize' => '16'],
+        'legend' => ['position' => 'top', 'textStyle' => ['fontSize' => '12']],
+        'chartArea' => ['height' => '80%', 'width' => '85%', 'left' => 70],
+        'annotations' => [
+          'textStyle' => ['fontSize' => 14, 'bold' => 'true'],
+        ],
+        'tooltip' => ['isHtml' => true],
+        'bar' => ['groupWidth' => "70%"],
+        'isStacked' => 'true',
+      ],
+    );
+
+    // чтобы была возможность подписать столбцы и вывести их в разном цвете,
+    // график выполнен в виде размещённых друг на друге значений за года,
+    // где реальное значение только у нужного года, а остальные имеют значение null
+    $year_prev = 0;
+    $tooltip = '';
+    foreach ($data as $year_1 => $item_1) {
+      $label = date('n', $period['from']) == DASH_PERIOD_START_MONTH_TD ? $year_1 . '/' . ($year_1+1) : $year_1;
+
+      $chart[$year_1] = [
+        '#type' => 'chart_data',
+        '#title' => (string)$label,
+        '#data' => [],
+      ];
+      foreach ($data as $year_2 => $item_2) {
+        if ($year_1 == $year_2) {
+          $chart['xaxis']['#labels'][] = (string)$label;
+          $chart[$year_1]['#data'][] = $item_1['fact_amount'];
+
+          $percent = '-';
+          $delta = 0;
+          if ($year_prev) {
+            $delta = $data[$year_1]['fact_amount'] - $data[$year_prev]['fact_amount'];
+            if ($data[$year_prev]['fact_amount']) $percent = number_format(abs($delta) / $data[$year_prev]['fact_amount'] * 100, 0, ',', ' ');
+          }
+          $tooltip =
+            '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+            '<div><div style="display:inline-block; font-weight: 700;">' . $year_1 . '</div></div>' .
+            '<div><div style="display:inline-block; width: 60px;">' . ($delta > 0 ? 'Рост' : 'Падение') . ':</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . $percent . '</b>&nbsp;%</div></div>' .
+            '</div>';
+
+          $year_prev = $year_1;
+        } else {
+          $chart[$year_1]['#data'][] = null;
+        }
+
+        $chart[$year_1][] = array(
+          '#type' => 'chart_data_item',
+          '#title' => $tooltip,
+          '#raw_options' => [
+            'annotation' => number_format($item_1['fact_amount'], 1, ',', ' '),
+          ],
+        );
+      }
+    }
+
+    // добавить столбец плана
+    $chart['plan']['#data'][] = null;
+    $chart['plan']['#data'][] = null;
+    $key = array_key_last($data);
+    $label = 'План на год ' . (date('n', $period['from']) == DASH_PERIOD_START_MONTH_TD ? $key . '/' . ($key+1) : $key);
+    $chart['xaxis']['#labels'][] = $label;
+    $chart['plan']['#data'][] = $data[$key]['plan_amount'];
+
+    $percent = '-';
+    $delta = $data[$key]['plan_amount'] - $data[$key]['fact_amount'];
+    if ($data[$key]['fact_amount']) $percent = number_format(abs($delta) / $data[$key]['fact_amount'] * 100, 0, ',', ' ');
+    $tooltip =
+      '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      '<div><div style="display:inline-block; font-weight: 700;">' . $label . '</div></div>' .
+      '<div><div style="display:inline-block; width: 60px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . $percent . '</b>&nbsp;%</div></div>' .
+      '</div>';
+    $chart['plan'][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+      '#raw_options' => [
+        'annotation' => number_format($item_1['fact_amount'], 1, ',', ' '),
+      ],
+    );
+
+  }
+
+  return $chart;
+}
 
 /**
  * ----- Формы --------------------------------------------------------------------------------------------------------
@@ -975,3 +1132,18 @@ function reports_plan_ship_data_edit_form_submit($form, $form_state)
   drupal_exit();
 }
 
+/**
+ * hook_import_processors_alter
+ */
+function reports_import_processors_alter(&$processors)
+{
+  $path = drupal_get_path('module', 'reports') . '/includes/';
+
+  // Справочник Статей расходов
+  $processors['first_queue'][] = ['mask' => '/^scrum_hb_outcome_categories_.*\.json/',  'include' => $path . 'import.reports.inc', 'func' => 'reports_outcome_categories_import', 'archive' => 'dash/rp'];
+
+  // План и факт расхода ДС
+  $processors['last_queue'][] = ['mask' => '/^scrum_cash_outcome_.*\.json/',            'include' => $path . 'import.reports.inc', 'func' => 'reports_cash_outcome_import', 'archive' => 'dash/rp'];
+  // Кредиты и задолженности (из бухгалтерии)
+  $processors['last_queue'][] = ['mask' => '/^scrum_debt_.*\.json/',                    'include' => $path . 'import.reports.inc', 'func' => 'reports_debt_import', 'archive' => 'dash/rp'];
+}

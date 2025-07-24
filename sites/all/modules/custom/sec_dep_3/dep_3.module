@@ -44,8 +44,8 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
 {
   $example['chart'] = ['#markup' => ''];
 
-  $period_prev = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD, -1);
-  $period_curr = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  $period_prev = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD, -1);
+  $period_curr = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
 
   // собрать все записи за период
   $fact_prev = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period_prev]);
@@ -55,7 +55,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
   $facts_by_month = [];
   $fact_prev_today_amount = 0;  // накопительная сумма на текущую дату в прошлом периоде
   $fact_curr_today_amount = 0;  // накопительная сумма на текущую дату в текущем периоде
-  foreach (dash_get_months_list($period_prev) as $month) {
+  foreach (dash_months_list_get($period_prev) as $month) {
     $month_num = date('n', $month['start']);
     $facts_by_month[$month_num]['prev'] = [
       'amount' => 0,
@@ -72,7 +72,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
       }
     }
   }
-  foreach (dash_get_months_list($period_curr) as $month) {
+  foreach (dash_months_list_get($period_curr) as $month) {
     $month_num = date('n', $month['start']);
     $facts_by_month[$month_num]['curr'] = [
       'amount' => 0,
@@ -233,12 +233,12 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
  */
 function dep_3_line_revenue_fact_by_week()
 {
-  $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
   $fact = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period]);
 
   // сгруппировать понедельно
   $fact_by_week = [];
-  foreach (dash_get_weeks_list($period) as $week) {
+  foreach (dash_weeks_list_get($period) as $week) {
     $fact_by_week[$week['start']] = [
       'amount' => 0,
       'start' => $week['start'],

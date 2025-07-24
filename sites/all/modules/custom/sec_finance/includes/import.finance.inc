@@ -1,12 +1,13 @@
 <?php
 
 /**
- * Удалить банковские выписки на дату
+ * Удалить банковские выписки компании на дату
  *
  * @param $timestamp - unix
+ * @param $company - текстовое наименование компании
  * @return void
  */
-function finance_delete_bank_docs($timestamp, $company)
+function finance_bank_docs_delete($timestamp, $company)
 {
   $timestamp_from = gmmktime(0, 0, 0, date('n', $timestamp), date('j', $timestamp), date('Y', $timestamp));
   $timestamp_to = $timestamp_from + 86400 - 1;
@@ -24,7 +25,7 @@ function finance_delete_bank_docs($timestamp, $company)
   }
 }
 
-function finance_import_bank_docs($array)
+function finance_bank_docs_import($array)
 {
   // старт транзакции БД, откатить изменения при ошибке
   $transaction = db_transaction();
@@ -34,7 +35,7 @@ function finance_import_bank_docs($array)
       $date_ts = helper_datetime_to_timestamp($array['date']);
 
       // удалить старые документы на дату
-      finance_delete_bank_docs($date_ts, $array['company']);
+      finance_bank_docs_delete($date_ts, $array['company']);
 
       // создать запись с остатком в кассе на начало дня
       $bank_doc = entity_create('bank_doc', ['type' => 'bank_doc']);
@@ -95,3 +96,4 @@ function finance_import_bank_docs($array)
 
   return false;
 }
+

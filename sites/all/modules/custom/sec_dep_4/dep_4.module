@@ -49,7 +49,7 @@ function dep_4_preprocess_page(&$vars)
 
 function dep_4_page()
 {
-  $period = dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD);
+  $period = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
   $form   = drupal_get_form('dep_4_analog_prices_filters_form');
 
   $output =   '<div class="section-title">' .
@@ -106,7 +106,7 @@ function dep_4_analog_prices($filters = null)
   if (!$filters) {
     $filters = dep_4_get_analog_prices_filters_set();
   }
-  $chart = dash_get_no_data_chart();
+  $chart = dash_no_data_chart_get();
 
   // собрать данные по заданной номенклатуре
   if ($data = dash_4_get_data_by_conditions(['nom' => $filters['nom']['current_id'], 'period' => $filters['period']])) {
@@ -343,7 +343,7 @@ function dep_4_get_analog_prices_filters_set()
     $filters = [
       'nom' => ['current_id' => NULL, 'options' => []],
       'currency' => ['current_id' => NULL, 'options' => []],
-      'period' => dash_get_page_time_bounds(DASH_PERIOD_START_MONTH_TD),
+      'period' => dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD),
     ];
 
     // -- Номенклатура

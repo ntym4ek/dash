@@ -5,7 +5,7 @@
  */
 function dep_2v_2g_head_compare_page()
 {
-  $period = dash_get_year_time_bounds(DASH_PERIOD_START_MONTH_TD, -1);
+  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD, -1);
 
   $output =  '<div class="section-title">' .
                 '<h3>Отгрузка</h3>' .

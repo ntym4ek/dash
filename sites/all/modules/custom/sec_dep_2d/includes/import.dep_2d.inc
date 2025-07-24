@@ -10,7 +10,7 @@ function dep_2d_import_storages($array)
     foreach($array['load'] as $record) {
       if ($record['name'] && $record['id']) {
         // проверить наличие записи в справочнике или создать её
-        $term = dash_get_term_by_1c_id('warehouses', $record['id']);
+        $term = dash_term_get_by_1c_id('warehouses', $record['id']);
 
         // обновить значения полей
         $term_wr = entity_metadata_wrapper('taxonomy_term', $term);
@@ -54,8 +54,8 @@ function dep_2d_import_remains($file_arr)
     // подготовка массива к импорту
     $import_arr = [];
     foreach ($file_arr['load'] as $load_item) {
-      $warehouse  = dash_get_term_by_1c_id('warehouses', $load_item['storage_id']);
-      $nom        = dash_get_term_by_1c_id('nomenklatura_td', $load_item['nom_id']);
+      $warehouse  = dash_term_get_by_1c_id('warehouses', $load_item['storage_id']);
+      $nom        = dash_term_get_by_1c_id('nomenklatura_td', $load_item['nom_id']);
       $date_arr   = explode('.', $load_item['date']);
       $date_prod  = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
       $date_expire = '';

@@ -10,7 +10,7 @@ function ah_import_clients_ah($array)
     foreach ($array['load'] as $key => $client) {
       if ($client['dav_id'] && $client['dav_name']) {
 
-        if ($term = dash_get_client_by_1c_id('ah', $client['dav_id'])) {
+        if ($term = dash_client_get_by_1c_id('ah', $client['dav_id'])) {
           $client_wr = entity_metadata_wrapper('taxonomy_term', $term);
           $client_wr->name = $client['dav_name'];
           $client_wr->field_status = 1;
@@ -56,13 +56,13 @@ function ah_import_nomenklatura($array)
     foreach($array['load'] as $nom) {
       if ($nom['name'] && $nom['id'] && $nom['art'] && $nom['dav_id']) {
         // найти пользователя
-        $client = dash_get_client_by_1c_id('ah', $nom['dav_id']);
+        $client = dash_client_get_by_1c_id('ah', $nom['dav_id']);
         if (isset($client->tid)) {
           // проверить наличие записи Номенклатуры по артикулу (тк не у всех прописан ID)
-          $term = dash_get_nomenklatura_by_1c_artikul('ah', $nom['art']);
+          $term = dash_nomenklatura_get_by_1c_artikul('ah', $nom['art']);
           // если нет по артикулу, искать по ID или создать
           if (!$term) {
-            $term = dash_get_term_by_1c_id('nomenklatura', $nom['id']);
+            $term = dash_term_get_by_1c_id('nomenklatura', $nom['id']);
           }
 
           if ($term) {
@@ -128,7 +128,7 @@ function ah_import_production_plan($array)
     $plan = [];
     foreach ($array['load'] as $plan_item) {
       // todo перейти на поиск по nom_id
-      $nom = dash_get_nomenklatura_by_1c_artikul('ah', $plan_item['artikul_1c']);
+      $nom = dash_nomenklatura_get_by_1c_artikul('ah', $plan_item['artikul_1c']);
       if (isset($nom->tid)) {
         $date_arr = explode('.', $plan_item['date']);
         $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);

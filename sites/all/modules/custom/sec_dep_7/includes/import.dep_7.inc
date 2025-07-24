@@ -9,7 +9,7 @@ function dep_7_import_cultures($array)
     foreach($array['load'] as $culture) {
       if ($culture['name'] && $culture['id']) {
         // проверить наличие записи Номенклатуры
-        $term = dash_get_term_by_1c_id('cultures', $culture['id']);
+        $term = dash_term_get_by_1c_id('cultures', $culture['id']);
 
         // обновить значения полей
         $term_wr = entity_metadata_wrapper('taxonomy_term', $term);
@@ -56,7 +56,7 @@ function dep_7_import_registrations($array)
       $cultures = [];
       if ($reg_item['cultures']) {
         foreach (explode(',', $reg_item['cultures']) as $culture_item) {
-          $culture = dash_get_term_by_1c_id('cultures', trim($culture_item));
+          $culture = dash_term_get_by_1c_id('cultures', trim($culture_item));
           if ($culture) {
             $cultures[] = $culture->tid;
           } else {
@@ -70,7 +70,7 @@ function dep_7_import_registrations($array)
       if ($reg_item['art']) {
         foreach (explode(',', $reg_item['art']) as $nom_artikul) {
           // todo переписать под id номенклатуры вместо артикула
-          $nom = dash_get_nomenklatura_by_1c_artikul('td', trim($nom_artikul));
+          $nom = dash_nomenklatura_get_by_1c_artikul('td', trim($nom_artikul));
           if ($nom) {
             $noms[] = $nom->tid;
           }
@@ -81,7 +81,7 @@ function dep_7_import_registrations($array)
         continue;
       }
 
-      $base_reg = dash_get_registration_by_1c_id($reg_item['base_id']);
+      $base_reg = dash_registration_get_by_1c_id($reg_item['base_id']);
 
       $date_from = $date_to = null;
       if (trim($reg_item['date_from'])) {
@@ -93,7 +93,7 @@ function dep_7_import_registrations($array)
         $date_to = gmmktime(0, 0, 0, $date_to_arr[1], $date_to_arr[0], $date_to_arr[2]);
       }
 
-      $reg = dash_get_registration_by_1c_id($reg_item['id']);
+      $reg = dash_registration_get_by_1c_id($reg_item['id']);
 
       if ($reg) {
         $reg_wr = entity_metadata_wrapper('registration', $reg);
