@@ -1422,8 +1422,9 @@ fieldset {
       font-size: 1.4rem; } }
 
 .icon {
-  display: flex;
-  line-height: 0; }
+  display: inline-flex;
+  line-height: normal;
+  vertical-align: middle; }
 
 .c0py:hover ~ .ctooltip {
   opacity: 1;
@@ -1678,7 +1679,8 @@ fieldset {
       color: transparent;
       background-color: #f08200; }
   .btn.btn-badge {
-    font-size: .6rem; }
+    font-size: .5rem;
+    height: 25px; }
   .btn.btn-icon {
     border: none;
     background: none; }
@@ -2741,6 +2743,14 @@ body {
     width: 120px; }
   .period-container .container-inline-date:first-child {
     margin-right: 1rem; }
+
+.month-select-wrapper {
+  display: flex; }
+  .month-select-wrapper .form-item-month {
+    flex: 0 0 auto;
+    margin-right: .5rem; }
+  .month-select-wrapper .form-item-year {
+    flex: 0 0 auto; }
 
 .table-li-responsive {
   font-size: .9em; }

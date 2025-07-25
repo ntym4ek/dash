@@ -790,6 +790,7 @@ function dash_period_filter_form_ajax_callback($form, $form_state)
     'end' => '',
   ];
 
+  // todo небезопасно
   $func = $form_state['callback'];
 
   return (function_exists($func) ? $func($period) : 'Function ' . $func . ' not found');
@@ -867,10 +868,12 @@ function dash_period_shifted_get($period, $year_shift = 0)
 {
   $from = gmmktime(0, 0, 0, date('n', $period['from']), date('j', $period['from']), date('Y', $period['from']) + $year_shift);
   $to = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to']), date('Y', $period['to']) + $year_shift);
+  $end = gmmktime(0, 0, 0, date('n', $period['end']), date('j', $period['end']), date('Y', $period['end']) + $year_shift);
 
   return [
     'from' => $from,
     'to' => $to,
+    'end' => $end,
   ];
 }
 
@@ -1160,10 +1163,14 @@ function dash_ajax_load()
   $result = '';
   $module = $_GET['module'];
   $func = $_GET['func'];
-  include_once (drupal_get_path('module', $module) . '/' . $module . '.module');
-  $function = $module . '_' . $func;
-  if (function_exists($function)) {
-    $result = $function();
+  // Функция должна иметь префикс block_ в составе
+  // для защиты от подмены функции.
+  if (strpos($func, 'block_') !== false) {
+    include_once(drupal_get_path('module', $module) . '/' . $module . '.module');
+    $function = $module . '_' . $func;
+    if (function_exists($function)) {
+      $result = $function();
+    }
   }
 
   print $result;
