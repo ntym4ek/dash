@@ -132,14 +132,26 @@ function reports_td_page_content($period_to)
   $output .= '</div>';
 
   // слайд 7
-  $output .= '<div class="section-title">' .
-    '<h3>План-факт. Бюджет движения денежных средств (в ' . DASH_REV_SUFFIX . ' с НДС)</h3>' .
-    '<div class="underline"></div>' .
-    '</div>';
+  $output .=  '<div class="section-title">' .
+                '<h3>План-факт. Бюджет движения денежных средств (в ' . DASH_REV_SUFFIX . ' с НДС)</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
   $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $period_to)-1) . '</h5>';
-  $output .=     '<div class="ajax-load" data-func="td_block_7" data-delay="00"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="td_block_7" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .= '</div>';
+
+  // слайд 8
+  $output .=  '<div class="section-title">' .
+                '<h3>Динамика дебиторской задолженности покупателей (в ' . DASH_REV_SUFFIX . ' с НДС)</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
+  $output .= '<div class="row">';
+  $output .=   '<div class="col-xs-12">';
+  $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $period_to)-1) . '</h5>';
+  $output .=     '<div class="ajax-load" data-func="td_block_8" data-delay="00"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -270,6 +282,17 @@ function reports_td_block_7()
   ];
 
   return reports_bdds_table_output($period);
+}
+function reports_td_block_8()
+{
+  // период с начала года по начало текущего месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 12, 1, date('Y')),
+  ];
+
+  return reports_debts_table_output($period);
 }
 
 /**
@@ -1157,5 +1180,65 @@ function reports_bdds_table_output($period)
   ]);
 
   return '<div class="bdds-table">' . $output . '</div>';
+}
+
+function reports_debts_table_output($period)
+{
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
+
+  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
+  $prev_year_prev_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
+  $year_start = $period['from'];
+  $month_start = $period['to'];
+  $prev_month_start = gmmktime(0, 0, 0, date('n', $period['to']) - 1, 1, date('Y', $period['to']));
+
+  $data = [
+    'row1' => [],
+    'kccc' => [],
+    'row2' => [],
+    'row3' => [],
+  ];
+
+  // собрать все записи Дебиторской задолженности
+  $debts = dash_debt_get_by_conditions(['company_id' => $company->tid, 'type' => 1, 'period' => ['from' => $prev_year_start, 'to' => $month_start]]);
+  foreach($debts as $debt) {
+    if ($debt->category == 1 && strpos(drupal_strtolower($debt->name), 'покупателей') !== false) { $row_key = 'row1'; }
+    elseif ($debt->category == 1 && strpos(drupal_strtolower($debt->name), 'юристов') !== false) { $row_key = 'row2'; }
+    elseif ($debt->category == 1 && strpos(drupal_strtolower($debt->name), 'вся') !== false) { $row_key = 'row3'; }
+    elseif ($debt->category == 2) { $row_key = 'kccc'; }
+
+    $data[$row_key][$debt->name][$debt->month] = $debt->amount;
+  }
+
+  // формируем таблицу
+  $header = [
+    ['data' => 'Наименование', 'align' => 'center', 'class' => ['td-name']],
+    ['data' => date('d.m.Y', $prev_year_start), 'align' => 'center'],
+    ['data' => date('d.m.Y', $prev_year_prev_month_start), 'align' => 'center'],
+    ['data' => date('d.m.Y', $year_start), 'align' => 'center'],
+    ['data' => date('d.m.Y', $prev_month_start), 'align' => 'center'],
+  ];
+
+  foreach ($data as $row) {
+    $name = array_key_first($row);
+    $rows[] = [
+      'data' => [
+        $name,
+        ['data' => helper_number_format($row[$name][$prev_year_start], 1, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($row[$name][$prev_year_prev_month_start], 1, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($row[$name][$year_start], 1, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($row[$name][$prev_month_start], 1, ' ', false), 'align' => 'right'],
+      ],
+    ];
+  }
+
+  $output = theme('table', [
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table', 'table-intersect']],
+    'sticky' => false,
+  ]);
+
+  return '<div class="debts-table">' . $output . '</div>';
 }
 

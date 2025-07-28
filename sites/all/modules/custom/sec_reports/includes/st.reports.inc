@@ -54,7 +54,7 @@ function reports_st_page_content($year)
 
   // слайд 1
   // Поступление ДС, год, помесячно, план-факт
-  $url = url('/data/cash-income/edit', ['query' => ['blocks' => ['st_block_1'], 'inn' => DASH_INN_ST]]);
+  $url = url('/data/cash-income/edit', ['query' => ['blocks' => ['st_block_1', 'st_block_3'], 'inn' => DASH_INN_ST]]);
   $output  = '<div class="section-title">' .
                 '<h3>План-факт поступления денежных средств за ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="450" href="' . $url . '">Редактировать данные</a>' .
@@ -65,7 +65,7 @@ function reports_st_page_content($year)
 
   // слайд 2
   // Отгрузка в деньгах, год, помесячно, план-факт
-  $url = url('/data/ship/edit', ['query' => ['blocks' => ['st_block_2'], 'inn' => DASH_INN_ST]]);
+  $url = url('/data/ship/edit', ['query' => ['blocks' => ['st_block_2', 'st_block_3'], 'inn' => DASH_INN_ST]]);
   $output .= '<div class="section-title">' .
                 '<h3>План-факт отгрузки продукции за ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
@@ -127,7 +127,7 @@ function reports_st_block_3()
   ];
 
   // сравнение факта Поступления ДС и Отгрузки в деньгах, год, помесячно
-  $data_arr = reports_st_column_cash_ship_fact($period);
+  $data_arr = reports_st_line_cash_ship_fact($period);
 
   return drupal_render($data_arr);
 }
@@ -336,7 +336,7 @@ function reports_st_column_ship_plan_fact($period)
 
   return $chart;
 }
-function reports_st_column_cash_ship_fact($period)
+function reports_st_line_cash_ship_fact($period)
 {
   $chart = dash_no_data_chart_get();
 
@@ -371,7 +371,7 @@ function reports_st_column_cash_ship_fact($period)
 
     $chart = array(
       '#type' => 'chart',
-      '#chart_type' => 'column',
+      '#chart_type' => 'line',
       '#colors' => [DASH_COLOR_BLUE, DASH_COLOR_AQUA],
       '#font' => 'Montserrat',
       '#height' => '350',

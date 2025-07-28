@@ -856,10 +856,10 @@ function dash_cash_outcome_get_by_conditions($conditions)
  *  Вернуть данные по Кредитам и задолженностям (сущность debt/debt)
  *  с учётом заданных параметров
  * @param $conditions
+ *   - company_id* - tid компании
  *   - period - массив ['from' =>, 'to' => не включительно] * - обязателен
- *   - company_id - tid компании
  *   - type - тип записи (план, факт)
- *   - category_ids - массив статей расходов
+ *   - category - категория записи (пока это 1 - статья, 2 - контрагент)
  * @return array|mixed|null
  */
 function dash_debt_get_by_conditions($conditions)
@@ -871,33 +871,37 @@ function dash_debt_get_by_conditions($conditions)
     $dbr = db_select('eck_debt', 'd');
     $dbr->condition('d.type', 'debt');
 
-    $dbr->innerJoin('field_data_field_co_company', 'fc', 'fc.entity_id = d.id');
-    if (!empty($conditions['company_id'])) {
-      $dbr->condition('fc.field_co_company_tid', $conditions['company_id']);
-    }
-    $dbr->addField('fc', 'field_co_company_tid', 'company');
+    $dbr->innerJoin('field_data_field_d_company', 'fc', 'fc.entity_id = d.id');
+    $dbr->condition('fc.field_d_company_tid', $conditions['company_id']);
+    $dbr->addField('fc', 'field_d_company_tid', 'company');
 
-    $dbr->innerJoin('field_data_field_co_category', 'fct', 'fct.entity_id = d.id');
-    if (!empty($conditions['category_ids'])) {
-      $dbr->condition('fct.field_co_category_tid', $conditions['category_ids'], 'IN');
-    }
-    $dbr->addField('fct', 'field_co_category_tid', 'category');
+    $dbr->innerJoin('field_data_field_d_name', 'fn', 'fn.entity_id = d.id');
+    $dbr->addField('fn', 'field_d_name_value', 'name');
 
-    $dbr->innerJoin('field_data_field_co_type', 'ft', 'ft.entity_id = d.id');
+    $dbr->innerJoin('field_data_field_d_category', 'fct', 'fct.entity_id = d.id');
+    if (!empty($conditions['category'])) {
+      $dbr->condition('fct.field_d_category_value', $conditions['category']);
+    }
+    $dbr->addField('fct', 'field_d_category_value', 'category');
+
+    $dbr->innerJoin('field_data_field_d_type', 'ft', 'ft.entity_id = d.id');
     if (!empty($conditions['type'])) {
-      $dbr->condition('ft.field_co_type_value', $conditions['type']);
+      $dbr->condition('ft.field_d_type_value', $conditions['type']);
     }
-    $dbr->addField('ft', 'field_co_type_value', 'type');
+    $dbr->addField('ft', 'field_d_type_value', 'type');
 
-    $dbr->innerJoin('field_data_field_co_date', 'fd', 'fd.entity_id = d.id');
-    $dbr->condition('fd.field_co_date_value', $conditions['period']['from'], '>=');
-    $dbr->condition('fd.field_co_date_value', $conditions['period']['to'], '<');
-    $dbr->addField('fd', 'field_co_date_value', 'date');
+    $dbr->innerJoin('field_data_field_d_date', 'fd', 'fd.entity_id = d.id');
+    $dbr->condition('fd.field_d_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('fd.field_d_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('fd', 'field_d_date_value', 'month');
 
-    $dbr->innerJoin('field_data_field_co_amount', 'fa', 'fa.entity_id = d.id');
-    $dbr->addField('fa', 'field_co_amount_value', 'amount');
+    $dbr->innerJoin('field_data_field_d_amount', 'fa', 'fa.entity_id = d.id');
+    $dbr->addField('fa', 'field_d_amount_value', 'amount');
 
-    $dbr->orderBy('date');
+    $dbr->innerJoin('field_data_field_d_amount2', 'fa2', 'fa2.entity_id = d.id');
+    $dbr->addField('fa2', 'field_d_amount2_value', 'amount2');
+
+    $dbr->orderBy('month');
     $result = $dbr->execute()->fetchAll();
   }
 
