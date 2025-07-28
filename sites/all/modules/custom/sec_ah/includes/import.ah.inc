@@ -5,15 +5,17 @@ function ah_import_clients_ah($array)
 {
   if (is_array($array) && !empty($array['load'])) {
     $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
+    $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
 
     $new_records = [];
     foreach ($array['load'] as $key => $client) {
       if ($client['dav_id'] && $client['dav_name']) {
 
-        if ($term = dash_client_get_by_1c_id('ah', $client['dav_id'])) {
+        if ($term = dash_client_get_by_1c_id(DASH_INN_AH, $client['dav_id'])) {
           $client_wr = entity_metadata_wrapper('taxonomy_term', $term);
           $client_wr->name = $client['dav_name'];
           $client_wr->field_status = 1;
+          $client_wr->field_kccc_company = $company->tid;
           $client_wr->save();
 
           $new_records[] = $client_wr->getIdentifier();
@@ -56,10 +58,11 @@ function ah_import_nomenklatura($array)
     foreach($array['load'] as $nom) {
       if ($nom['name'] && $nom['id'] && $nom['art'] && $nom['dav_id']) {
         // найти пользователя
-        $client = dash_client_get_by_1c_id('ah', $nom['dav_id']);
+        $client = dash_client_get_by_1c_id(DASH_INN_AH, $nom['dav_id']);
+        $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
         if (isset($client->tid)) {
           // проверить наличие записи Номенклатуры по артикулу (тк не у всех прописан ID)
-          $term = dash_nomenklatura_get_by_1c_artikul('ah', $nom['art']);
+          $term = dash_nomenklatura_get_by_1c_artikul(DASH_INN_AH, $nom['art']);
           // если нет по артикулу, искать по ID или создать
           if (!$term) {
             $term = dash_term_get_by_1c_id('nomenklatura', $nom['id']);
@@ -74,6 +77,7 @@ function ah_import_nomenklatura($array)
             if (isset($nom['ei'])) $term_wr->field_nom_unit = $nom['ei'];
             $term_wr->field_nom_type = $nom['vid'];
             $term_wr->field_nom_client = $client->tid;
+            $term_wr->field_kccc_company = $company->tid;
             $term_wr->field_status = 1;
             $term_wr->save();
 
@@ -128,7 +132,7 @@ function ah_import_production_plan($array)
     $plan = [];
     foreach ($array['load'] as $plan_item) {
       // todo перейти на поиск по nom_id
-      $nom = dash_nomenklatura_get_by_1c_artikul('ah', $plan_item['artikul_1c']);
+      $nom = dash_nomenklatura_get_by_1c_artikul(DASH_INN_AH, $plan_item['artikul_1c']);
       if (isset($nom->tid)) {
         $date_arr = explode('.', $plan_item['date']);
         $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
@@ -146,7 +150,7 @@ function ah_import_production_plan($array)
 
     if ($plan) {
       // удалить старый план на месяц
-      ah_plan_month_delete($month_start, $is_fact);
+      ah_plan_delete_by_month($month_start, $is_fact);
 
       // создание Плана на месяц
       foreach ($plan as $date => $plan_item) {
@@ -161,6 +165,7 @@ function ah_import_production_plan($array)
         $plan_wr->field_nomenklatura = $plan_item['nom'];
         $plan_wr->field_output = $plan_item['output'];
         $plan_wr->field_is_fact = $plan_item['is_fact'];
+        $plan_wr->field_is_manual = 0;
         $plan_wr->save();
       }
 
@@ -186,7 +191,7 @@ function ah_import_production_plan($array)
  * @param $is_fact
  * @return void
  */
-function ah_plan_month_delete($month_start, $is_fact)
+function ah_plan_delete_by_month($month_start, $is_fact)
 {
   if ($month_start) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));

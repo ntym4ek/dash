@@ -29,7 +29,7 @@ function finance_import_processors_alter(&$processors)
 {
   $path = drupal_get_path('module', 'finance') . '/includes/';
   // Банковские документы
-  $processors['first_queue'][] =  ['mask' => '/^scrum_fn_bank_doc.*\.json/',            'include' => $path . 'import.finance.inc', 'func' => 'finance_bank_docs_import', 'archive' => 'dash/fn'];
+  $processors['first_queue'][] =  ['mask' => '/^scrum_fn_bank_doc_.*\.json/',            'include' => $path . 'import.finance.inc', 'func' => 'finance_bank_docs_import', 'archive' => 'dash/fn'];
 }
 
 function finance_preprocess_page(&$vars)

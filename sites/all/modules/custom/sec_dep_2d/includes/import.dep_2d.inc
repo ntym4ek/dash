@@ -82,7 +82,7 @@ function dep_2d_import_remains($file_arr)
       $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
       $date_arr   = explode('.', $file_arr['end_date']);
       $date_end   = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0]+1, $date_arr[2]); // включительно
-      dash_remains_period_delete($date_start, $date_end);
+      dash_remains_delete_by_period($date_start, $date_end);
 
       // создание Плана на месяц
       foreach ($import_arr as $plan_item) {

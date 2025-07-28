@@ -70,7 +70,7 @@ function dep_7_import_registrations($array)
       if ($reg_item['art']) {
         foreach (explode(',', $reg_item['art']) as $nom_artikul) {
           // todo переписать под id номенклатуры вместо артикула
-          $nom = dash_nomenklatura_get_by_1c_artikul('td', trim($nom_artikul));
+          $nom = dash_nomenklatura_get_by_1c_artikul(DASH_INN_TD, trim($nom_artikul));
           if ($nom) {
             $noms[] = $nom->tid;
           }

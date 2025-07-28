@@ -305,7 +305,8 @@ body {
   .container-inline-date:first-child { margin-right: 1rem; }
 }
 
-.month-select-wrapper {
+.month-select-wrapper,
+.period-select-wrapper {
   display: flex;
   .form-item-month {
     flex: 0 0 auto;

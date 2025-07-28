@@ -9,7 +9,7 @@ function reports_outcome_categories_import($array)
     foreach ($array['load'] as $category) {
       if ($category['id'] && $category['name']) {
 
-        if ($term = dash_term_get_by_1c_id('companies', $category['id'])) {
+        if ($term = dash_term_get_by_1c_id('outcome_categories', $category['id'])) {
           $category_wr = entity_metadata_wrapper('taxonomy_term', $term);
           $category_wr->name = $category['name'];
           $category_wr->field_status = 1;
@@ -73,7 +73,7 @@ function reports_cash_outcome_import($array)
 
     if ($data) {
       // удалить старые записи на месяц
-      reports_cash_outcome_delete($month_start, $record_type, $company->tid);
+      reports_cash_outcome_delete_records($month_start, $record_type, $company->tid);
 
       // создание записей за месяц
       foreach ($data as $item) {
@@ -89,6 +89,7 @@ function reports_cash_outcome_import($array)
         $cash_wr->field_co_date = $item['date'];
         $cash_wr->field_co_category = $item['category_id'];
         $cash_wr->field_co_amount = $item['amount'];
+        $cash_wr->field_co_is_manual = 0;
         $cash_wr->save();
       }
 
@@ -125,7 +126,7 @@ function reports_debt_import($array)
 
     if ($data) {
       // удалить старые записи на месяц
-      reports_debt_delete($month_start, $company->tid);
+      reports_debt_delete_records($month_start, $company->tid);
 
       // создание записей за месяц
       foreach ($data as $item) {
@@ -155,13 +156,15 @@ function reports_debt_import($array)
 }
 
 /**
- * Удалить записи определённого типа за месяц
+ * Удалить записи определённого типа за месяц.
+ * Удаляем только данные из 1с, введённые вручную не трогаем
  *
  * @param $month_start - unix timestamp
  * @param $record_type - 1 - план, 2 - факт
+ * @param $company_id - tid компании
  * @return void
  */
-function reports_cash_outcome_delete($month_start, $record_type, $company_id)
+function reports_cash_outcome_delete_records($month_start, $record_type, $company_id)
 {
   if ($month_start) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
@@ -173,7 +176,8 @@ function reports_cash_outcome_delete($month_start, $record_type, $company_id)
       ->fieldCondition('field_co_date', 'value', $month_start, '>=')
       ->fieldCondition('field_co_date', 'value', $next_month_start, '<')
       ->fieldCondition('field_co_type', 'value', $record_type)
-      ->fieldCondition('field_co_company', 'tid', $company_id);
+      ->fieldCondition('field_co_company', 'tid', $company_id)
+      ->fieldCondition('field_co_is_manual', 'value', 0);
 
     $result = $efquery->execute();
     if ($result) {
@@ -189,7 +193,7 @@ function reports_cash_outcome_delete($month_start, $record_type, $company_id)
  * @param $company_id - tid компании
  * @return void
  */
-function reports_debt_delete($month_start, $company_id)
+function reports_debt_delete_records($month_start, $company_id)
 {
   if ($month_start) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
@@ -198,9 +202,9 @@ function reports_debt_delete($month_start, $company_id)
     $efquery
       ->entityCondition('entity_type', 'debt')
       ->entityCondition('bundle', 'debt')
-      ->fieldCondition('field_co_date', 'value', $month_start, '>=')
-      ->fieldCondition('field_co_date', 'value', $next_month_start, '<')
-      ->fieldCondition('field_co_company', 'tid', $company_id);
+      ->fieldCondition('field_d_date', 'value', $month_start, '>=')
+      ->fieldCondition('field_d_date', 'value', $next_month_start, '<')
+      ->fieldCondition('field_d_company', 'tid', $company_id);
 
     $result = $efquery->execute();
     if ($result) {

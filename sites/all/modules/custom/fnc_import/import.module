@@ -121,7 +121,7 @@ function import_import_revenue($array)
 
     if ($revenue) {
       // удалить старую Выручку за месяц
-      import_revenue_month_delete($array['company'], $month_start);
+      import_revenue_delete_by_month($array['company'], $month_start);
 
       // создание Выручки на месяц
       foreach ($revenue as $date => $rev_item) {
@@ -149,7 +149,7 @@ function import_import_revenue($array)
   }
 }
 
-function import_revenue_month_delete($company, $month_start)
+function import_revenue_delete_by_month($company, $month_start)
 {
   if ($month_start) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));

@@ -2744,12 +2744,15 @@ body {
   .period-container .container-inline-date:first-child {
     margin-right: 1rem; }
 
-.month-select-wrapper {
+.month-select-wrapper,
+.period-select-wrapper {
   display: flex; }
-  .month-select-wrapper .form-item-month {
+  .month-select-wrapper .form-item-month,
+  .period-select-wrapper .form-item-month {
     flex: 0 0 auto;
     margin-right: .5rem; }
-  .month-select-wrapper .form-item-year {
+  .month-select-wrapper .form-item-year,
+  .period-select-wrapper .form-item-year {
     flex: 0 0 auto; }
 
 .table-li-responsive {
@@ -3142,5 +3145,8 @@ body {
     width: 250px; }
   .holding-balances .zero-value {
     color: #aaa; }
+
+.bdds-table .td-name {
+  width: 350px; }
 
 /*# sourceMappingURL=project.css.map */

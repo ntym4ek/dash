@@ -94,7 +94,7 @@ function dep_2v_2g_td_column_plan_ship_period_to_period($period, $field, $region
       $bounds = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD, $shift);
     }
 
-    $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $bounds, 'regions' => $regions]);
+    $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $bounds, 'regions' => $regions]);
 
     $sum = 0;
     foreach($fact as $record) {
@@ -184,8 +184,8 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
   // собрать все записи за период
-  $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions]);
-  $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
+  $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => $plan_bounds, 'regions' => $regions]);
+  $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period, 'regions' => $regions]);
 
   if ($plan || $fact) {
     // сгруппировать помесячно
@@ -329,8 +329,8 @@ function dep_2v_2g_line_revenue_plan_fact($type, $period)
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
   // собрать все записи за период
-  $plan = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds]);
-  $fact = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period]);
+  $plan = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => $plan_bounds]);
+  $fact = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period]);
 
   if ($plan || $fact) {
     // сгруппировать помесячно
@@ -484,9 +484,9 @@ function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $options)
 
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
-  $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions]);
-  $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
-  $deal = dash_is_current_season($period) ? dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL, 'regions' => $regions]) : [];
+  $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => $plan_bounds, 'regions' => $regions]);
+  $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period, 'regions' => $regions]);
+  $deal = dash_is_current_season($period) ? dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL_DEPR, 'regions' => $regions]) : [];
 
   $plan_amount = $plan_c1_amount = $plan_c2_amount = $fact_amount = $deal_amount = 0;
   // для определения текущего плана определить начало текущего и следующего месяцев
@@ -656,9 +656,9 @@ function dep_2v_2g_bar_ship_plan_fact_by_region($period, $options = [])
 
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
-  $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions, 'exclude' => $exclude]);
-  $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions, 'exclude' => $exclude]);
-  $deal = dash_is_current_season($period) ? dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL, 'regions' => $regions, 'exclude' => $exclude]) : [];
+  $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => $plan_bounds, 'regions' => $regions, 'exclude' => $exclude]);
+  $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period, 'regions' => $regions, 'exclude' => $exclude]);
+  $deal = dash_is_current_season($period) ? dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL_DEPR, 'regions' => $regions, 'exclude' => $exclude]) : [];
 
   // собрать массив с регионами
   // какие-то Рег отсутствуют в плане, какие-то в факте и контрактах, перебираем отдельно
@@ -817,7 +817,7 @@ function dep_2v_2g_pie_revenue_pay_plan($time_from, $time_to)
 
   $dbr->innerJoin('field_data_field_is_fact', 'ff', 'ff.entity_id = p.id');
   $dbr->condition('ff.bundle', 'plan_revenue');
-  $dbr->condition('ff.field_is_fact_value', DASH_TYPE_FACT);
+  $dbr->condition('ff.field_is_fact_value', DASH_TYPE_FACT_DEPR);
 
   $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
   $dbr->condition('fct.bundle', 'plan_revenue');
@@ -1065,9 +1065,9 @@ function dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom)
     $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD, $shift);
     $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
-    $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'noms' => $noms]);
-    $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period, 'noms' => $noms]);
-    $deal = $shift ? [] : dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL, 'noms' => $noms]);
+    $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => $plan_bounds, 'noms' => $noms]);
+    $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period, 'noms' => $noms]);
+    $deal = $shift ? [] : dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL_DEPR, 'noms' => $noms]);
 
     $plan_qty = $fact_qty = $deal_qty = 0;
     if ($plan) foreach ($plan as $record) $plan_qty += $record->qty;
@@ -1205,12 +1205,12 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
 
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
-  $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN, 'period' => $plan_bounds]);
-  $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period]);
+  $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => $plan_bounds]);
+  $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period]);
   $deal = [];
   $remains = [];
   if (dash_is_current_season($period)) {
-    $deal = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL]);
+    $deal = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL_DEPR]);
     $remains_last_ts = dep_2d_get_date_data_available();
     $remains = dash_remains_get_by_nom(['date' => $remains_last_ts]);
   }
@@ -1418,9 +1418,9 @@ function dep_2v_2g_column_ship_plan_fact_by_nom1($period, $options = [])
   $dbr_d = clone($dbr);
   $dbr_f = clone($dbr);
 
-  $dbr->condition('frt.field_record_type_td_value', DASH_TYPE_PLAN);
-  $dbr_f->condition('frt.field_record_type_td_value', DASH_TYPE_FACT);
-  $dbr_d->condition('frt.field_record_type_td_value', DASH_TYPE_DEAL);
+  $dbr->condition('frt.field_record_type_td_value', DASH_TYPE_PLAN_DEPR);
+  $dbr_f->condition('frt.field_record_type_td_value', DASH_TYPE_FACT_DEPR);
+  $dbr_d->condition('frt.field_record_type_td_value', DASH_TYPE_DEAL_DEPR);
 
   $result_plan = $dbr->execute()->fetchAllAssoc('tid');
   $result_fact = $dbr_f->execute()->fetchAllAssoc('tid');
@@ -1557,7 +1557,7 @@ function dep_2v_2g_column_ship_fact_gross_profit_by_week($period)
   $chart = dash_no_data_chart_get('');
 
   // выбрать препараты с наибольшим планом
-  if ($fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT, 'period' => $period])) {
+  if ($fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period])) {
 
     // сгруппировать понедельно
     $result_by_week = [];
@@ -1698,7 +1698,7 @@ function dep_2v_2g_column_ship_plan_by_nom($period, $regions = [])
 
   // выбрать препараты с наибольшим планом
   $fact = dash_plan_ship_get_by_conditions([
-    'type' => DASH_TYPE_FACT,
+    'type' => DASH_TYPE_FACT_DEPR,
     'period' => $period,
     'regions' => $regions,
   ]);
@@ -2111,11 +2111,11 @@ function dep_2v_2g_line_ship_plan_fact_by_month_filter_form_ajax_callback($form,
 function dep_2v_2g_import_processors_alter(&$processors)
 {
   $path = drupal_get_path('module', 'dep_2v_2g') . '/includes/';
-  $processors['first_queue'][] = ['mask' => '/^scrum_td_region.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_regions', 'archive' => 'dash/td']; // -- Справочник Регионов
-  $processors['first_queue'][] = ['mask' => '/^scrum_td_clients.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_clients_td', 'archive' => 'dash/td']; // -- Справочник Клиентов ТД
-  $processors['first_queue'][] = ['mask' => '/^scrum_td_nom.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_nomenklatura_td', 'archive' => 'dash/td']; // -- Справочник Номенклатуры ТД
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_region_.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_regions', 'archive' => 'dash/td']; // -- Справочник Регионов
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_clients_.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_clients_td', 'archive' => 'dash/td']; // -- Справочник Клиентов ТД
+  $processors['first_queue'][] = ['mask' => '/^scrum_td_nom_.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_nomenklatura_td', 'archive' => 'dash/td']; // -- Справочник Номенклатуры ТД
 
-  $processors['last_queue'][] = ['mask' => '/^scrum_td_payplan.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_pay_plan_td', 'archive' => 'dash/td']; // -- План выручки ТД
-  $processors['last_queue'][] = ['mask' => '/^scrum_td_shipplan.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_ship_plan_td', 'archive' => 'dash/td']; // -- План отгрузки ТД
+  $processors['last_queue'][] = ['mask' => '/^scrum_td_payplan_.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_pay_plan_td', 'archive' => 'dash/td']; // -- План выручки ТД
+  $processors['last_queue'][] = ['mask' => '/^scrum_td_shipplan_.*\.json/', 'include' => $path . 'import.dep_2v_2g.inc', 'func' => 'dep_2v_2g_import_ship_plan_td', 'archive' => 'dash/td']; // -- План отгрузки ТД
 }
 

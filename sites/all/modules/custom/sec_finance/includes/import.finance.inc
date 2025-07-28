@@ -7,7 +7,7 @@
  * @param $company - текстовое наименование компании
  * @return void
  */
-function finance_bank_docs_delete($timestamp, $company)
+function finance_bank_docs_delete_by_date($timestamp, $company)
 {
   $timestamp_from = gmmktime(0, 0, 0, date('n', $timestamp), date('j', $timestamp), date('Y', $timestamp));
   $timestamp_to = $timestamp_from + 86400 - 1;
@@ -35,7 +35,7 @@ function finance_bank_docs_import($array)
       $date_ts = helper_datetime_to_timestamp($array['date']);
 
       // удалить старые документы на дату
-      finance_bank_docs_delete($date_ts, $array['company']);
+      finance_bank_docs_delete_by_date($date_ts, $array['company']);
 
       // создать запись с остатком в кассе на начало дня
       $bank_doc = entity_create('bank_doc', ['type' => 'bank_doc']);

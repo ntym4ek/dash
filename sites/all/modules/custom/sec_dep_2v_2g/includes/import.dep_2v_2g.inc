@@ -37,7 +37,7 @@ function dep_2v_2g_import_clients_td($array)
     foreach ($array['load'] as $client) {
       if ($client['id'] && $client['name']) {
 
-        if ($term = dash_client_get_by_1c_id('td', $client['id'])) {
+        if ($term = dash_client_get_by_1c_id(DASH_INN_TD, $client['id'])) {
           $client_wr = entity_metadata_wrapper('taxonomy_term', $term);
           $client_wr->name = $client['name'];
           $client_wr->field_status = 1;
@@ -86,7 +86,7 @@ function dep_2v_2g_import_nomenklatura_td($array)
     foreach($array['load'] as $nom) {
       if ($nom['id'] && $nom['name'] && $nom['art']) {
         // проверить наличие записи Номенклатуры по артикулу (тк не у всех прописан ID)
-        $term = dash_nomenklatura_get_by_1c_artikul('td', $nom['art']);
+        $term = dash_nomenklatura_get_by_1c_artikul(DASH_INN_TD, $nom['art']);
         // если нет по артикулу, искать по ID или создать
         if (!$term) {
           $term = dash_term_get_by_1c_id('nomenklatura_td', $nom['id']);
@@ -146,10 +146,10 @@ function dep_2v_2g_import_ship_plan_td($array)
     // подготовка Плана на месяц
     $plan = [];
     foreach ($array['load'] as $load_item) {
-      $client = dash_client_get_by_1c_id('td', $load_item['clients_id']);
+      $client = dash_client_get_by_1c_id(DASH_INN_TD, $load_item['clients_id']);
       if (isset($client->tid)) {
         // todo перейти на поиск по nom_id
-        $nom = dash_nomenklatura_get_by_1c_artikul('td', $load_item['artikul_1c']);
+        $nom = dash_nomenklatura_get_by_1c_artikul(DASH_INN_TD, $load_item['artikul_1c']);
         if (isset($nom->tid)) {
           $date_arr = explode('.', $load_item['date']);
           $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
@@ -179,7 +179,7 @@ function dep_2v_2g_import_ship_plan_td($array)
         $month_arr = explode('.', $array['month']);
         $month_start = gmmktime(0, 0, 0, $month_arr[1], 1, $month_arr[2]);
       }
-      dep_2v_2g_shipplan_td_month_delete($month_start, $record_type);
+      dep_2v_2g_shipplan_td_delete_by_month($month_start, $record_type);
 
       // создание Плана на месяц
       foreach ($plan as $plan_item) {
@@ -197,6 +197,7 @@ function dep_2v_2g_import_ship_plan_td($array)
         $plan_wr->field_quantity_td = $plan_item['qty'];
         $plan_wr->field_amount = $plan_item['amount'];
         $plan_wr->field_net_cost = $plan_item['net_cost'];
+        $plan_wr->field_is_manual = 0;
         $plan_wr->save();
       }
 
@@ -235,7 +236,7 @@ function dep_2v_2g_import_pay_plan_td($array)
 
     if ($plan) {
       // удалить старый план на месяц
-      dep_2v_2g_payplan_td_month_delete($month_start, $record_type);
+      dep_2v_2g_payplan_td_delete_by_month($month_start, $record_type);
 
       // создание Плана на месяц
       foreach ($plan as $date => $plan_item) {
@@ -269,7 +270,7 @@ function dep_2v_2g_import_pay_plan_td($array)
  * @param $record_type
  * @return void
  */
-function dep_2v_2g_shipplan_td_month_delete($month_start, $record_type)
+function dep_2v_2g_shipplan_td_delete_by_month($month_start, $record_type)
 {
   if ($month_start || $record_type == 2) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
@@ -294,7 +295,7 @@ function dep_2v_2g_shipplan_td_month_delete($month_start, $record_type)
   }
 }
 
-function dep_2v_2g_payplan_td_month_delete($month_start, $record_type)
+function dep_2v_2g_payplan_td_delete_by_month($month_start, $record_type)
 {
   if ($month_start) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));

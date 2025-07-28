@@ -37,7 +37,7 @@ function dep_4_menu_alter(&$items)
 function dep_4_import_processors_alter(&$processors)
 {
   $path = drupal_get_path('module', 'dep_4') . '/includes/';
-  $processors['last_queue'][] =   ['mask' => '/^scrum_td_manufacturers.*\.json/', 'include' => $path . 'import.dep_4.inc', 'func' => 'dep_4_import_analog_prices', 'archive' => 'dash/td'];
+  $processors['last_queue'][] =   ['mask' => '/^scrum_td_manufacturers_.*\.json/', 'include' => $path . 'import.dep_4.inc', 'func' => 'dep_4_import_analog_prices', 'archive' => 'dash/td'];
 }
 
 function dep_4_preprocess_page(&$vars)
