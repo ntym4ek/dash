@@ -73,24 +73,21 @@ function reports_cash_outcome_import($array)
 
     if ($data) {
       // удалить старые записи на месяц
-      reports_cash_outcome_delete_records($month_start, $record_type, $company->tid);
+      reports_cash_outcome_delete_records($month_start, $company->tid, $record_type);
 
       // создание записей за месяц
       foreach ($data as $item) {
-        $data = entity_create('cash_outcome', [
-          'type' => 'cash_outcome',
-          'created' => REQUEST_TIME,
-        ]);
-        entity_save('cash_outcome', $data);
-
-        $cash_wr = entity_metadata_wrapper('cash_outcome', $data);
-        $cash_wr->field_co_type = $item['type'];
-        $cash_wr->field_co_company = $company->tid;
-        $cash_wr->field_co_date = $item['date'];
-        $cash_wr->field_co_category = $item['category_id'];
-        $cash_wr->field_co_amount = $item['amount'];
-        $cash_wr->field_co_is_manual = 0;
-        $cash_wr->save();
+        dash_cash_outcome_create(
+          [
+            'created' => REQUEST_TIME,
+            'company_id' => $company->tid,
+            'month_ts' => $item['date'],
+            'type' => $item['type'],
+            'category_id' => $item['category_id'],
+            'amount' => $item['amount'],
+            'manual' => 0,
+          ]
+        );
       }
 
       watchdog('import', 'Записи расхода ДС импортированы.', [], WATCHDOG_INFO);
@@ -118,7 +115,8 @@ function reports_debt_import($array)
       $data[] = [
         'category' => $item['category'],
         'title' => $item['title'],
-        'type' => $item['type'],
+        'type' => DASH_TYPE_FACT,
+        'kind' => $item['type'],
         'amount' => $item['amount'],
         'amount2' => $item['amount2'],
       ];
@@ -130,21 +128,18 @@ function reports_debt_import($array)
 
       // создание записей за месяц
       foreach ($data as $item) {
-        $data = entity_create('debt', [
-          'type' => 'debt',
+        dash_debt_create([
           'created' => REQUEST_TIME,
+          'company_id' => $company->tid,
+          'month_ts' => $month_start,
+          'type' => $item['type'],
+          'kind' => $item['kind'],
+          'category' => $item['category'],
+          'name' => $item['title'],
+          'amount' => $item['amount'],
+          'amount2' => $item['amount2'],
+          'manual' => 0,
         ]);
-        entity_save('debt', $data);
-
-        $cash_wr = entity_metadata_wrapper('debt', $data);
-        $cash_wr->field_d_company = $company->tid;
-        $cash_wr->field_d_date = $month_start;
-        $cash_wr->field_d_type = $item['type'];
-        $cash_wr->field_d_category = $item['category'];
-        $cash_wr->field_d_name = $item['title'];
-        $cash_wr->field_d_amount = $item['amount'];
-        $cash_wr->field_d_amount2 = $item['amount2'];
-        $cash_wr->save();
       }
 
       watchdog('import', 'Записи Кредитов и задолженностей импортированы.', [], WATCHDOG_INFO);
@@ -164,7 +159,7 @@ function reports_debt_import($array)
  * @param $company_id - tid компании
  * @return void
  */
-function reports_cash_outcome_delete_records($month_start, $record_type, $company_id)
+function reports_cash_outcome_delete_records($month_start, $company_id, $record_type)
 {
   if ($month_start) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
@@ -204,7 +199,8 @@ function reports_debt_delete_records($month_start, $company_id)
       ->entityCondition('bundle', 'debt')
       ->fieldCondition('field_d_date', 'value', $month_start, '>=')
       ->fieldCondition('field_d_date', 'value', $next_month_start, '<')
-      ->fieldCondition('field_d_company', 'tid', $company_id);
+      ->fieldCondition('field_d_company', 'tid', $company_id)
+      ->fieldCondition('field_d_is_manual', 'value', 0);
 
     $result = $efquery->execute();
     if ($result) {

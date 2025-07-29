@@ -40,6 +40,11 @@ const DASH_TD_NOM_ID_LIST_TO_EXCLUDE = [      // ТД, часть номенкл
  const DASH_TYPE_FACT = 2;                      // тип Факт
  const DASH_TYPE_DEAL = 3;                      // тип Неоплаченный контракт
 
+// вид Задолженности для таблицы Кредиты и задолженности
+const DASH_DEBT_KIND_DEBITOR = 1;              // Дебиторская задолженность
+const DASH_DEBT_KIND_CREDITOR = 2;             // Кредиторская задолженность
+const DASH_DEBT_KIND_CREDIT = 3;               // внешние Кредиты
+const DASH_DEBT_KIND_LOAN = 4;                 // внутренние займы
 
 // Агрохимикат
 define ('DASH_HISTORY_START_YEAR_AH', 2020);  // год начала статистики
@@ -858,8 +863,10 @@ function dash_cash_outcome_get_by_conditions($conditions)
  * @param $conditions
  *   - company_id* - tid компании
  *   - period - массив ['from' =>, 'to' => не включительно] * - обязателен
- *   - type - тип записи (план, факт)
+ *   - type - тип записи (1 - план, 2 - факт)
+ *   - kinds - массив типов записей (1 - дебиторская, 2- кредиторская, 3 - кредиты, 4 - займы)
  *   - category - категория записи (пока это 1 - статья, 2 - контрагент)
+ *   - manual - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
  * @return array|mixed|null
  */
 function dash_debt_get_by_conditions($conditions)
@@ -890,10 +897,16 @@ function dash_debt_get_by_conditions($conditions)
     }
     $dbr->addField('ft', 'field_d_type_value', 'type');
 
+    $dbr->innerJoin('field_data_field_d_kind', 'fk', 'fk.entity_id = d.id');
+    if (!empty($conditions['kinds'])) {
+      $dbr->condition('fk.field_d_kind_value', $conditions['kinds'], 'IN');
+    }
+    $dbr->addField('fk', 'field_d_kind_value', 'kind');
+
     $dbr->innerJoin('field_data_field_d_date', 'fd', 'fd.entity_id = d.id');
     $dbr->condition('fd.field_d_date_value', $conditions['period']['from'], '>=');
     $dbr->condition('fd.field_d_date_value', $conditions['period']['to'], '<');
-    $dbr->addField('fd', 'field_d_date_value', 'month');
+    $dbr->addField('fd', 'field_d_date_value', 'date');
 
     $dbr->innerJoin('field_data_field_d_amount', 'fa', 'fa.entity_id = d.id');
     $dbr->addField('fa', 'field_d_amount_value', 'amount');
@@ -901,7 +914,15 @@ function dash_debt_get_by_conditions($conditions)
     $dbr->innerJoin('field_data_field_d_amount2', 'fa2', 'fa2.entity_id = d.id');
     $dbr->addField('fa2', 'field_d_amount2_value', 'amount2');
 
-    $dbr->orderBy('month');
+    $dbr->innerJoin('field_data_field_d_is_manual', 'fm', 'fm.entity_id = d.id');
+    if (empty($conditions['manual'])) {
+      $dbr->condition('fm.field_d_is_manual_value', 0);
+    } else {
+      $dbr->condition('fm.field_d_is_manual_value', 1);
+    }
+    $dbr->addField('fm', 'field_d_is_manual_value', 'manual');
+
+    $dbr->orderBy('date');
     $result = $dbr->execute()->fetchAll();
   }
 
@@ -1506,8 +1527,8 @@ function dash_cash_income_create($params)
     $ci_wr->field_ci_company = $params['company_id'];
     $ci_wr->field_ci_date = $params['month_ts'];
     $ci_wr->field_ci_type = $params['type'];
-    $ci_wr->field_ci_is_manual = $params['manual'];
-    $ci_wr->field_ci_amount = $params['amount'];
+    $ci_wr->field_ci_is_manual = $params['manual'] ?? 0;
+    $ci_wr->field_ci_amount = $params['amount'] ?? 0;
     $ci_wr->save();
   } catch (Exception $e) {
     $transaction->rollback();
@@ -1532,10 +1553,11 @@ function dash_cash_outcome_create($params)
 
     $co_wr = entity_metadata_wrapper('cash_outcome', $co);
     $co_wr->field_co_company = $params['company_id'];
+    $co_wr->field_co_category = $params['category_id'];
     $co_wr->field_co_date = $params['month_ts'];
     $co_wr->field_co_type = $params['type'];
-    $co_wr->field_co_is_manual = $params['manual'];
-    $co_wr->field_co_amount = $params['amount'];
+    $co_wr->field_co_is_manual = $params['manual'] ?? 0;
+    $co_wr->field_co_amount = $params['amount'] ?? 0;
     $co_wr->save();
   } catch (Exception $e) {
     $transaction->rollback();
@@ -1588,13 +1610,13 @@ function dash_plan_ship_create($params)
 
     $plan_wr = entity_metadata_wrapper('plan', $plan);
     $plan_wr->field_record_type_td = $params['type'];
-    $plan_wr->field_nomenklatura_td = $params['nom_id'];
-    $plan_wr->field_client_td = $params['client_id'];
+    $plan_wr->field_nomenklatura_td = $params['nom_id'] ?? 0;
+    $plan_wr->field_client_td = $params['client_id'] ?? 0;
     $plan_wr->field_date = $params['month_ts'];
-    $plan_wr->field_quantity_td = $params['qty'];
-    $plan_wr->field_amount = $params['amount'];
-    $plan_wr->field_net_cost = $params['net_cost'];
-    $plan_wr->field_is_manual = $params['manual'];
+    $plan_wr->field_quantity_td = $params['qty'] ?? 0;
+    $plan_wr->field_amount = $params['amount'] ?? 0;
+    $plan_wr->field_net_cost = $params['net_cost'] ?? 0;
+    $plan_wr->field_is_manual = $params['manual'] ?? 0;
     $plan_wr->save();
   } catch (Exception $e) {
     $transaction->rollback();
@@ -1621,12 +1643,12 @@ function dash_ship_create($params)
     $ship_wr->field_s_company = $params['company_id'];
     $ship_wr->field_s_type = $params['type'];
     $ship_wr->field_s_date = $params['month_ts'];
-    $ship_wr->field_s_quantity = $params['qty'];
-    $ship_wr->field_s_amount = $params['amount'];
-    $ship_wr->field_s_is_manual = $params['manual'];
-    $ship_wr->field_s_net_cost = $params['net_cost'];
-    $ship_wr->field_s_nomenklatura = $params['nom_id'];
-    $ship_wr->field_s_client = $params['client_id'];
+    $ship_wr->field_s_quantity = $params['qty'] ?? 0;
+    $ship_wr->field_s_amount = $params['amount'] ?? 0;
+    $ship_wr->field_s_is_manual = $params['manual'] ?? 0;
+    $ship_wr->field_s_net_cost = $params['net_cost'] ?? 0;
+    $ship_wr->field_s_nomenklatura = $params['nom_id'] ?? 0;
+    $ship_wr->field_s_client = $params['client_id'] ?? 0;
     $ship_wr->save();
   } catch (Exception $e) {
     $transaction->rollback();
@@ -1634,4 +1656,36 @@ function dash_ship_create($params)
   }
 
   return $ship ?? false;
+}
+
+/**
+ * Создать Запись таблицы Отгрузка продукции
+ */
+function dash_debt_create($params)
+{
+  $transaction = db_transaction();
+  try {
+    $debt = entity_create('debt', [
+      'type' => 'debt',
+      'created' => $params['created'],
+    ]);
+    entity_save('debt', $debt);
+
+    $debt_wr = entity_metadata_wrapper('debt', $debt);
+    $debt_wr->field_d_company = $params['company_id'];
+    $debt_wr->field_d_date = $params['month_ts'];
+    $debt_wr->field_d_type = $params['type'];
+    $debt_wr->field_d_kind = $params['kind'];
+    $debt_wr->field_d_category = $params['category'] ?? 1;
+    $debt_wr->field_d_name = $params['name'] ?? '';
+    $debt_wr->field_d_amount = $params['amount'];
+    $debt_wr->field_d_amount2 = $params['amount2'] ?? 0;
+    $debt_wr->field_d_is_manual = $params['manual'];
+    $debt_wr->save();
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('database', $e);
+  }
+
+  return $debt ?? false;
 }
