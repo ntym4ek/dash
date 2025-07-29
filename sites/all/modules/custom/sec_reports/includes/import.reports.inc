@@ -151,6 +151,49 @@ function reports_debt_import($array)
 }
 
 /**
+ * Импорт данных в таблицу Остатков готовой продукции и сырья
+ * @param $array
+ */
+function reports_remains_brief_import($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $month_start = helper_datetime_to_timestamp($array['month']);
+    // для компаний инн является 1c_id
+    $company = dash_term_get_by_1c_id('companies', $array['company_inn']);
+
+    // подготовка Записей на месяц
+    $data = [];
+    foreach ($array['load'] as $item) {
+      $data[] = [
+        'category' => $item['category'],
+        'amount' => $item['amount'],
+      ];
+    }
+
+    if ($data) {
+      // удалить старые записи на месяц
+      reports_remains_brief_delete_records($month_start, $company->tid);
+
+      // создание записей за месяц
+      foreach ($data as $item) {
+        dash_remains_brief_create([
+          'created' => REQUEST_TIME,
+          'company_id' => $company->tid,
+          'month_ts' => $month_start,
+          'category' => $item['category'],
+          'amount' => $item['amount'],
+        ]);
+      }
+
+      watchdog('import', 'Записи Остатков готовой продукции и сырья импортированы.', [], WATCHDOG_INFO);
+      return $data;
+    }
+  }
+  watchdog('import', 'Импорт записей Остатков готовой продукции и сырья не выполнен.', [], WATCHDOG_ERROR);
+  return false;
+}
+
+/**
  * Удалить записи определённого типа за месяц.
  * Удаляем только данные из 1с, введённые вручную не трогаем
  *
@@ -182,29 +225,28 @@ function reports_cash_outcome_delete_records($month_start, $company_id, $record_
 }
 
 /**
- * Удалить записи за месяц из таблицы Кредитов и задолженностей
+ * Удалить записи за месяц из таблицы Остатков готовой продукции и сырья
  *
  * @param $month_start - unix timestamp
  * @param $company_id - tid компании
  * @return void
  */
-function reports_debt_delete_records($month_start, $company_id)
+function reports_remains_brief_delete_records($month_start, $company_id)
 {
   if ($month_start) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
 
     $efquery = new EntityFieldQuery();
     $efquery
-      ->entityCondition('entity_type', 'debt')
-      ->entityCondition('bundle', 'debt')
-      ->fieldCondition('field_d_date', 'value', $month_start, '>=')
-      ->fieldCondition('field_d_date', 'value', $next_month_start, '<')
-      ->fieldCondition('field_d_company', 'tid', $company_id)
-      ->fieldCondition('field_d_is_manual', 'value', 0);
+      ->entityCondition('entity_type', 'remains')
+      ->entityCondition('bundle', 'remains_brief')
+      ->fieldCondition('field_rm_date', 'value', $month_start, '>=')
+      ->fieldCondition('field_rm_date', 'value', $next_month_start, '<')
+      ->fieldCondition('field_rm_company', 'tid', $company_id);
 
     $result = $efquery->execute();
     if ($result) {
-      entity_delete_multiple('debt', array_keys($result['debt']));
+      entity_delete_multiple('remains', array_keys($result['remains']));
     }
   }
 }

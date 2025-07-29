@@ -723,6 +723,50 @@ function dash_cash_income_get_by_conditions($conditions)
 }
 
 /**
+ *  Вернуть данные по Остаткам готовой продукции и сырья (remains/remains_brief)
+ *  с учётом заданных параметров.
+ *
+ * @param $conditions
+ *   - company_id* - tid компании kccc
+ *   - period* - массив ['from' =>, 'to' => не включительно]
+ *   - category - категория записи (1 - гп, 2 - сырьё)
+ * @return array|mixed|null
+ */
+function dash_remains_brief_get_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_remains', 'r');
+    $dbr->condition('r.type', 'remains_brief');
+
+    $dbr->innerJoin('field_data_field_rm_company', 'fc', 'fc.entity_id = r.id');
+    $dbr->condition('fc.field_rm_company_tid', $conditions['company_id']);
+    $dbr->addField('fc', 'field_rm_company_tid', 'company');
+
+    $dbr->innerJoin('field_data_field_rm_category', 'fct', 'fct.entity_id = r.id');
+    if (isset($conditions['category'])) {
+      $dbr->condition('fct.field_rm_category_value', $conditions['category']);
+    }
+    $dbr->addField('fct', 'field_rm_category_value', 'category');
+
+    $dbr->innerJoin('field_data_field_rm_date', 'frd', 'frd.entity_id = r.id');
+    $dbr->condition('frd.field_rm_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('frd.field_rm_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('frd', 'field_rm_date_value', 'date');
+
+    $dbr->innerJoin('field_data_field_rm_amount', 'fa', 'fa.entity_id = r.id');
+    $dbr->addField('fa', 'field_rm_amount_value', 'amount');
+
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+/**
  * Вернуть данные по ПРОИЗВОДСТВУ продукции (сущность plan/plan)
  * с учётом заданных параметров
  *
@@ -1688,4 +1732,31 @@ function dash_debt_create($params)
   }
 
   return $debt ?? false;
+}
+
+/**
+ * Создать Остатков готовой продукции и сырья
+ */
+function dash_remains_brief_create($params)
+{
+  $transaction = db_transaction();
+  try {
+    $remains = entity_create('remains', [
+      'type' => 'remains_brief',
+      'created' => $params['created'],
+    ]);
+    entity_save('remains', $remains);
+
+    $remains_wr = entity_metadata_wrapper('remains', $remains);
+    $remains_wr->field_rm_company = $params['company_id'];
+    $remains_wr->field_rm_date = $params['month_ts'];
+    $remains_wr->field_rm_category = $params['category'];
+    $remains_wr->field_rm_amount = $params['amount'];
+    $remains_wr->save();
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('database', $e);
+  }
+
+  return $remains ?? false;
 }

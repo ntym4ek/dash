@@ -101,6 +101,8 @@ function reports_import_processors_alter(&$processors)
   $processors['last_queue'][] = ['mask' => '/^scrum_cash_outcome_.*\.json/',            'include' => $path . 'import.reports.inc', 'func' => 'reports_cash_outcome_import', 'archive' => 'dash/rp'];
   // Кредиты и задолженности (из бухгалтерии)
   $processors['last_queue'][] = ['mask' => '/^scrum_debt_.*\.json/',                    'include' => $path . 'import.reports.inc', 'func' => 'reports_debt_import', 'archive' => 'dash/rp'];
+  // Остатки готовой продукции и сырья
+  $processors['last_queue'][] = ['mask' => '/^scrum_remains_brief_\d.*\.json/',         'include' => $path . 'import.reports.inc', 'func' => 'reports_remains_brief_import', 'archive' => 'dash/rp'];
 }
 
 /**
