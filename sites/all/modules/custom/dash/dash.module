@@ -1789,6 +1789,7 @@ function dash_debt_create($params)
     $debt_wr->field_d_amount = $params['amount'];
     $debt_wr->field_d_amount2 = $params['amount2'] ?? 0;
     $debt_wr->field_d_is_manual = $params['manual'];
+    $debt_wr->field_d_source = $params['source'];
     $debt_wr->save();
   } catch (Exception $e) {
     $transaction->rollback();

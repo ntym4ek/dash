@@ -124,7 +124,7 @@ function reports_debt_import($array)
 
     if ($data) {
       // удалить старые записи на месяц
-      reports_debt_delete_records($month_start, $company->tid);
+      reports_debt_delete_records($month_start, $company->tid, $array['source']);
 
       // создание записей за месяц
       foreach ($data as $item) {
@@ -138,6 +138,7 @@ function reports_debt_import($array)
           'name' => $item['title'],
           'amount' => $item['amount'],
           'amount2' => $item['amount2'],
+          'source' => $array['source'],
           'manual' => 0,
         ]);
       }
@@ -225,6 +226,35 @@ function reports_cash_outcome_delete_records($month_start, $company_id, $record_
 }
 
 /**
+ * Удалить записи за месяц из таблицы Кредитов и задолженностей
+ *
+ * @param $month_start - unix timestamp
+ * @param $company_id - tid компании
+ * @param $source - источник данных
+ * @return void
+ */
+function reports_debt_delete_records($month_start, $company_id, $source)
+{
+  if ($month_start) {
+    $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
+
+    $efquery = new EntityFieldQuery();
+    $efquery
+      ->entityCondition('entity_type', 'debt')
+      ->entityCondition('bundle', 'debt')
+      ->fieldCondition('field_d_company', 'tid', $company_id)
+      ->fieldCondition('field_d_date', 'value', $month_start, '>=')
+      ->fieldCondition('field_d_date', 'value', $next_month_start, '<')
+      ->fieldCondition('field_d_source', 'value', $source);
+
+    $result = $efquery->execute();
+    if ($result) {
+      entity_delete_multiple('debt', array_keys($result['debt']));
+    }
+  }
+}
+
+/**
  * Удалить записи за месяц из таблицы Остатков готовой продукции и сырья
  *
  * @param $month_start - unix timestamp
@@ -250,3 +280,4 @@ function reports_remains_brief_delete_records($month_start, $company_id)
     }
   }
 }
+
