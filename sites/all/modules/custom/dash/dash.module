@@ -645,6 +645,7 @@ function dash_plan_revenue_get_by_conditions($conditions)
   if (!isset($result)) {
     $dbr = db_select('eck_plan', 'p');
     $dbr->condition('p.type', 'plan_revenue');
+    $dbr->addField('p', 'id');
 
     $dbr->innerJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
     $dbr->condition('frt.bundle', 'plan_revenue');
@@ -688,6 +689,7 @@ function dash_cash_income_get_by_conditions($conditions)
   if (!isset($result)) {
     $dbr = db_select('eck_cash_income', 'ci');
     $dbr->condition('ci.type', 'cash_income');
+    $dbr->addField('ci', 'id');
 
     $dbr->innerJoin('field_data_field_ci_company', 'fc', 'fc.entity_id = ci.id');
     $dbr->condition('fc.field_ci_company_tid', $conditions['company_id']);
@@ -740,6 +742,7 @@ function dash_remains_brief_get_by_conditions($conditions)
   if (!isset($result)) {
     $dbr = db_select('eck_remains', 'r');
     $dbr->condition('r.type', 'remains_brief');
+    $dbr->addField('r', 'id');
 
     $dbr->innerJoin('field_data_field_rm_company', 'fc', 'fc.entity_id = r.id');
     $dbr->condition('fc.field_rm_company_tid', $conditions['company_id']);
@@ -861,6 +864,7 @@ function dash_cash_outcome_get_by_conditions($conditions)
   if (!isset($result)) {
     $dbr = db_select('eck_cash_outcome', 'co');
     $dbr->condition('co.type', 'cash_outcome');
+    $dbr->addField('co', 'id');
 
     $dbr->innerJoin('field_data_field_co_company', 'fc', 'fc.entity_id = co.id');
     $dbr->condition('fc.field_co_company_tid', $conditions['company_id']);
@@ -921,13 +925,14 @@ function dash_debt_get_by_conditions($conditions)
   if (!isset($result)) {
     $dbr = db_select('eck_debt', 'd');
     $dbr->condition('d.type', 'debt');
+    $dbr->addField('d', 'id');
 
     $dbr->innerJoin('field_data_field_d_company', 'fc', 'fc.entity_id = d.id');
     $dbr->condition('fc.field_d_company_tid', $conditions['company_id']);
     $dbr->addField('fc', 'field_d_company_tid', 'company');
 
     $dbr->innerJoin('field_data_field_d_name', 'fn', 'fn.entity_id = d.id');
-    $dbr->addField('fn', 'field_d_name_value', 'name');
+    $dbr->addField('fn', 'field_d_bdr', 'name');
 
     $dbr->innerJoin('field_data_field_d_category', 'fct', 'fct.entity_id = d.id');
     if (!empty($conditions['category'])) {
@@ -965,6 +970,65 @@ function dash_debt_get_by_conditions($conditions)
       $dbr->condition('fm.field_d_is_manual_value', 1);
     }
     $dbr->addField('fm', 'field_d_is_manual_value', 'manual');
+
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+
+/**
+ *  Вернуть данные по из таблицы Бюджета доходов и расходов (ручной ввод данных) (manual/bdr)
+ *  с учётом заданных параметров
+ * @param $conditions
+ *   - company_id* - tid компании
+ *   - period* - массив ['from' =>, 'to' => не включительно]
+ *   - type - тип записи (план, факт, неотгруженные контракты)
+ *   - category_id - статья Бюджета доходов и расходов
+ * @return array|mixed|null
+ */
+function dash_manual_bdr_get_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_manual', 'm');
+    $dbr->condition('m.type', 'bdr');
+    $dbr->addField('m', 'id');
+
+    $dbr->innerJoin('field_data_field_m_company', 'fc', 'fc.entity_id = m.id');
+    $dbr->condition('fc.bundle', 'bdr');
+    $dbr->condition('fc.field_m_company_tid', $conditions['company_id']);
+    $dbr->addField('fc', 'field_m_company_tid', 'company');
+
+    $dbr->innerJoin('field_data_field_m_date', 'frd', 'frd.entity_id = m.id');
+    $dbr->condition('frd.bundle', 'bdr');
+    $dbr->condition('frd.field_m_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('frd.field_m_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('frd', 'field_m_date_value', 'date');
+
+    $dbr->innerJoin('field_data_field_m_type', 'frt', 'frt.entity_id = m.id');
+    $dbr->condition('frt.bundle', 'bdr');
+    if (isset($conditions['type'])) {
+      $dbr->condition('frt.field_m_type_value', $conditions['type']);
+    }
+    $dbr->addField('frt', 'field_m_type_value', 'type');
+
+    $dbr->innerJoin('field_data_field_m_category', 'fct', 'fct.entity_id = m.id');
+    $dbr->condition('fct.bundle', 'bdr');
+    if (isset($conditions['category_id'])) {
+      $dbr->condition('fct.field_m_category_tid', $conditions['category_id']);
+    }
+    $dbr->innerJoin('taxonomy_term_data', 'tc', 'tc.tid = fct.field_m_category_tid');
+    $dbr->addField('tc', 'tid', 'category_id');
+    $dbr->addField('tc', 'name', 'category_name');
+
+    $dbr->innerJoin('field_data_field_m_amount', 'fa', 'fa.entity_id = m.id');
+    $dbr->condition('fa.bundle', 'bdr');
+    $dbr->addField('fa', 'field_m_amount_value', 'amount');
 
     $dbr->orderBy('date');
     $result = $dbr->execute()->fetchAll();
@@ -1759,4 +1823,32 @@ function dash_remains_brief_create($params)
   }
 
   return $remains ?? false;
+}
+
+/**
+ * Создать Остатков готовой продукции и сырья
+ */
+function dash_manual_bdr_create($params)
+{
+  $transaction = db_transaction();
+  try {
+    $manual = entity_create('manual', [
+      'type' => 'bdr',
+      'created' => $params['created'],
+    ]);
+    entity_save('manual', $manual);
+
+    $manual_wr = entity_metadata_wrapper('manual', $manual);
+    $manual_wr->field_m_company = $params['company_id'];
+    $manual_wr->field_m_date = $params['month_ts'];
+    $manual_wr->field_m_category = $params['category_id'];
+    $manual_wr->field_m_type = $params['type'];
+    $manual_wr->field_m_amount = $params['amount'];
+    $manual_wr->save();
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('database', $e);
+  }
+
+  return $manual ?? false;
 }

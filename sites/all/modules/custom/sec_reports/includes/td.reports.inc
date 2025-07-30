@@ -202,6 +202,20 @@ function reports_td_page_content($period_to)
   $output .=   '</div>';
   $output .= '</div>';
 
+  // слайд 13
+  $url = url('/data/manual-bdr/edit', ['query' => ['blocks' => ['td_block_13'], 'inn' => DASH_INN_TD]]);
+  $output .=  '<div class="section-title">' .
+                '<h3>План-факт. Бюджет доходов и расходов (в ' . DASH_REV_SUFFIX . ' без НДС)</h3>' .
+                '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
+                '<div class="underline"></div>' .
+              '</div>';
+  $output .= '<div class="row">';
+  $output .=   '<div class="col-xs-12">';
+  $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $period_to)) . '</h5>';
+  $output .=     '<div class="ajax-load" data-func="td_block_13" data-delay="00"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .= '</div>';
+
   // слайд 14
   $output .=  '<div class="section-title">' .
                 '<h3>План-факт расходов на регистрацию (в ' . DASH_REV_SUFFIX . ')</h3>' .
@@ -209,7 +223,7 @@ function reports_td_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
-  $output .=     '<div class="ajax-load" data-func="td_block_14" data-delay="00"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="td_block_14" data-delay="1400"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -230,7 +244,6 @@ function reports_td_block_1()
 
   return drupal_render($data_arr);
 }
-
 function reports_td_block_2()
 {
   // период с начала года по начало заданного месяца
@@ -245,7 +258,6 @@ function reports_td_block_2()
 
   return drupal_render($data_arr);
 }
-
 function reports_td_block_31()
 {
   // период с начала сезона по начало заданного месяца
@@ -257,7 +269,6 @@ function reports_td_block_31()
 
   return drupal_render($data_arr);
 }
-
 function reports_td_block_32()
 {
   // период с начала сезона по начало заданного месяца
@@ -269,7 +280,6 @@ function reports_td_block_32()
 
   return drupal_render($data_arr);
 }
-
 function reports_td_block_4()
 {
   // период с начала года по начало заданного месяца
@@ -287,7 +297,6 @@ function reports_td_block_4()
 
   return $output;
 }
-
 function reports_td_block_51()
 {
   // период с начала предыдущего заданному месяца по начало заданного месяца
@@ -302,7 +311,6 @@ function reports_td_block_51()
 
   return drupal_render($data_arr);
 }
-
 function reports_td_block_52()
 {
   // период с начала года по начало текущего месяца
@@ -317,7 +325,6 @@ function reports_td_block_52()
 
   return drupal_render($data_arr);
 }
-
 function reports_td_block_6()
 {
   // период с начала сезона по начало месяца
@@ -329,7 +336,6 @@ function reports_td_block_6()
 
   return drupal_render($data_arr);
 }
-
 function reports_td_block_7()
 {
   // период с начала года по начало текущего месяца
@@ -398,7 +404,17 @@ function reports_td_block_12()
 
   return reports_remains_progress_table_output($period);
 }
+function reports_td_block_13()
+{
+  // период с начала года по начало текущего месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+  ];
 
+  return reports_manual_bdr_table_output($period);
+}
 function reports_td_block_14()
 {
   // период с начала года по начало заданного месяца
@@ -446,6 +462,7 @@ function reports_column_production_plan_fact($period)
     $chart = array(
       '#type' => 'chart',
       '#chart_type' => 'column',
+      '#colors' => ['#ccc', DASH_COLOR_BLUE],
       '#font' => 'Montserrat',
       '#height' => '350',
       '#legend_position' => 'top',
@@ -1298,6 +1315,7 @@ function reports_bdds_table_output($period)
     'rows' => $rows,
     'attributes' => ['class' => ['table', 'table-intersect']],
     'sticky' => false,
+    'empty' => 'нет данных',
   ]);
 
   return '<div class="bdds-table">' . $output . '</div>';
@@ -1363,6 +1381,7 @@ function reports_debt_debitors_table_output($period)
     'rows' => $rows,
     'attributes' => ['class' => ['table', 'table-intersect']],
     'sticky' => false,
+    'empty' => 'нет данных',
   ]);
 
   return '<div class="debt-debitors-table">' . $output . '</div>';
@@ -1428,6 +1447,7 @@ function reports_debt_creditors_table_output($period)
     'rows' => $rows,
     'attributes' => ['class' => ['table', 'table-intersect']],
     'sticky' => false,
+    'empty' => 'нет данных',
   ]);
 
   return '<div class="debt-creditors-table">' . $output . '</div>';
@@ -1500,6 +1520,7 @@ function reports_debt_credits_loans_table_output($period)
     'rows' => $rows,
     'attributes' => ['class' => ['table', 'table-intersect']],
     'sticky' => false,
+    'empty' => 'нет данных',
   ]);
 
   return '<div class="credits-loans-table">' . $output . '</div>';
@@ -1663,17 +1684,17 @@ function reports_remains_progress_table_output($period)
     $data['row3'][$remain->name][$remain->date] += $remain->amount / DASH_REV_DIVIDER;
   }
 
+  // формируем таблицу
+  $header = [
+    ['data' => 'Наименование', 'align' => 'center', 'class' => ['td-name']],
+    ['data' => date('d.m.Y', $prev_year_start), 'align' => 'center'],
+    ['data' => date('d.m.Y', $prev_year_month_start), 'align' => 'center'],
+    ['data' => date('d.m.Y', $year_start), 'align' => 'center'],
+    ['data' => date('d.m.Y', $month_start), 'align' => 'center'],
+  ];
+
   // если есть данные
   if ($data['row3']) {
-    // формируем таблицу
-    $header = [
-      ['data' => 'Наименование', 'align' => 'center', 'class' => ['td-name']],
-      ['data' => date('d.m.Y', $prev_year_start), 'align' => 'center'],
-      ['data' => date('d.m.Y', $prev_year_month_start), 'align' => 'center'],
-      ['data' => date('d.m.Y', $year_start), 'align' => 'center'],
-      ['data' => date('d.m.Y', $month_start), 'align' => 'center'],
-    ];
-
     foreach ($data as $key => $row) {
       foreach ($row as $name => $item) {
         $rows[] = [
@@ -1769,16 +1790,16 @@ function reports_column_registration_plan_fact($period)
       if ($month['plan_amount'] || $month['fact_amount']) {
         $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
-        $plan_amount = $month['plan_amount'] / DASH_PROD_DIVIDER;
-        $fact_amount = $month['fact_amount'] / DASH_PROD_DIVIDER;
+        $plan_amount = $month['plan_amount'] / DASH_REV_DIVIDER;
+        $fact_amount = $month['fact_amount'] / DASH_REV_DIVIDER;
 
         $chart['plan']['#data'][] = $plan_amount;
         $chart['fact']['#data'][] = $fact_amount;
 
         $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
           '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
+          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
           '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan_amount ? number_format($fact_amount/$plan_amount*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
           '</div>';
 
@@ -1801,4 +1822,64 @@ function reports_column_registration_plan_fact($period)
   }
 
   return $chart;
+}
+
+function reports_manual_bdr_table_output($period)
+{
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
+
+  // собрать все записи Прихода ДС за период
+  $data = [];
+  if ($bdr = dash_manual_bdr_get_by_conditions(['company_id' => $company->tid, 'period' => $period])) {
+    foreach ($bdr as $record) {
+      if (!isset($data[$record->category_id])) $data[$record->category_id] = ['name' => $record->category_name, 'plan_period' => 0, 'fact_period' => 0];
+      if ($record->type == DASH_TYPE_PLAN) {
+        $data[$record->category_id]['plan_period'] += $record->amount;
+      }
+      if ($record->type == DASH_TYPE_FACT) {
+        $data[$record->category_id]['fact_period'] += $record->amount;
+      }
+    }
+  }
+
+  // формируем таблицу
+  $header = [
+    ['data' => 'Наименование', 'align' => 'center', 'class' => ['td-name']],
+    ['data' => 'План (год)', 'align' => 'center'],
+    ['data' => 'Факт (год)', 'align' => 'center'],
+    ['data' => '% вып.', 'align' => 'center'],
+  ];
+
+
+  $terms = taxonomy_get_tree(taxonomy_vocabulary_machine_name_load('bdr')->vid);
+  foreach ($terms as $term) {
+    $item = $data[$term->tid];
+    if ($item['plan_period'] || $item['fact_period']) {
+      // сформировать имя с учётом иерархии
+      $label = $term->name;
+      if ($term->depth) {
+        $label = '&nbsp;&nbsp;' . $label;
+        for($i=1; $i <= $term->depth; $i++) { $label = '-' . $label; }
+      }
+
+      $rows[] = [
+        'data' => [
+          $label,
+          ['data' => helper_number_format($item['plan_period'], 0, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item['fact_period'], 0, ' ', false), 'align' => 'right'],
+          ['data' => ($item['plan_period'] ? helper_number_format($item['fact_period'] / $item['plan_period'] * 100, 0, ' ', false) . ' %' : '-'), 'align' => 'right'],
+        ],
+      ];
+    }
+  }
+
+  $output = theme('table', [
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table', 'table-intersect']],
+    'sticky' => false,
+    'empty' => 'нет данных',
+  ]);
+
+  return '<div class="bdds-table">' . $output . '</div>';
 }
