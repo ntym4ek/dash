@@ -38,7 +38,7 @@ function ext_admin_menu()
     'access arguments' => array('access manager settings'),
   );
   $items['admin/config/custom/migration'] = array(
-    'title' => 'Перенос данных',
+    'title' => 'Обработка данных',
     'weight' => 1,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ext_admin_migration_form'),
@@ -85,7 +85,7 @@ function ext_admin_settings_form($form, &$form_state)
 function ext_admin_migration_form($form, &$form_state)
 {
   $function = '';
-  $function = 'ext_admin_queue_database_processing_2';
+  $function = 'ext_admin_queue_database_processing_3';
 
   $form['message'] = array(
     '#markup' => ($function ? '<p>Будет запущена функция ' . $function . '</p>' : '<p>Функция для запуска не задана</p>'),
@@ -210,4 +210,20 @@ function ext_admin_database_process_record_2($record_id)
   $debt_wr->save();
 
   watchdog('message', 'Обработана запись с id: ' . $record_id);
+}
+
+function ext_admin_queue_database_processing_3()
+{
+  // удалить все записи из Кредитов и задолженностей
+  $q = db_select('eck_debt', 'd');
+  $q->fields('d', ['id']);
+
+  if ($items = $q->execute()->fetchCol()) {
+    entity_delete_multiple('debt', $items);
+
+    drupal_set_message('Записей удалено: ' . count($items));
+    return true;
+  }
+
+  return false;
 }

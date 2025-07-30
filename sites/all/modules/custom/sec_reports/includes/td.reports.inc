@@ -572,7 +572,6 @@ function reports_line_revenue_plan_fact($period)
     $chart = array(
       '#type' => 'chart',
       '#chart_type' => 'line',
-      '#colors' => ['#ccc', DASH_COLOR_BLUE],
       '#font' => 'Montserrat',
       '#height' => '350',
       '#legend_position' => 'top',
@@ -816,7 +815,6 @@ function reports_line_ship_plan_fact($period)
     $chart = array(
       '#type' => 'chart',
       '#chart_type' => 'line',
-      '#colors' => ['#ccc', DASH_COLOR_BLUE],
       '#font' => 'Montserrat',
       '#height' => '350',
       '#legend_position' => 'top',
@@ -1427,6 +1425,7 @@ function reports_debt_creditors_table_output($period)
     ['data' => date('d.m.Y', $month_start), 'align' => 'center'],
   ];
 
+  $rows = [];
   foreach ($data as $key => $row) {
     foreach ($row as $name => $item) {
       $rows[] = [
@@ -1499,6 +1498,7 @@ function reports_debt_credits_loans_table_output($period)
     ['data' => 'Неопл. % по займам', 'align' => 'center'],
   ];
 
+  $rows = [];
   foreach ($data as $key => $row) {
     foreach ($row as $name => $item) {
       $rows[] = [
@@ -1694,6 +1694,7 @@ function reports_remains_progress_table_output($period)
   ];
 
   // если есть данные
+  $rows = [];
   if ($data['row3']) {
     foreach ($data as $key => $row) {
       foreach ($row as $name => $item) {
@@ -1850,7 +1851,7 @@ function reports_manual_bdr_table_output($period)
     ['data' => '% вып.', 'align' => 'center'],
   ];
 
-
+  $rows = [];
   $terms = taxonomy_get_tree(taxonomy_vocabulary_machine_name_load('bdr')->vid);
   foreach ($terms as $term) {
     $item = $data[$term->tid];

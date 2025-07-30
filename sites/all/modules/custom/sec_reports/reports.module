@@ -146,7 +146,7 @@ function reports_manual_bdr_data_edit_form($form, &$form_state)
     return $form;
   }
 
-  $intro = '<p>Форма позволяет добавлять новые и&nbsp;редактировать ранее введённые данные</p>';
+  $intro = '<p>Форма позволяет добавлять новые и&nbsp;редактировать ранее введённые данные. Только числовые значения. Рублёвые значения в млн без НДС.</p>';
   $form['intro'] = [
     '#markup' => '<div class="intro">' . $intro . '</div>',
     '#attached' => ['js' => [[

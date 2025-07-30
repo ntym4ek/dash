@@ -932,7 +932,7 @@ function dash_debt_get_by_conditions($conditions)
     $dbr->addField('fc', 'field_d_company_tid', 'company');
 
     $dbr->innerJoin('field_data_field_d_name', 'fn', 'fn.entity_id = d.id');
-    $dbr->addField('fn', 'field_d_bdr', 'name');
+    $dbr->addField('fn', 'field_d_name_value', 'name');
 
     $dbr->innerJoin('field_data_field_d_category', 'fct', 'fct.entity_id = d.id');
     if (!empty($conditions['category'])) {
