@@ -12,6 +12,7 @@ define ('DASH_TYPE_DEAL_DEPR', 2);               // тип Неоплаченн�
 define ('DASH_COLOR_BLUE', '#2B94C9');
 define ('DASH_COLOR_LIGHT_BLUE', '#89BDDF');
 define ('DASH_COLOR_AQUA', '#2DAD9E');
+define ('DASH_COLOR_GREEN', '#47AD9E');
 define ('DASH_COLOR_GLOW_GREEN', '#A6B727');
 define ('DASH_COLOR_LIGHT_GREEN', '#a6c96a');
 define ('DASH_COLOR_RED', '#DF5327');

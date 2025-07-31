@@ -668,7 +668,7 @@ function reports_line_revenue_plan_fact($period)
 
   // определить цвет графика
   if ($last_fact > $last_plan) {
-    $chart['#colors'] = ['#ccc', DASH_COLOR_LIGHT_GREEN];
+    $chart['#colors'] = ['#ccc', DASH_COLOR_GREEN];
   } else {
     $chart['#colors'] = ['#ccc', DASH_COLOR_DARK_RED];
   }
@@ -880,17 +880,17 @@ function reports_line_ship_plan_fact($period)
         $last_plan = $total_plan;
       }
 
-      $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-        '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
-        '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
-        '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
-        '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
-        '<div>&nbsp;</div>' .
-        '<div><div style="display:inline-block; font-weight: 700;">Накопительный итог</div></div>' .
-        '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($total_plan, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
-        '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($last_fact, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
-        '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($total_plan ? number_format($last_fact/$total_plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
-        '</div>';
+      $tooltip =  '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+                    '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
+                    '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
+                    '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
+                    '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
+                    '<div>&nbsp;</div>' .
+                    '<div><div style="display:inline-block; font-weight: 700;">Накопительный итог</div></div>' .
+                    '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($total_plan, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
+                    '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($last_fact, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
+                    '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($total_plan ? number_format($last_fact/$total_plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
+                  '</div>';
 
       $chart['fact'][] = array(
         '#type' => 'chart_data_item',
@@ -911,7 +911,7 @@ function reports_line_ship_plan_fact($period)
 
   // определить цвет графика
   if ($last_fact > $last_plan) {
-    $chart['#colors'] = ['#ccc', DASH_COLOR_LIGHT_GREEN];
+    $chart['#colors'] = ['#ccc', DASH_COLOR_GREEN];
     $chart['fact']['#raw_options']['annotations']['stem']['length'] = 40;
     $chart['plan']['#raw_options']['annotations']['stem']['length'] = -40;
   } else {

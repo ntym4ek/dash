@@ -1,6 +1,6 @@
 <?php
 
-function reports_st_period_form($form, &$form_state)
+function reports_jp_period_form($form, &$form_state)
 {
   // дефолтные значения
   $year_default = date('Y');
@@ -26,7 +26,7 @@ function reports_st_period_form($form, &$form_state)
     '#options' => $year_opts,
     '#default_value' => [$year],
     '#ajax' => [
-      'callback' => 'reports_st_period_form_callback',
+      'callback' => 'reports_jp_period_form_callback',
       'wrapper' => 'period-form-wrapper',
     ],
     '#prefix' => '<div class="row"><div class="col-xs-12 col-md-4"><div class="filter"><div class="period-select-wrapper">',
@@ -34,17 +34,17 @@ function reports_st_period_form($form, &$form_state)
   ];
 
   $form['content'] = [
-    '#markup' => reports_st_page_content($year)
+    '#markup' => reports_jp_page_content($year)
   ];
 
   return $form;
 }
-function reports_st_period_form_callback($form, &$form_state)
+function reports_jp_period_form_callback($form, &$form_state)
 {
   return $form;
 }
 
-function reports_st_page_content($year)
+function reports_jp_page_content($year)
 {
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, $year),
@@ -54,40 +54,40 @@ function reports_st_page_content($year)
 
   // слайд 1
   // Поступление ДС, год, помесячно, план-факт
-  $url = url('/data/cash-income/edit', ['query' => ['blocks' => ['st_block_1', 'st_block_3'], 'inn' => DASH_INN_ST]]);
+  $url = url('/data/cash-income/edit', ['query' => ['blocks' => ['jp_block_1', 'jp_block_3'], 'inn' => DASH_INN_ST]]);
   $output  = '<div class="section-title">' .
                 '<h3>План-факт поступления денежных средств за ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="450" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '';
-  $output .= '<div class="ajax-load" data-func="st_block_1" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="jp_block_1" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 2
   // Отгрузка в деньгах, год, помесячно, план-факт
-  $url = url('/data/ship/edit', ['query' => ['blocks' => ['st_block_2', 'st_block_3'], 'inn' => DASH_INN_ST]]);
+  $url = url('/data/ship/edit', ['query' => ['blocks' => ['jp_block_2', 'jp_block_3'], 'inn' => DASH_INN_ST]]);
   $output .= '<div class="section-title">' .
                 '<h3>План-факт отгрузки продукции за ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '';
-  $output .= '<div class="ajax-load" data-func="st_block_2" data-delay="200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="jp_block_2" data-delay="200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 3
   // сравнение факта Поступления ДС и Отгрузки в деньгах, год, помесячно
-  $url = url('/data/ship/edit', ['query' => ['blocks' => ['st_block_3'], 'inn' => DASH_INN_ST]]);
+  $url = url('/data/ship/edit', ['query' => ['blocks' => ['jp_block_3'], 'inn' => DASH_INN_ST]]);
   $output .= '<div class="section-title">' .
                 '<h3>Поступление ДС и отгрузка продукции за ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '';
-  $output .= '<div class="ajax-load" data-func="st_block_3" data-delay="300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .= '<div class="ajax-load" data-func="jp_block_3" data-delay="300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   return '<div class="charts" data-module="reports" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
 }
 
-function reports_st_block_1()
+function reports_jp_block_1()
 {
   // период с начала года по начало текущего месяца за заданный год
   $period = [
@@ -97,12 +97,12 @@ function reports_st_block_1()
   ];
 
   // план-факт поступления ДС
-  $data_arr = reports_st_column_cash_plan_fact($period);
+  $data_arr = reports_jp_column_cash_plan_fact($period);
 
   return drupal_render($data_arr);
 }
 
-function reports_st_block_2()
+function reports_jp_block_2()
 {
   // период с начала года по начало текущего месяца за заданный год
   $period = [
@@ -112,12 +112,12 @@ function reports_st_block_2()
   ];
 
   // план-факт отгрузки продукции
-  $data_arr = reports_st_column_ship_plan_fact($period);
+  $data_arr = reports_jp_column_ship_plan_fact($period);
 
   return drupal_render($data_arr);
 }
 
-function reports_st_block_3()
+function reports_jp_block_3()
 {
   // период с начала года по начало текущего месяца за заданный год
   $period = [
@@ -127,12 +127,12 @@ function reports_st_block_3()
   ];
 
   // сравнение факта Поступления ДС и Отгрузки в деньгах, год, помесячно
-  $data_arr = reports_st_line_cash_ship_fact($period);
+  $data_arr = reports_jp_line_cash_ship_fact($period);
 
   return drupal_render($data_arr);
 }
 
-function reports_st_column_cash_plan_fact($period)
+function reports_jp_column_cash_plan_fact($period)
 {
   $chart = dash_no_data_chart_get();
 
@@ -234,7 +234,7 @@ function reports_st_column_cash_plan_fact($period)
 
   return $chart;
 }
-function reports_st_column_ship_plan_fact($period)
+function reports_jp_column_ship_plan_fact($period)
 {
   $chart = dash_no_data_chart_get();
 
@@ -336,7 +336,7 @@ function reports_st_column_ship_plan_fact($period)
 
   return $chart;
 }
-function reports_st_line_cash_ship_fact($period)
+function reports_jp_line_cash_ship_fact($period)
 {
   $chart = dash_no_data_chart_get();
 

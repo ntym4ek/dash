@@ -2,7 +2,7 @@
 
 // постоянное подключение, т.к в файле есть функции для ajax вызовов
 include ('includes/td.reports.inc');
-include ('includes/st.reports.inc');
+include ('includes/jp.reports.inc');
 
 /**
  * Implementation of hook_menu().
@@ -29,11 +29,11 @@ function reports_menu()
     'weight' => 17,
     'type' => MENU_NORMAL_ITEM,
   );
-  $items['reports/st'] = array(
-    'title' => 'Страда',
+  $items['reports/jp'] = array(
+    'title' => 'Joy Premium',
     'menu_name' => 'main-menu',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['reports_st_period_form'],
+    'page arguments' => ['reports_jp_period_form'],
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
     'weight' => 18,
