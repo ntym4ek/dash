@@ -48,7 +48,7 @@ function reports_jp_page_content($year)
 {
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, $year),
-    'to' => gmmktime(0, 0, 0, date('n'), 1, $year),
+    'to' => gmmktime(0, 0, 0, 1, 1, $year+1),
     'end' => gmmktime(0, 0, 0, 1, 1, $year+1),
   ];
 
@@ -56,7 +56,7 @@ function reports_jp_page_content($year)
   // Поступление ДС, год, помесячно, план-факт
   $url = url('/data/cash-income/edit', ['query' => ['blocks' => ['jp_block_1', 'jp_block_3'], 'inn' => DASH_INN_ST]]);
   $output  = '<div class="section-title">' .
-                '<h3>План-факт поступления денежных средств за ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ')</h3>' .
+                '<h3>План-факт поступления денежных средств за ' . date('Y') . ' (в тыс. руб.)</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="450" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
               '</div>';
@@ -67,7 +67,7 @@ function reports_jp_page_content($year)
   // Отгрузка в деньгах, год, помесячно, план-факт
   $url = url('/data/ship/edit', ['query' => ['blocks' => ['jp_block_2', 'jp_block_3'], 'inn' => DASH_INN_ST]]);
   $output .= '<div class="section-title">' .
-                '<h3>План-факт отгрузки продукции за ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ')</h3>' .
+                '<h3>План-факт отгрузки продукции за ' . date('Y') . ' (в тыс. руб.)</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
               '</div>';
@@ -76,9 +76,8 @@ function reports_jp_page_content($year)
 
   // слайд 3
   // сравнение факта Поступления ДС и Отгрузки в деньгах, год, помесячно
-  $url = url('/data/ship/edit', ['query' => ['blocks' => ['jp_block_3'], 'inn' => DASH_INN_ST]]);
   $output .= '<div class="section-title">' .
-                '<h3>Поступление ДС и отгрузка продукции за ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ')</h3>' .
+                '<h3>Поступление ДС и отгрузка продукции за ' . date('Y') . ' (в тыс. руб.)</h3>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '';
@@ -201,16 +200,16 @@ function reports_jp_column_cash_plan_fact($period)
       if ($month['plan_amount'] || $month['fact_amount']) {
         $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
-        $plan = $month['plan_amount'] / DASH_REV_DIVIDER;
-        $fact = $month['fact_amount'] / DASH_REV_DIVIDER;
+        $plan = $month['plan_amount'] / 1000;
+        $fact = $month['fact_amount'] / 1000;
 
         $chart['plan']['#data'][] = $plan;
         $chart['fact']['#data'][] = $fact;
 
         $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
           '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;тыс. руб.</div></div>' .
+          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;тыс. руб.</div></div>' .
           '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
           '</div>';
 
@@ -303,16 +302,16 @@ function reports_jp_column_ship_plan_fact($period)
       if ($month['plan_amount'] || $month['fact_amount']) {
         $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
-        $plan = $month['plan_amount'] / DASH_REV_DIVIDER;
-        $fact = $month['fact_amount'] / DASH_REV_DIVIDER;
+        $plan = $month['plan_amount'] / 1000;
+        $fact = $month['fact_amount'] / 1000;
 
         $chart['plan']['#data'][] = $plan;
         $chart['fact']['#data'][] = $fact;
 
         $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
           '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;тыс. руб.</div></div>' .
+          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;тыс. руб.</div></div>' .
           '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
           '</div>';
 
@@ -412,16 +411,16 @@ function reports_jp_line_cash_ship_fact($period)
       if ($month['cash_fact'] || $month['ship_fact']) {
         $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
-        $cash_amount = $month['cash_fact'] / DASH_REV_DIVIDER;
-        $ship_amount = $month['ship_fact'] / DASH_REV_DIVIDER;
+        $cash_amount = $month['cash_fact'] / 1000;
+        $ship_amount = $month['ship_fact'] / 1000;
 
         $chart['cash']['#data'][] = $cash_amount;
         $chart['ship']['#data'][] = $ship_amount;
 
         $tooltip =  '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
                       '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
-                      '<div><div style="display:inline-block; width: 210px;">Поступления:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($cash_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-                      '<div><div style="display:inline-block; width: 210px;">Отгрузки:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($ship_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+                      '<div><div style="display:inline-block; width: 210px;">Поступления:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($cash_amount, 2, ',', ' ') . '</b>&nbsp;тыс. руб.</div></div>' .
+                      '<div><div style="display:inline-block; width: 210px;">Отгрузки:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($ship_amount, 2, ',', ' ') . '</b>&nbsp;тыс. руб.</div></div>' .
                     '</div>';
 
         $chart['cash'][] = array(
