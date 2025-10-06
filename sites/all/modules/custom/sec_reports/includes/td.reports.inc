@@ -21,7 +21,6 @@ function reports_td_period_to_form($form, &$form_state)
     ],
   ];
 
-
   $month_opts = [];
   for($i = 1; $i <= 12; $i++) {
     $month_opts[$i] = helper_month_label_ru($i);
@@ -67,6 +66,9 @@ function reports_td_period_to_form_callback($form, &$form_state)
 
 function reports_td_page_content($period_to)
 {
+  $season_01 = dash_season_bounds_get_by_date(1, $period_to);
+  $season_10 = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to);
+
   // слайд 1
   $url = url('/data/plan-prod/edit', ['query' => ['blocks' => ['td_block_1'], 'inn' => DASH_INN_TD]]);
   $output  =  '<div class="section-title">' .
@@ -87,10 +89,9 @@ function reports_td_page_content($period_to)
   $output .= '<div class="ajax-load" data-func="td_block_2" data-delay="200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 3
-  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
   $url = url('/data/plan-ship/edit', ['query' => ['blocks' => ['td_block_31', 'td_block_32'], 'inn' => DASH_INN_TD]]);
   $output .=  '<div class="section-title">' .
-               '<h3>Отгрузки + контракты на 1 ' . helper_month_label_ru(date('n')) . ' в сравнении по сезонам ' . (date('y', $period['from'])-1) . '-' . (date('y', $period['end'])-1) . ' / ' . date('y', $period['from']) . '-' . date('y', $period['end']) . '</h3>' .
+               '<h3>Отгрузки + контракты на 1 ' . helper_month_label_ru(date('n')) . ' в сравнении по сезонам ' . (date('y', $season_10['from'])-1) . '-' . (date('y', $season_10['end'])-1) . ' / ' . date('y', $season_10['from']) . '-' . date('y', $season_10['end']) . '</h3>' .
                '<a class="edit-link autodialog" data-dialog-width="500" href="' . $url . '">Редактировать данные</a>' .
                '<div class="underline"></div>' .
               '</div>';
@@ -119,16 +120,15 @@ function reports_td_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12 col-md-6">';
-  $output .=     '<h5 class="chart-title">За месяц: ' . helper_month_label_ru(date('n', $period_to)-1) . '</h5>';
+  $output .=     '<h5 class="chart-title">За месяц: ' . helper_month_label_ru(date('n', $season_10['to'])-1) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_51" data-delay="500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-md-6">';
-  $output .=     '<h5 class="chart-title">С начала года: ' . helper_month_label_ru(1) . ' - ' . helper_month_label_ru(date('n', $period_to)-1) . '</h5>';
+  $output .=     '<h5 class="chart-title">С начала года: ' . helper_month_label_ru(1) . ' - ' . helper_month_label_ru(date('n', $season_10['to'])-1) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_52" data-delay="550"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
-  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to);
   $output .=   '<div class="col-xs-12 col-md-8">';
-  $output .=     '<h5 class="chart-title">За сезон: ' . helper_month_label_ru(DASH_PERIOD_START_MONTH_TD) . ' ' . date('Y', $period['from']) . ' - ' . helper_month_label_ru(date('n', $period['to'])-1) . ' ' . date('Y', $period['to']) . '</h5>';
+  $output .=     '<h5 class="chart-title">За сезон: ' . helper_month_label_ru(DASH_PERIOD_START_MONTH_TD) . ' ' . date('Y', $season_10['from']) . ' - ' . helper_month_label_ru(date('n', $season_10['to'])-1) . ' ' . date('Y', $season_10['to']) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_6" data-delay="600"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
@@ -140,7 +140,7 @@ function reports_td_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
-  $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $period_to)) . '</h5>';
+  $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $season_10['to'])) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_7" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
@@ -203,7 +203,6 @@ function reports_td_page_content($period_to)
   $output .= '</div>';
 
   // слайд 13
-  $period = dash_year_time_bounds_get(1);
   $url = url('/data/manual-bdr/edit', ['query' => ['blocks' => ['td_block_13'], 'inn' => DASH_INN_TD]]);
   $output .=  '<div class="section-title">' .
                 '<h3>План-факт. Бюджет доходов и расходов (в ' . DASH_REV_SUFFIX . ' без НДС)</h3>' .
@@ -212,7 +211,7 @@ function reports_td_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
-  $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $period_to)-1) . '</h5>';
+  $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season_01['from'])) . '-' . helper_month_label_ru(date('n', $season_01['to'])-2) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_13" data-delay="1300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
@@ -228,8 +227,7 @@ function reports_td_page_content($period_to)
   $output .=   '</div>';
   $output .= '</div>';
 
-  $period = dash_year_time_bounds_get(1);
-  return '<div class="charts" data-module="reports" data-period-from="' . $period['from'] . '" data-period-to="' . $period_to . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
+  return '<div class="charts" data-module="reports" data-period-from="' . $season_01['from'] . '" data-period-to="' . $season_01['to'] . '" data-period-end="' . $season_01['end'] . '">' . $output . '</div>';
 }
 
 function reports_td_block_1()
@@ -262,9 +260,11 @@ function reports_td_block_2()
 }
 function reports_td_block_31()
 {
+  // определяем заданный месяц
+  $period_to_set = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
   // период с начала сезона по начало заданного месяца
-  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
-  $period['to'] = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
+  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to_set);
+
 
   // сравнение отгрузки (план и факт+контракты) по годам в рублях
   $data_arr = reports_column_ship_plan_fact_compare_revenue($period);
@@ -273,9 +273,10 @@ function reports_td_block_31()
 }
 function reports_td_block_32()
 {
+  // определяем заданный месяц
+  $period_to_set = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
   // период с начала сезона по начало заданного месяца
-  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
-  $period['to'] = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
+  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to_set);
 
   // сравнение отгрузки (план и факт+контракты) по годам в литрах
   $data_arr = reports_column_ship_plan_fact_compare_qty($period);
@@ -331,8 +332,7 @@ function reports_td_block_6()
 {
   // определяем заданный месяц
   $period_to_set = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
-
-  // период с начала сезона по начало месяца
+  // период с начала сезона по начало заданного месяца
   $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to_set);
 
   // факт поступления выручки
@@ -689,7 +689,7 @@ function reports_column_revenue_fact_compare($period)
 
   // собрать данные периодов с DASH_YEAR_HISTORY_START года
   $data = [];
-  foreach (dash_years_shift_list_get($period, date('n', $period['from'])) as $shift) {
+  foreach (dash_years_shift_list_get(null, date('n', $period['from'])) as $shift) {
     $period_shifted = dash_period_shifted_get($period, $shift);
 
     $fact = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period_shifted]);
@@ -1856,6 +1856,14 @@ function reports_column_registration_plan_fact($period)
   return $chart;
 }
 
+/**
+ * Данную таблицу Бобков заполняет не накопительным итогом, а итоговыми значениями,
+ * то есть суммировать не нужно. Берём последние значения.
+ *
+ * Нужно учитывать, что данные за месяц вносятся в конце следующего месяца.
+ * Например, в таблице "План-факт. Бюджет доходов и расходов" (block_13)
+ * при выводе данных на начало октября нужно выводить по август.
+ */
 function reports_manual_bdr_table_output($period)
 {
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
@@ -1866,10 +1874,10 @@ function reports_manual_bdr_table_output($period)
     foreach ($bdr as $record) {
       if (!isset($data[$record->category_id])) $data[$record->category_id] = ['name' => $record->category_name, 'plan_period' => 0, 'fact_period' => 0];
       if ($record->type == DASH_TYPE_PLAN) {
-        $data[$record->category_id]['plan_period'] += $record->amount;
+        $data[$record->category_id]['plan_period'] = $record->amount;
       }
       if ($record->type == DASH_TYPE_FACT) {
-        $data[$record->category_id]['fact_period'] += $record->amount;
+        $data[$record->category_id]['fact_period'] = $record->amount;
       }
     }
   }
