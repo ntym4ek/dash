@@ -1098,6 +1098,7 @@ function dash_period_filter_form_ajax_callback($form, $form_state)
 /**
  * ----- Вспомогательные функции ---------------------------------------------------------------------------------------
  */
+
 /** Вернуть начальное и конечное (не включительно) время Unix
  * 12-и месячного периода начиная с месяца $month_num
  * и смещением $year_shift лет от текущего периода.
@@ -1130,6 +1131,43 @@ function dash_year_time_bounds_get($month_num_start, $year_shift = 0)
     'from' => $from,
     'to' => $to,
     'end' => $end,
+  ];
+}
+
+/**
+ * Вернуть начальное и конечное (не включительно) время Unix
+ * 12-и месячного Сезона начиная с месяца $month_num_start.
+ *
+ * Сезон определяется НА ЗАДАННЫЙ МЕСЯЦ.
+ * То есть, для сезона, начинающегося в Октябре ($month_num_start = 10),
+ * если дата $datetime_set задана в октябре, то данные выводим по сентябрь включительно, то есть предыдущий сезон.
+ * Если дата в ноябре, то это данные за октябрь, а октябрь - начало нового сезона.
+ *
+ * @return
+ *   from - начало 12и месячного периода
+ *   to   - == end для прошлых периодов и == now для текущего
+ *   end  - конец 12и месячного периода
+ */
+function dash_season_bounds_get_by_date($month_num_start, $datetime_set)
+{
+  // получить начало заданного месяца
+  $month_start_set = gmmktime(0, 0, 0, date('n', $datetime_set), 1, date('Y', $datetime_set));
+
+  // год заданного месяца
+  $year = date('Y', $month_start_set);
+
+  // ищем Сезон, включающий заданный месяц
+  // сравниваем с предыдущим месяцем ($month_start_set-1), так как заданный месяц определяет
+  do {
+    $period_from_month_start = gmmktime(0, 0, 0, $month_num_start, 1, $year);
+    $period_end_month_start = gmmktime(0, 0, 0, $month_num_start + 12, 1, $year);
+    $year--;
+  } while (!($period_from_month_start <= ($month_start_set-1) && ($month_start_set-1) < $period_end_month_start));
+
+  return [
+    'from' => $period_from_month_start,
+    'to' => $month_start_set,
+    'end' => $period_end_month_start,
   ];
 }
 

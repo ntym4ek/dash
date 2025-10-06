@@ -52,10 +52,19 @@ function reports_jp_page_content($year)
     'end' => gmmktime(0, 0, 0, 1, 1, $year+1),
   ];
 
+  // слайд 0
+  // Факт поступления денежных средств год к году
+  $output  = '<div class="section-title">' .
+                '<h3>Факт поступления денежных средств год к году ' . date('Y') . ' (в тыс. руб.)</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
+  $output .= '';
+  $output .= '<div class="ajax-load" data-func="jp_block_0" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+
   // слайд 1
   // Поступление ДС, год, помесячно, план-факт
-  $url = url('/data/cash-income/edit', ['query' => ['blocks' => ['jp_block_1', 'jp_block_3'], 'inn' => DASH_INN_ST]]);
-  $output  = '<div class="section-title">' .
+  $url = url('/data/cash-income/edit', ['query' => ['blocks' => ['jp_block_0', 'jp_block_1', 'jp_block_3'], 'inn' => DASH_INN_ST]]);
+  $output .= '<div class="section-title">' .
                 '<h3>План-факт поступления денежных средств за ' . date('Y') . ' (в тыс. руб.)</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="450" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
@@ -84,6 +93,21 @@ function reports_jp_page_content($year)
   $output .= '<div class="ajax-load" data-func="jp_block_3" data-delay="300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   return '<div class="charts" data-module="reports" data-period-from="' . $period['from'] . '" data-period-to="' . $period['to'] . '" data-period-end="' . $period['end'] . '">' . $output . '</div>';
+}
+
+function reports_jp_block_0()
+{
+  // период с начала года по начало текущего месяца за заданный год
+  $period = [
+    'from' => $_GET["period_from"],
+    'to' => $_GET["period_to"],
+    'end' => $_GET["period_end"],
+  ];
+
+  // факт поступления ДС год к году
+  $data_arr = reports_jp_column_cash_fact_compare($period);
+
+  return drupal_render($data_arr);
 }
 
 function reports_jp_block_1()
@@ -129,6 +153,116 @@ function reports_jp_block_3()
   $data_arr = reports_jp_line_cash_ship_fact($period);
 
   return drupal_render($data_arr);
+}
+
+function reports_jp_column_cash_fact_compare($period)
+{
+  $chart = dash_no_data_chart_get();
+
+  // собрать все записи Страды за период
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_ST);
+
+  // сгруппировать помесячно
+  $fact_by_month = [];
+  foreach ([-1, 0] as $shift) {
+    $period_shifted = dash_period_shifted_get($period, $shift);
+
+    if ($data = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted, 'manual' => 1])) {
+      foreach (dash_months_list_get($period_shifted) as $month) {
+        $month_num = date('n', $month['start']);
+        $year = date('Y', $month['start']);
+        $fact_by_month[$month_num][$year] = 0;
+
+        foreach ($data as $record) {
+          if ($record->date >= $month['start'] && $record->date < $month['end']) {
+            $fact_by_month[$month_num][$year] += $record->amount;
+          }
+        }
+      }
+    }
+  }
+  ksort($fact_by_month);
+
+  $chart = array(
+    '#type' => 'chart',
+    '#chart_type' => 'column',
+    '#colors' => [DASH_COLOR_LIGHT_BLUE, DASH_COLOR_BLUE],
+    '#font' => 'Montserrat',
+    '#height' => '350',
+    '#legend_position' => 'top',
+    '#raw_options' => [
+      'titleTextStyle' => ['bold' => 'true', 'fontSize' => '16'],
+      'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
+      'annotations' => [
+        'datum' => ['stem' => ['color' => 'transparent']],
+        'textStyle' => ['fontSize' => 14, 'bold' => 'true'],
+      ],
+      'chartArea' => [
+        'width' => '90%',
+        'left' => 70,
+      ],
+      'tooltip' => ['isHtml' => true],
+    ],
+    'xaxis' => [
+      '#type' => 'chart_xaxis',
+    ],
+    'yaxis' => [
+      '#type' => 'chart_yaxis',
+      '#min' => 0,
+    ],
+  );
+  $year_prev = (string)(date('Y', $period['from'])-1);
+  $year_now = (string)date('Y', $period['from']);
+
+  $chart[$year_prev] = [
+    '#type' => 'chart_data',
+    '#title' => $year_prev,
+    '#data' => [],
+  ];
+  $chart[$year_now] = [
+    '#type' => 'chart_data',
+    '#title' => $year_now,
+    '#data' => [],
+  ];
+
+  $max = 0;
+  foreach ($fact_by_month as $month_num => $amount) {
+    $chart['xaxis']['#labels'][] = helper_month_label_ru($month_num);
+
+    $amount_year_prev = ($amount[$year_prev] ?? 0) / 1000;
+    $amount_year_now = ($amount[$year_now] ?? 0) / 1000;
+
+    $max = max($max, $amount_year_prev, $amount_year_now);
+
+    $chart[$year_prev]['#data'][] = $amount_year_prev;
+    $chart[$year_now]['#data'][] = $amount_year_now;
+
+    $tooltip =  '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+                  '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru($month_num) . '</div></div>' .
+                  '<div><div style="display:inline-block; width: 210px;">' . $year_prev . ':</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($amount_year_prev, 2, ',', ' ') . '</b>&nbsp;тыс. руб.</div></div>' .
+                  '<div><div style="display:inline-block; width: 210px;">' . $year_now . ':</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($amount_year_now, 2, ',', ' ') . '</b>&nbsp;тыс. руб.</div></div>' .
+                  '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($amount_year_prev ? number_format($amount_year_now/$amount_year_prev*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
+                '</div>';
+
+    $chart[$year_prev][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+      '#raw_options' => [
+        'annotation' => $amount_year_prev ? number_format($amount_year_prev, 2, ',', ' ') : null,
+      ],
+    );
+    $chart[$year_now][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+      '#raw_options' => [
+        'annotation' => $amount_year_now ? number_format($amount_year_now, 2, ',', ' ') : null,
+      ],
+    );
+  }
+
+  $chart['yaxis']['#max'] = $max * 1.2; // нужен чтобы tooltip для высоких графиков помещался вверху и не моргал
+
+  return $chart;
 }
 
 function reports_jp_column_cash_plan_fact($period)
@@ -196,12 +330,15 @@ function reports_jp_column_cash_plan_fact($period)
       ],
     );
 
+    $max = 0;
     foreach ($plan_fact_by_month as $month) {
       if ($month['plan_amount'] || $month['fact_amount']) {
         $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
         $plan = $month['plan_amount'] / 1000;
         $fact = $month['fact_amount'] / 1000;
+
+        $max = max($max, $plan, $fact);
 
         $chart['plan']['#data'][] = $plan;
         $chart['fact']['#data'][] = $fact;
@@ -230,6 +367,8 @@ function reports_jp_column_cash_plan_fact($period)
       }
     }
   }
+
+  $chart['yaxis']['#max'] = $max * 1.2; // нужен чтобы tooltip для высоких графиков помещался вверху и не моргал
 
   return $chart;
 }

@@ -16,9 +16,11 @@ function reports_td_period_to_form($form, &$form_state)
     '#suffix' => '</div>',
     'filters' => [
       '#type' => 'container',
+      '#suffix' => '<div class="text-notes">Отчёт составлен на начало месяца.</div>',
       '#attributes' => ['class' => ['filters']],
     ],
   ];
+
 
   $month_opts = [];
   for($i = 1; $i <= 12; $i++) {
@@ -124,9 +126,9 @@ function reports_td_page_content($period_to)
   $output .=     '<h5 class="chart-title">С начала года: ' . helper_month_label_ru(1) . ' - ' . helper_month_label_ru(date('n', $period_to)-1) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_52" data-delay="550"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
-  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to);
   $output .=   '<div class="col-xs-12 col-md-8">';
-  $output .=     '<h5 class="chart-title">За сезон: ' . helper_month_label_ru(DASH_PERIOD_START_MONTH_TD) . ' ' . date('Y', $period['from']) . ' - ' . helper_month_label_ru(date('n', $period_to)-1) . ' ' . date('Y', $period_to) . '</h5>';
+  $output .=     '<h5 class="chart-title">За сезон: ' . helper_month_label_ru(DASH_PERIOD_START_MONTH_TD) . ' ' . date('Y', $period['from']) . ' - ' . helper_month_label_ru(date('n', $period['to'])-1) . ' ' . date('Y', $period['to']) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_6" data-delay="600"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
@@ -172,7 +174,7 @@ function reports_td_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
-  $output .=     '<div class="ajax-load" data-func="td_block_10" data-delay="1000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="td_block_10" data-delay="000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -327,9 +329,11 @@ function reports_td_block_52()
 }
 function reports_td_block_6()
 {
+  // определяем заданный месяц
+  $period_to_set = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
+
   // период с начала сезона по начало месяца
-  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
-  $period['to'] = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
+  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to_set);
 
   // факт поступления выручки
   $data_arr = reports_column_revenue_fact_compare($period);
@@ -1489,11 +1493,11 @@ function reports_debt_credits_loans_table_output($period)
     }
     elseif ($debt->kind == 4 && $debt->category == 2) {
       if (!isset($data['row2'][$loan][$debt->date])) $data['row2'][$loan][$debt->date] = 0;
-      if (!isset($data['row2'][$loan]['percent'])) $data['row2'][$loan]['percent'] = 0;
-      $data['row2'][$loan][$debt->date] += $debt->amount / DASH_REV_DIVIDER;
-      $data['row2'][$loan]['percent']    += $debt->amount2 / DASH_REV_DIVIDER;
-      $data['kccc'][$debt->name][$debt->date] = $debt->amount / DASH_REV_DIVIDER;
-      $data['kccc'][$debt->name]['percent'] = $debt->amount2 / DASH_REV_DIVIDER;
+      if (!isset($data['row2'][$loan]['percent'][$debt->date])) $data['row2'][$loan]['percent'][$debt->date] = 0;
+      $data['row2'][$loan][$debt->date]                   += $debt->amount / DASH_REV_DIVIDER;
+      $data['row2'][$loan]['percent'][$debt->date]        += $debt->amount2 / DASH_REV_DIVIDER;
+      $data['kccc'][$debt->name][$debt->date]             = $debt->amount / DASH_REV_DIVIDER;
+      $data['kccc'][$debt->name]['percent'][$debt->date]  = $debt->amount2 / DASH_REV_DIVIDER;
     }
   }
 
@@ -1517,7 +1521,7 @@ function reports_debt_credits_loans_table_output($period)
           ['data' => helper_number_format($item[$prev_year_month_start], 1, ' ', false), 'align' => 'right'],
           ['data' => helper_number_format($item[$year_start], 1, ' ', false), 'align' => 'right'],
           ['data' => helper_number_format($item[$month_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => isset($item['percent']) ? helper_number_format($item[$month_start], 1, ' ', false) : '', 'align' => 'right'],
+          ['data' => isset($item['percent'][$month_start]) ? helper_number_format($item['percent'][$month_start], 1, ' ', false) : '', 'align' => 'right'],
         ],
         'class' => [$key == 'row2' ? 'tfoot': ''],
       ];
