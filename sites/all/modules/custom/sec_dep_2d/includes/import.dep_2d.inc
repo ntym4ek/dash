@@ -93,12 +93,12 @@ function dep_2d_import_remains($file_arr)
         entity_save('remains', $record);
 
         $remains_wr = entity_metadata_wrapper('remains', $record);
-        $remains_wr->field_date = $plan_item['date'];
-        $remains_wr->field_date_expiration = $plan_item['date_expire'] ?: null;
-        $remains_wr->field_warehouse_td = $plan_item['warehouse'];
-        $remains_wr->field_nomenklatura_td = $plan_item['nom'];
-        $remains_wr->field_quantity_td = $plan_item['qty'];
-        $remains_wr->field_price = $plan_item['price'];
+        $remains_wr->field_rm_date = $plan_item['date'];
+        $remains_wr->field_rm_date_exp = $plan_item['date_expire'] ?: null;
+        $remains_wr->field_rm_warehouse = $plan_item['warehouse'];
+        $remains_wr->field_rm_nomenklatura = $plan_item['nom'];
+        $remains_wr->field_rm_quantity = $plan_item['qty'];
+        $remains_wr->field_rm_price = $plan_item['price'];
         $remains_wr->save();
       }
 

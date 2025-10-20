@@ -1447,8 +1447,8 @@ function dash_remains_delete_by_period($date_start, $date_end)
     $efquery
       ->entityCondition('entity_type', 'remains')
       ->entityCondition('bundle', 'remains')
-      ->fieldCondition('field_date', 'value', $date_start, '>=')
-      ->fieldCondition('field_date', 'value', $date_end, '<');
+      ->fieldCondition('field_rm_date', 'value', $date_start, '>=')
+      ->fieldCondition('field_rm_date', 'value', $date_end, '<');
 
     $result = $efquery->execute();
     if ($result) {
