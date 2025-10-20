@@ -132,10 +132,10 @@ function import_import_revenue($array)
         entity_save('revenue', $revenue);
 
         $revenue_wr = entity_metadata_wrapper('revenue', $revenue);
-        $revenue_wr->field_date = $rev_item['date'];
+        $revenue_wr->field_revenue_date = $rev_item['date'];
         $revenue_wr->field_revenue_type = $rev_item['type'];
-        $revenue_wr->field_amount = $rev_item['amount'];
-        $revenue_wr->field_company = $array['company'];
+        $revenue_wr->field_revenue_amount = $rev_item['amount'];
+        $revenue_wr->field_revenue_company = $array['company'];
         $revenue_wr->save();
       }
 
@@ -158,9 +158,9 @@ function import_revenue_delete_by_month($company, $month_start)
     $efquery
       ->entityCondition('entity_type', 'revenue')
       ->entityCondition('bundle', 'revenue')
-      ->fieldCondition('field_date', 'value', $month_start, '>=')
-      ->fieldCondition('field_date', 'value', $next_month_start, '<')
-      ->fieldCondition('field_company', 'value', $company);
+      ->fieldCondition('field_revenue_date', 'value', $month_start, '>=')
+      ->fieldCondition('field_revenue_date', 'value', $next_month_start, '<')
+      ->fieldCondition('field_revenue_company', 'value', $company);
 
     $result = $efquery->execute();
     if ($result) {

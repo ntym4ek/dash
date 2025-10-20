@@ -119,15 +119,15 @@ function dash_column_revenue_period_to_period($company, $time_from, $time_to, $r
     $time_end = gmmktime(0, 0, 0,  date('n', $time_to)-12*$years_shift, date('j', $time_to), date('Y', $time_to));
 
     $dbr = db_select('eck_revenue', 'r');
-    $dbr->innerJoin('field_data_field_amount', 'fra', 'fra.entity_id = r.id');
+    $dbr->innerJoin('field_data_field_revenue_amount', 'fra', 'fra.entity_id = r.id');
     $dbr->condition('fra.bundle', 'revenue');
-    $dbr->innerJoin('field_data_field_company', 'fc', 'fc.entity_id = r.id');
-    $dbr->condition('fc.field_company_value', $company);
-    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+    $dbr->innerJoin('field_data_field_revenue_company', 'fc', 'fc.entity_id = r.id');
+    $dbr->condition('fc.field_revenue_company_value', $company);
+    $dbr->innerJoin('field_data_field_revenue_date', 'frd', 'frd.entity_id = r.id');
     $dbr->condition('frd.bundle', 'revenue');
-    $dbr->condition('frd.field_date_value', $time_start, '>=');
-    $dbr->condition('frd.field_date_value', $time_end, '<');
-    $dbr->addExpression('SUM(fra.field_amount_value)', 'amount');
+    $dbr->condition('frd.field_revenue_date_value', $time_start, '>=');
+    $dbr->condition('frd.field_revenue_date_value', $time_end, '<');
+    $dbr->addExpression('SUM(fra.field_revenue_amount_value)', 'amount');
     $dbr->innerJoin('field_data_field_revenue_type', 'frt', 'frt.entity_id = r.id');
     $dbr->condition('frt.field_revenue_type_value', 'Прочая реализация', '!=');
     if ($revenue_type) {
@@ -200,18 +200,18 @@ function dash_column_revenue_period_to_period($company, $time_from, $time_to, $r
 function dash_pie_revenue_year($company, $time_from, $time_to)
 {
   $dbr = db_select('eck_revenue', 'r');
-  $dbr->innerJoin('field_data_field_company', 'fc', 'fc.entity_id = r.id');
-  $dbr->condition('fc.field_company_value', $company);
+  $dbr->innerJoin('field_data_field_revenue_company', 'fc', 'fc.entity_id = r.id');
+  $dbr->condition('fc.field_revenue_company_value', $company);
   $dbr->innerJoin('field_data_field_revenue_type', 'frt', 'frt.entity_id = r.id');
   $dbr->addField('frt', 'field_revenue_type_value', 'type');
-  $dbr->innerJoin('field_data_field_amount', 'fra', 'fra.entity_id = r.id');
+  $dbr->innerJoin('field_data_field_revenue_amount', 'fra', 'fra.entity_id = r.id');
   $dbr->condition('fra.bundle', 'revenue');
   $dbr->groupBy('frt.field_revenue_type_value');
-  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+  $dbr->innerJoin('field_data_field_revenue_date', 'frd', 'frd.entity_id = r.id');
   $dbr->condition('frd.bundle', 'revenue');
-  $dbr->condition('frd.field_date_value', $time_from, '>=');
-  $dbr->condition('frd.field_date_value', $time_to, '<');
-  $dbr->addExpression('SUM(fra.field_amount_value)', 'amount');
+  $dbr->condition('frd.field_revenue_date_value', $time_from, '>=');
+  $dbr->condition('frd.field_revenue_date_value', $time_to, '<');
+  $dbr->addExpression('SUM(fra.field_revenue_amount_value)', 'amount');
   $results = $dbr->execute()->fetchAll();
 
   $total = 0;
@@ -285,9 +285,9 @@ function dash_column_revenue_by_types($company, $time_from, $time_to)
   $dbr = db_select('eck_revenue', 'r');
   $dbr->innerJoin('field_data_field_revenue_type', 'frt', 'frt.entity_id = r.id');
   $dbr->addField('frt', 'field_revenue_type_value');
-  $dbr->innerJoin('field_data_field_company', 'fc', 'fc.entity_id = r.id');
-  $dbr->condition('fc.field_company_value', $company);
-  $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+  $dbr->innerJoin('field_data_field_revenue_company', 'fc', 'fc.entity_id = r.id');
+  $dbr->condition('fc.field_revenue_company_value', $company);
+  $dbr->innerJoin('field_data_field_revenue_date', 'frd', 'frd.entity_id = r.id');
   $dbr->condition('frd.bundle', 'revenue');
   $dbr->distinct();
   $types = $dbr->execute()->fetchCol();
@@ -306,15 +306,15 @@ function dash_column_revenue_by_types($company, $time_from, $time_to)
       $dbr = db_select('eck_revenue', 'r');
       $dbr->innerJoin('field_data_field_revenue_type', 'frt', 'frt.entity_id = r.id');
       $dbr->condition('frt.field_revenue_type_value', $type);
-      $dbr->innerJoin('field_data_field_company', 'fc', 'fc.entity_id = r.id');
-      $dbr->condition('fc.field_company_value', $company);
-      $dbr->innerJoin('field_data_field_amount', 'fra', 'fra.entity_id = r.id');
+      $dbr->innerJoin('field_data_field_revenue_company', 'fc', 'fc.entity_id = r.id');
+      $dbr->condition('fc.field_revenue_company_value', $company);
+      $dbr->innerJoin('field_data_field_revenue_amount', 'fra', 'fra.entity_id = r.id');
       $dbr->condition('fra.bundle', 'revenue');
-      $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = r.id');
+      $dbr->innerJoin('field_data_field_revenue_date', 'frd', 'frd.entity_id = r.id');
       $dbr->condition('frd.bundle', 'revenue');
-      $dbr->condition('frd.field_date_value', $time_start, '>=');
-      $dbr->condition('frd.field_date_value', $time_end, '<');
-      $dbr->addExpression('SUM(fra.field_amount_value)', 'amount');
+      $dbr->condition('frd.field_revenue_date_value', $time_start, '>=');
+      $dbr->condition('frd.field_revenue_date_value', $time_end, '<');
+      $dbr->addExpression('SUM(fra.field_revenue_amount_value)', 'amount');
       $amounts[date('Y', $time_start)] = $dbr->execute()->fetchField()/DASH_REV_DIVIDER;
 
       $years_shift--;
