@@ -31,7 +31,7 @@ function dep_2v_2g_head_period_page()
 
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12"><h5 class="chart-title">Суммарная отгрузка</h5></div>';
-  $form =      drupal_get_form('dep_2v_2g_td_column_plan_ship_period_to_period_filter_form');
+  $form =      drupal_get_form('dep_2v_2g_td_column_ship_period_to_period_filter_form');
   $output .=   '<div class="col-xs-12 col-md-4">' . drupal_render($form) . '</div>';
   $output .= '</div>';
   $output .= '<div class="ajax-load" data-func="block_period_2" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
@@ -126,11 +126,11 @@ function dep_2v_2g_block_period_2($period = null)
 
   // отчёт в млн
   $output = '<div id="summary-target" class="row">';
-  $data_arr =   dep_2v_2g_td_column_plan_ship_period_to_period($period, 'amount');
+  $data_arr =   dep_2v_2g_td_column_ship_period_to_period($period, 'amount');
   $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
 
   // отчёт в литрах
-  $data_arr =   dep_2v_2g_td_column_plan_ship_period_to_period($period, 'qty');
+  $data_arr =   dep_2v_2g_td_column_ship_period_to_period($period, 'qty');
   $output .=    '<div class="col-xs-12 col-md-6">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 

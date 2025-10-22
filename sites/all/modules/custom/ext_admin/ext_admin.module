@@ -292,17 +292,17 @@ function ext_admin_database_process_record_3($record_id)
   watchdog('message', 'Обработана запись с id: ' . $record_id);
 }
 
+
 function ext_admin_queue_database_processing_4()
 {
   // получить записи с незаполненным полем и поставить в очередь
   $q = db_select('eck_plan', 'p');
-  $q->condition('p.type', 'plan_revenue');
+  $q->condition('p.type', 'plan_ship');
   $q->fields('p', array('id'));
 
   if ($items = $q->execute()->fetchCol()) {
     $queue = DrupalQueue::get('database_processing_queue_4');
     $queue->deleteQueue();
-
 
     foreach($items as $item) {
       $queue->createItem($item);
@@ -318,84 +318,39 @@ function ext_admin_database_process_record_4($record_id)
   // обработать запись базы данных
   $arr = [];
   $plan_wr = entity_metadata_wrapper('plan', $record_id);
-  $arr['type'] = $plan_wr->field_record_type_td->value();
-  $arr['date'] = $plan_wr->field_date->value();
-  $arr['amount'] = $plan_wr->field_amount->value();
-  $arr['created'] = $plan_wr->created->value();
+  if ($plan_wr->value()) {
+    $arr['type'] = $plan_wr->field_record_type_td->value();
+    $arr['client'] = $plan_wr->field_client->value();
+    $arr['qty'] = $plan_wr->field_quantity_td->value();
+    $arr['date'] = $plan_wr->field_date->value();
+    $arr['amount'] = $plan_wr->field_amount->value();
+    $arr['net_cost'] = $plan_wr->field_net_cost->value();
+    $arr['manual'] = $plan_wr->field_is_manual->value();
+    $arr['created'] = $plan_wr->created->value();
+    $arr['nom'] = $plan_wr->field_nomenklatura->value();
 
-  $ship = entity_create('cash_income', [
-    'type' => 'cash_income',
-    'created' => $arr['created'],
-  ]);
-  entity_save('cash_income', $ship);
-  entity_delete('plan', $record_id);
+    if ($arr['type'] && $arr['date']) {
+      $ship = entity_create('ship', [
+        'type' => 'ship',
+        'created' => $arr['created'],
+      ]);
+      entity_save('ship', $ship);
 
-  $new_wr = entity_metadata_wrapper('cash_income', $ship);
-  $new_wr->field_ci_company = 196472; // тд
-  $new_wr->field_ci_date = $arr['date'];
-  $new_wr->field_ci_type = $arr['type']+1;
-  $new_wr->field_ci_amount = $arr['amount'];
-  $new_wr->field_ci_is_manual = 0;
-  $new_wr->save();
-
-  watchdog('message', 'Обработана запись с id: ' . $record_id);
-}
-
-function ext_admin_queue_database_processing_41()
-{
-  // получить записи с незаполненным полем и поставить в очередь
-  $q = db_select('eck_plan', 'p');
-  $q->condition('p.type', 'plan_ship');
-  $q->fields('p', array('id'));
-
-  if ($items = $q->execute()->fetchCol()) {
-    $queue = DrupalQueue::get('database_processing_queue_41');
-//    $queue->deleteQueue();
-
-    foreach($items as $item) {
-      $queue->createItem($item);
+      $new_wr = entity_metadata_wrapper('ship', $ship);
+      $new_wr->field_s_company = 196472; // тд
+      $new_wr->field_s_date = $arr['date'];
+      $new_wr->field_s_type = $arr['type'] + 1;
+      $new_wr->field_s_amount = $arr['amount'];
+      $new_wr->field_s_quantity = $arr['qty'];
+      $new_wr->field_s_net_cost = $arr['net_cost'];
+      $new_wr->field_s_is_manual = $arr['manual'] ?? 0;
+      $new_wr->field_s_nomenklatura = $arr['nom'];
+      $new_wr->field_s_client = $arr['client'];
+      $new_wr->save();
     }
-
-    drupal_set_message('Записей, помещённых в очередь: ' . count($items) . ' (' . $items[0] . ' - ' . array_pop($items) . ')');
-    return true;
   }
-}
 
-function ext_admin_database_process_record_41($record_id)
-{
-  // обработать запись базы данных
-  $arr = [];
-  $plan_wr = entity_metadata_wrapper('plan', $record_id);
-  $arr['type'] = $plan_wr->field_record_type_td->value();
-  $arr['nom'] = $plan_wr->field_nomenklatura_td->value();
-  $arr['client'] = $plan_wr->field_client->value();
-  $arr['qty'] = $plan_wr->field_quantity_td->value();
-  $arr['date'] = $plan_wr->field_date->value();
-  $arr['amount'] = $plan_wr->field_amount->value();
-  $arr['net_cost'] = $plan_wr->field_net_cost->value();
-  $arr['manual'] = $plan_wr->field_is_manual->value();
-  $arr['created'] = $plan_wr->created->value();
-
-  $ship = entity_create('ship', [
-    'type' => 'ship',
-    'created' => $arr['created'],
-  ]);
-  entity_save('ship', $ship);
   entity_delete('plan', $record_id);
-
-  $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-
-  $new_wr = entity_metadata_wrapper('ship', $ship);
-  $new_wr->field_s_company = $company->tid;
-  $new_wr->field_s_date = $arr['date'];
-  $new_wr->field_s_type = $arr['type']+1;
-  $new_wr->field_s_amount = $arr['amount'];
-  $new_wr->field_s_quantity = $arr['qty'];
-  $new_wr->field_s_net_cost = $arr['net_cost'];
-  $new_wr->field_s_is_manual = $arr['manual'];
-  $new_wr->field_s_nomenklatura = $arr['nom'];
-  $new_wr->field_s_client = $arr['']; // todo определить клиента, нужно сопоставить старый и новый словарь (или перенести из старого в новый)
-  $new_wr->save();
 
   watchdog('message', 'Обработана запись с id: ' . $record_id);
 }

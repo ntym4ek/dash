@@ -422,124 +422,8 @@ function dash_column_revenue_by_types($company, $time_from, $time_to)
  */
 
 /**
- *  Вернуть данные по ОТГРУЗКЕ продукции (сущность plan/plan_ship)
- *  с учётом заданных параметров
- * @param $conditions
- *   - type - тип записи (план, факт, неотгруженные контракты)
- *   - manual (bool) - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
- *   - period - массив ['from' => , 'to' => не включительно]
- *   - noms - массив ID номенклатуры, которые нужно отобрать
- *   - regions - массив ID регионов, которые нужно отобрать
- *   - exclude - массив условий, которые нужно исключить
- *     - noms - массив ID номенклатуры, которые нужно исключить
- *     - regions - массив ID регионов, которые нужно исключить
- * @return array|mixed|null
- */
-function dash_plan_ship_get_by_conditions($conditions)
-{
-  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
-  $result = &drupal_static($fid);
-
-  if (!isset($result)) {
-    $dbr = db_select('eck_plan', 'p');
-    $dbr->condition('p.type', 'plan_ship');
-    $dbr->addField('p', 'id');
-
-    $dbr->innerJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
-    $dbr->condition('frt.bundle', 'plan_ship');
-    $dbr->condition('frt.field_record_type_td_value', $conditions['type']);
-
-    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
-    $dbr->condition('frd.bundle', 'plan_ship');
-    if (!empty($conditions['period'])) {
-      $dbr->condition('frd.field_date_value', $conditions['period']['from'], '>=');
-      $dbr->condition('frd.field_date_value', $conditions['period']['to'], '<');
-    }
-    $dbr->addField('frd', 'field_date_value', 'date');
-
-    $dbr->leftJoin('field_data_field_quantity_td', 'fq', 'fq.entity_id = p.id');
-    $dbr->condition(db_or()
-      ->isNull('fq.bundle')
-      ->condition('fq.bundle', 'plan_ship')
-    );
-    $dbr->addField('fq', 'field_quantity_td_value', 'qty');
-
-    $dbr->leftJoin('field_data_field_amount', 'fa', 'fa.entity_id = p.id');
-    $dbr->condition(db_or()
-      ->isNull('fa.bundle')
-      ->condition('fa.bundle', 'plan_ship')
-    );
-    $dbr->addField('fa', 'field_amount_value', 'amount');
-
-    $dbr->leftJoin('field_data_field_net_cost', 'fnc', 'fnc.entity_id = p.id');
-    $dbr->condition(db_or()
-      ->isNull('fnc.bundle')
-      ->condition('fnc.bundle', 'plan_ship')
-    );
-    $dbr->addField('fnc', 'field_net_cost_value', 'net_cost');
-
-    $dbr->leftJoin('field_data_field_nomenklatura', 'fn', 'fn.entity_id = p.id');
-    $dbr->condition(db_or()
-      ->isNull('fn.bundle')
-      ->condition('fn.bundle', 'plan_ship')
-    );
-    $dbr->condition('fn.field_nomenklatura_tid', DASH_TD_NOM_ID_LIST_TO_EXCLUDE, 'NOT IN');
-    $dbr->leftJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklatura_tid');
-    $dbr->fields('t', ['tid', 'name']);
-    if (!empty($conditions['noms'])) {
-      $dbr->condition('fn.field_nomenklatura_tid', $conditions['noms'], 'IN');
-    }
-    if (!empty($conditions['exclude']['noms'])) {
-      $dbr->condition('fn.field_nomenklatura_tid', $conditions['exclude']['noms'], 'NOT IN');
-    }
-
-    $dbr->leftJoin('field_data_field_nom_nds', 'fnds', 'fnds.entity_id = fn.field_nomenklatura_tid');
-    $dbr->addField('fnds', 'field_nom_nds_value', 'nds');
-
-    $dbr->leftJoin('field_data_field_client', 'fct', 'fct.entity_id = p.id');
-    $dbr->condition(db_or()
-      ->isNull('fct.bundle')
-      ->condition('fct.bundle', 'plan_ship')
-    );
-    $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
-    $dbr->leftJoin('taxonomy_term_data', 'tr', 'tr.tid = fr.field_region_tid');
-    $dbr->addField('tr', 'tid', 'region_tid');
-    $dbr->addField('tr', 'name', 'region_name');
-    if (!empty($conditions['regions'])) {
-      $dbr->condition('fr.field_region_tid', $conditions['regions'], 'IN');
-    }
-    if (!empty($conditions['exclude']['regions'])) {
-      $dbr->condition('fr.field_region_tid', $conditions['exclude']['regions'], 'NOT IN');
-    }
-
-    // для полей, добавленных позже нужно учитывать, что данные могут быть не заданы
-    $dbr->leftJoin('field_data_field_is_manual', 'fm', 'fm.entity_id = p.id');
-    $dbr->condition(db_or()
-      ->isNull('fm.bundle')
-      ->condition('fm.bundle', 'plan_ship')
-    );
-    if (isset($conditions['manual']) && $conditions['manual']) {
-      $dbr->condition('fm.field_is_manual_value', 1);
-    } else {
-      $dbr->condition(db_or()
-        ->isNull('fm.field_is_manual_value')
-        ->condition('fm.field_is_manual_value', 0)
-      );
-    }
-    $dbr->addField('fm', 'field_is_manual_value', 'manual');
-
-    $dbr->orderBy('date');
-    $result = $dbr->execute()->fetchAll();
-  }
-
-  return $result;
-}
-
-/**
  *  Вернуть данные по ОТГРУЗКЕ продукции (сущность ship/ship)
  *  с учётом заданных параметров
- *   Таблица на замену plan/plan_ship.
- *   todo перенести данные из plan/plan_ship.
  *
  * @param $conditions
  *   - company_id* - по какой компании KCCC собирать данные
@@ -584,35 +468,30 @@ function dash_ship_get_by_conditions($conditions)
     $dbr->innerJoin('field_data_field_s_net_cost', 'fnc', 'fnc.entity_id = s.id');
     $dbr->addField('fnc', 'field_s_net_cost_value', 'net_cost');
 
-    // todo пока не перенесёны записи ТД, детализация по номенклатуре и клиентам не нужна
-//    $dbr->innerJoin('field_data_field_s_nomenklatura', 'fn', 'fn.entity_id = s.id');
-//    $dbr->condition('fn.field_s_nomenklatura_tid', DASH_TD_NOM_ID_LIST_TO_EXCLUDE, 'NOT IN');
-//    $dbr->leftJoin('taxonomy_term_data', 't', 't.tid = fn.field_s_nomenklatura_tid');
-//    $dbr->fields('t', ['tid', 'name']);
-//    if (!empty($conditions['noms'])) {
-//      $dbr->condition('fn.field_s_nomenklatura_tid', $conditions['noms'], 'IN');
-//    }
-//    if (!empty($conditions['exclude']['noms'])) {
-//      $dbr->condition('fn.field_s_nomenklatura_tid', $conditions['exclude']['noms'], 'NOT IN');
-//    }
-//    $dbr->leftJoin('field_data_field_nom_nds', 'fnds', 'fnds.entity_id = fn.field_s_nomenklatura_tid');
-//    $dbr->addField('fnds', 'field_nom_nds_value', 'nds');
+    $dbr->innerJoin('field_data_field_s_nomenklatura', 'fn', 'fn.entity_id = s.id');
+    $dbr->condition('fn.field_s_nomenklatura_tid', DASH_TD_NOM_ID_LIST_TO_EXCLUDE, 'NOT IN');
+    $dbr->leftJoin('taxonomy_term_data', 't', 't.tid = fn.field_s_nomenklatura_tid');
+    $dbr->fields('t', ['tid', 'name']);
+    if (!empty($conditions['noms'])) {
+      $dbr->condition('fn.field_s_nomenklatura_tid', $conditions['noms'], 'IN');
+    }
+    if (!empty($conditions['exclude']['noms'])) {
+      $dbr->condition('fn.field_s_nomenklatura_tid', $conditions['exclude']['noms'], 'NOT IN');
+    }
+    $dbr->leftJoin('field_data_field_nom_nds', 'fnds', 'fnds.entity_id = fn.field_s_nomenklatura_tid');
+    $dbr->addField('fnds', 'field_nom_nds_value', 'nds');
 
-//    $dbr->leftJoin('field_data_field_client', 'fct', 'fct.entity_id = s.id');
-//    $dbr->condition(db_or()
-//      ->isNull('fct.bundle')
-//      ->condition('fct.bundle', 'plan_ship')
-//    );
-//    $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
-//    $dbr->leftJoin('taxonomy_term_data', 'tr', 'tr.tid = fr.field_region_tid');
-//    $dbr->addField('tr', 'tid', 'region_tid');
-//    $dbr->addField('tr', 'name', 'region_name');
-//    if (!empty($conditions['regions'])) {
-//      $dbr->condition('fr.field_region_tid', $conditions['regions'], 'IN');
-//    }
-//    if (!empty($conditions['exclude']['regions'])) {
-//      $dbr->condition('fr.field_region_tid', $conditions['exclude']['regions'], 'NOT IN');
-//    }
+    $dbr->leftJoin('field_data_field_client', 'fct', 'fct.entity_id = s.id');
+    $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
+    $dbr->leftJoin('taxonomy_term_data', 'tr', 'tr.tid = fr.field_region_tid');
+    $dbr->addField('tr', 'tid', 'region_tid');
+    $dbr->addField('tr', 'name', 'region_name');
+    if (!empty($conditions['regions'])) {
+      $dbr->condition('fr.field_region_tid', $conditions['regions'], 'IN');
+    }
+    if (!empty($conditions['exclude']['regions'])) {
+      $dbr->condition('fr.field_region_tid', $conditions['exclude']['regions'], 'NOT IN');
+    }
 
     // для полей, добавленных позже нужно учитывать, что данные могут быть не заданы
     $dbr->leftJoin('field_data_field_s_is_manual', 'fm', 'fm.entity_id = s.id');
@@ -1313,6 +1192,11 @@ function dash_term_siblings_get($parent_tid)
  */
 function dash_term_get_by_1c_id($voc, $record_1c_id)
 {
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($voc . '_' . $record_1c_id));
+  $result = &drupal_static($fid);
+
+  if (isset($result)) return $result;
+
   $vid = is_numeric($voc) ? $voc : taxonomy_vocabulary_machine_name_load($voc)->vid;
 
   if ($vid && $record_1c_id) {
@@ -1334,7 +1218,7 @@ function dash_term_get_by_1c_id($voc, $record_1c_id)
     }
     $entities = entity_load('taxonomy_term', [$term->tid]);
   }
-  return empty($entities) ? false: current($entities);
+  return empty($entities) ? false : current($entities);
 }
 
 function dash_nomenklatura_get_by_1c_artikul($company_inn, $artikul)
@@ -1722,37 +1606,6 @@ function dash_plan_prod_create($params)
   } catch (Exception $e) {
     $transaction->rollback();
     watchdog_exception('migration', $e);
-  }
-
-  return $plan ?? false;
-}
-
-/**
- * Создать Запись плана типа plan
- */
-function dash_plan_ship_create($params)
-{
-  $transaction = db_transaction();
-  try {
-    $plan = entity_create('plan', [
-      'type' => 'plan_ship',
-      'created' => $params['created'],
-    ]);
-    entity_save('plan', $plan);
-
-    $plan_wr = entity_metadata_wrapper('plan', $plan);
-    $plan_wr->field_record_type_td = $params['type'];
-    $plan_wr->field_nomenklatura = $params['nom_id'] ?? 0;
-    $plan_wr->field_client = $params['client_id'] ?? 0;
-    $plan_wr->field_date = $params['month_ts'];
-    $plan_wr->field_quantity_td = $params['qty'] ?? 0;
-    $plan_wr->field_amount = $params['amount'] ?? 0;
-    $plan_wr->field_net_cost = $params['net_cost'] ?? 0;
-    $plan_wr->field_is_manual = $params['manual'] ?? 0;
-    $plan_wr->save();
-  } catch (Exception $e) {
-    $transaction->rollback();
-    watchdog_exception('database', $e);
   }
 
   return $plan ?? false;

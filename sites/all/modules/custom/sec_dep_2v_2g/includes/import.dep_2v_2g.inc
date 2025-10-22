@@ -140,7 +140,9 @@ function dep_2v_2g_import_nomenklatura($array)
 function dep_2v_2g_import_ship_plan_td($array)
 {
   if (is_array($array) && !empty($array['load'])) {
-    $record_type = $array['fact'];
+    if ($array['fact'] == 0) $record_type = DASH_TYPE_PLAN;
+    if ($array['fact'] == 1) $record_type = DASH_TYPE_FACT;
+
     $plan_import_time = REQUEST_TIME;
 
     // подготовка Плана на месяц
@@ -179,25 +181,26 @@ function dep_2v_2g_import_ship_plan_td($array)
         $month_arr = explode('.', $array['month']);
         $month_start = gmmktime(0, 0, 0, $month_arr[1], 1, $month_arr[2]);
       }
-      dep_2v_2g_shipplan_td_delete_by_month($month_start, $record_type);
+      $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
+      dash_ship_delete_by_month(['month_start' => $month_start, 'type' => $record_type, 'company_id' => $company->tid, 'manual' => 0]);
 
       // создание Плана на месяц
       foreach ($plan as $plan_item) {
-        $plan = entity_create('plan', [
-          'type' => 'plan_ship',
+        $plan = entity_create('ship', [
+          'type' => 'ship',
           'created' => $plan_import_time,
         ]);
-        entity_save('plan', $plan);
+        entity_save('ship', $plan);
 
-        $plan_wr = entity_metadata_wrapper('plan', $plan);
-        $plan_wr->field_record_type_td = $plan_item['record_type'];
-        $plan_wr->field_date = $plan_item['date'];
-        $plan_wr->field_client = $plan_item['client'];
-        $plan_wr->field_nomenklatura = $plan_item['nom'];
-        $plan_wr->field_quantity_td = $plan_item['qty'];
-        $plan_wr->field_amount = $plan_item['amount'];
-        $plan_wr->field_net_cost = $plan_item['net_cost'];
-        $plan_wr->field_is_manual = 0;
+        $plan_wr = entity_metadata_wrapper('ship', $plan);
+        $plan_wr->field_s_type = $plan_item['record_type'];
+        $plan_wr->field_s_date = $plan_item['date'];
+        $plan_wr->field_s_client = $plan_item['client'];
+        $plan_wr->field_s_nomenklatura = $plan_item['nom'];
+        $plan_wr->field_s_quantity = $plan_item['qty'];
+        $plan_wr->field_s_amount = $plan_item['amount'];
+        $plan_wr->field_s_net_cost = $plan_item['net_cost'];
+        $plan_wr->field_s_is_manual = 0;
         $plan_wr->save();
       }
 
@@ -234,9 +237,8 @@ function dep_2v_2g_import_pay_plan_td($array)
     }
 
     if ($cash_income) {
-      $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-
       // удалить старый план на месяц
+      $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
       dash_cash_income_delete_by_month(['month_start' => $month_start, 'type' => $record_type, 'company_id' => $company->tid, 'manual' => 0]);
 
       // создание Плана на месяц
@@ -267,34 +269,42 @@ function dep_2v_2g_import_pay_plan_td($array)
 }
 
 /**
- * Удалить записи за период, кроме введённых вручную
- * @param $month_start
- * @param $record_type
- * @return void
+ *  Удалить данные Отгрузке продукции (сущность ship/ship)
+ *  с учётом заданных параметров.
+ *
+ * @param $conditions
+ *   - company_id* - tid компании kccc
+ *   - month_start - массив ['from' =>, 'to' => не включительно]           * - обязательно
+ *   - type - тип записи (план, факт, неотгруженные контракты)
+ *   - manual - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
+ *
+ *  Для DASH_TYPE_DEAL дата не имеет значения, поэтому их удаляем все, без периода.
+ * @return array|mixed|null
  */
-function dep_2v_2g_shipplan_td_delete_by_month($month_start, $record_type)
+function dash_ship_delete_by_month($conditions)
 {
-  if ($month_start || $record_type == 2) {
-    $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
+  if ($conditions['company_id'] && $conditions['type'] && $conditions['manual']
+    && ($conditions['month_start'] || $conditions['type'] == DASH_TYPE_DEAL)) {
+    $next_month_start = gmmktime(0, 0, 0, date('n', $conditions['month_start'])+1, 1, date('Y', $conditions['month_start']));
 
     $efquery = new EntityFieldQuery();
     $efquery
-      ->entityCondition('entity_type', 'plan')
-      ->entityCondition('bundle', 'plan_ship')
-      ->fieldCondition('field_record_type_td', 'value', $record_type)
-      ->fieldCondition('field_is_manual', 'value', 1, '!=');
+      ->entityCondition('entity_type', 'ship')
+      ->entityCondition('bundle', 'ship')
+      ->fieldCondition('field_s_company', 'value', $conditions['company_id'])
+      ->fieldCondition('field_s_type', 'value', $conditions['type'])
+      ->fieldCondition('field_s_is_manual', 'value', $conditions['manual']);
 
-    if ($record_type != 2) {
+    if ($conditions['type'] != DASH_TYPE_DEAL) {
       $efquery
-        ->fieldCondition('field_date', 'value', $month_start, '>=')
-        ->fieldCondition('field_date', 'value', $next_month_start, '<');
+        ->fieldCondition('field_s_date', 'value', $conditions['month_start'], '>=')
+        ->fieldCondition('field_s_date', 'value', $next_month_start, '<');
     }
 
     $result = $efquery->execute();
     if ($result) {
-      entity_delete_multiple('plan', array_keys($result['plan']));
+      entity_delete_multiple('ship', array_keys($result['ship']));
     }
   }
 }
-
 

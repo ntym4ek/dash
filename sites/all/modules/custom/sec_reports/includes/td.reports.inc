@@ -80,7 +80,7 @@ function reports_td_page_content($period_to)
   $output .= '<div class="ajax-load" data-func="td_block_1" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 2
-  $url = url('/data/plan-ship/edit', ['query' => ['blocks' => ['td_block_2'], 'inn' => DASH_INN_TD]]);
+  $url = url('/data/ship/edit', ['query' => ['blocks' => ['td_block_2'], 'inn' => DASH_INN_TD]]);
   $output .=  '<div class="section-title">' .
                 '<h3>План-факт отгрузки продукции (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
@@ -89,7 +89,7 @@ function reports_td_page_content($period_to)
   $output .= '<div class="ajax-load" data-func="td_block_2" data-delay="200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 3
-  $url = url('/data/plan-ship/edit', ['query' => ['blocks' => ['td_block_31', 'td_block_32'], 'inn' => DASH_INN_TD]]);
+  $url = url('/data/ship/edit', ['query' => ['blocks' => ['td_block_31', 'td_block_32'], 'inn' => DASH_INN_TD]]);
   $output .=  '<div class="section-title">' .
                '<h3>Отгрузки + контракты на 1 ' . helper_month_label_ru(date('n')) . ' в сравнении по сезонам ' . (date('y', $season_10['from'])-1) . '-' . (date('y', $season_10['end'])-1) . ' / ' . date('y', $season_10['from']) . '-' . date('y', $season_10['end']) . '</h3>' .
                '<a class="edit-link autodialog" data-dialog-width="500" href="' . $url . '">Редактировать данные</a>' .
@@ -793,8 +793,9 @@ function reports_line_ship_plan_fact($period)
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
   // собрать все записи за период
-  $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => $plan_bounds, 'manual' => 1]);
-  $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period]);
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
+  $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'manual' => 1]);
+  $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period]);
 
   if ($plan || $fact) {
     // сгруппировать помесячно
@@ -938,14 +939,15 @@ function reports_column_ship_plan_fact_compare_revenue($period)
 
   // собрать данные периодов за предыдущий и текущий сезоны
   $data = [];
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
   foreach ([-1, 0] as $shift) {
     $period_shifted = dash_period_shifted_get($period, $shift);
 
     // план за весь год (вводится вручную)
-    $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => ['from' => $period_shifted['from'], 'to' => $period_shifted['end']], 'manual' => true]);
+    $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => ['from' => $period_shifted['from'], 'to' => $period_shifted['end']], 'manual' => 1]);
     // остальное по текущий месяц
-    $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period_shifted]);
-    $deal = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL_DEPR, 'period' => $period_shifted]);
+    $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
+    $deal = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'period' => $period_shifted]);
 
     $plan_amount = 0;
     if ($plan) foreach ($plan as $record) $plan_amount += $record->amount;
@@ -1072,14 +1074,16 @@ function reports_column_ship_plan_fact_compare_qty($period)
 
   // собрать данные периодов за предыдущий и текущий сезоны
   $data = [];
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
   foreach ([-1, 0] as $shift) {
     $period_shifted = dash_period_shifted_get($period, $shift);
 
     // план за весь год (вводится вручную)
-    $plan = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => ['from' => $period_shifted['from'], 'to' => $period_shifted['end']], 'manual' => true]);
+    $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => ['from' => $period_shifted['from'], 'to' => $period_shifted['end']], 'manual' => 1]);
     // остальное по текущий месяц
-    $fact = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period_shifted]);
-    $deal = dash_plan_ship_get_by_conditions(['type' => DASH_TYPE_DEAL_DEPR, 'period' => $period_shifted]);
+    $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
+    $deal = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'period' => $period_shifted]);
+
 
     $plan_qty = 0;
     if ($plan) foreach ($plan as $record) $plan_qty += $record->qty;
