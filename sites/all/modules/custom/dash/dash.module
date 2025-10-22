@@ -631,49 +631,9 @@ function dash_ship_get_by_conditions($conditions)
 }
 
 /**
- *  Вернуть данные по ВЫРУЧКЕ за продукцию (сущность plan/plan_revenue)
- *  с учётом заданных параметров
- * @param $conditions
- *   - type - тип записи (план, факт, неотгруженные контракты)
- *   - period - массив ['from' =>, 'to' => не включительно]
- * @return array|mixed|null
- */
-function dash_plan_revenue_get_by_conditions($conditions)
-{
-  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
-  $result = &drupal_static($fid);
-
-  if (!isset($result)) {
-    $dbr = db_select('eck_plan', 'p');
-    $dbr->condition('p.type', 'plan_revenue');
-    $dbr->addField('p', 'id');
-
-    $dbr->innerJoin('field_data_field_record_type_td', 'frt', 'frt.entity_id = p.id');
-    $dbr->condition('frt.bundle', 'plan_revenue');
-    $dbr->condition('frt.field_record_type_td_value', $conditions['type']);
-
-    $dbr->innerJoin('field_data_field_date', 'frd', 'frd.entity_id = p.id');
-    $dbr->condition('frd.bundle', 'plan_revenue');
-
-    $dbr->innerJoin('field_data_field_amount', 'fa', 'fa.entity_id = p.id');
-    $dbr->condition('fa.bundle', 'plan_revenue');
-    $dbr->addField('fa', 'field_amount_value', 'amount');
-
-    $dbr->condition('frd.field_date_value', $conditions['period']['from'], '>=');
-    $dbr->condition('frd.field_date_value', $conditions['period']['to'], '<');
-    $dbr->addField('frd', 'field_date_value', 'date');
-    $dbr->orderBy('date');
-    $result = $dbr->execute()->fetchAll();
-  }
-
-  return $result;
-}
-
-/**
  *  Вернуть данные по поступлению ДС (сущность cash_income/cash_income)
  *  с учётом заданных параметров.
  *  Таблица на замену plan/plan_revenue.
- *  todo перенести данные из plan/plan_revenue.
  *
  * @param $conditions
  *   - company_id* - tid компании kccc
@@ -723,6 +683,39 @@ function dash_cash_income_get_by_conditions($conditions)
   }
 
   return $result;
+}
+
+/**
+ *  Удалить данные по поступлению ДС (сущность cash_income/cash_income)
+ *  с учётом заданных параметров.
+ *
+ * @param $conditions
+ *   - company_id* - tid компании kccc
+ *   - month_start - массив ['from' =>, 'to' => не включительно]           * - обязательно
+ *   - type - тип записи (план, факт, неотгруженные контракты)
+ *   - manual - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
+ * @return array|mixed|null
+ */
+function dash_cash_income_delete_by_month($conditions)
+{
+  if ($conditions['company_id'] && $conditions['month_start'] && $conditions['type'] && $conditions['manual']) {
+    $next_month_start = gmmktime(0, 0, 0, date('n', $conditions['month_start'])+1, 1, date('Y', $conditions['month_start']));
+
+    $efquery = new EntityFieldQuery();
+    $efquery
+      ->entityCondition('entity_type', 'cash_income')
+      ->entityCondition('bundle', 'cash_income')
+      ->fieldCondition('field_ci_date', 'value', $conditions['month_start'], '>=')
+      ->fieldCondition('field_ci_date', 'value', $next_month_start, '<')
+      ->fieldCondition('field_ci_company', 'value', $conditions['company_id'])
+      ->fieldCondition('field_ci_type', 'value', $conditions['type'])
+      ->fieldCondition('field_ci_is_manual', 'value', $conditions['manual']);
+
+    $result = $efquery->execute();
+    if ($result) {
+      entity_delete_multiple('cash_income', array_keys($result['cash_income']));
+    }
+  }
 }
 
 /**

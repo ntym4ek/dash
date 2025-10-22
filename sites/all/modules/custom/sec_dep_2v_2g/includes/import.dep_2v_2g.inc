@@ -216,47 +216,49 @@ function dep_2v_2g_import_pay_plan_td($array)
   if (is_array($array) && !empty($array['load'])) {
     $month_arr = explode('.', $array['month']);
     $month_start = gmmktime(0, 0, 0, $month_arr[1], 1, $month_arr[2]);
-    $record_type = $array['fact'];
+    if ($array['fact'] == 0) $record_type = DASH_TYPE_PLAN;
+    if ($array['fact'] == 1) $record_type = DASH_TYPE_FACT;
     $plan_import_time = time();
 
-    // подготовка Плана на месяц
-    $plan = [];
-    foreach ($array['load'] as $plan_item) {
-//      $client = import_get_client_by_id('td', $plan_item['clients_id']);
-      $date_arr = explode('.', $plan_item['date']);
+    // подготовка массива на заданный месяц
+    $cash_income = [];
+    foreach ($array['load'] as $arr_item) {
+      $date_arr = explode('.', $arr_item['date']);
       $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
 
-      $plan[] = [
+      $cash_income[] = [
         'record_type' => $record_type,
         'date' => $date_start,
-        'client' => null, // план выручки с 17.02.2023 выгружается без привязки к клиенту
-        'amount' => $plan_item['amount'],
+        'amount' => $arr_item['amount'],
       ];
     }
 
-    if ($plan) {
+    if ($cash_income) {
+      $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
+
       // удалить старый план на месяц
-      dep_2v_2g_payplan_td_delete_by_month($month_start, $record_type);
+      dash_cash_income_delete_by_month(['month_start' => $month_start, 'type' => $record_type, 'company_id' => $company->tid, 'manual' => 0]);
 
       // создание Плана на месяц
-      foreach ($plan as $date => $plan_item) {
-        $plan = entity_create('plan', [
-          'type' => 'plan_revenue',
+      foreach ($cash_income as $date => $item) {
+        $cash_income = entity_create('cash_income', [
+          'type' => 'cash_income',
           'created' => $plan_import_time,
         ]);
-        entity_save('plan', $plan);
+        entity_save('cash_income', $cash_income);
 
-        $plan_wr = entity_metadata_wrapper('plan', $plan);
-        $plan_wr->field_record_type_td = $plan_item['record_type'];
-        $plan_wr->field_date = $plan_item['date'];
-//        $plan_wr->field_client = $plan_item['client']; // план выручки с 17.02.2023 выгружается без привязки к клиенту
-        $plan_wr->field_amount = $plan_item['amount'];
+        $plan_wr = entity_metadata_wrapper('cash_income', $cash_income);
+        $plan_wr->field_ci_company = $company->tid;
+        $plan_wr->field_ci_type = $item['record_type'];
+        $plan_wr->field_ci_date = $item['date'];
+        $plan_wr->field_ci_amount = $item['amount'];
+        $plan_wr->field_ci_is_manual = 0;
         $plan_wr->save();
       }
 
       watchdog('import', 'План выручки ТД импортирован.', [], WATCHDOG_INFO);
       // drupal_set_message('План выручки ТД импортирован.');
-      return $plan;
+      return $cash_income;
     }
   } else {
     watchdog('import', 'Импорт плана выручки ТД не выполнен.', [], WATCHDOG_ERROR);
@@ -295,22 +297,4 @@ function dep_2v_2g_shipplan_td_delete_by_month($month_start, $record_type)
   }
 }
 
-function dep_2v_2g_payplan_td_delete_by_month($month_start, $record_type)
-{
-  if ($month_start) {
-    $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
 
-    $efquery = new EntityFieldQuery();
-    $efquery
-      ->entityCondition('entity_type', 'plan')
-      ->entityCondition('bundle', 'plan_revenue')
-      ->fieldCondition('field_date', 'value', $month_start, '>=')
-      ->fieldCondition('field_date', 'value', $next_month_start, '<')
-      ->fieldCondition('field_record_type_td', 'value', $record_type);
-
-    $result = $efquery->execute();
-    if ($result) {
-      entity_delete_multiple('plan', array_keys($result['plan']));
-    }
-  }
-}

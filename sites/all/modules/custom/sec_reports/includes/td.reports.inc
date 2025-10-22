@@ -546,8 +546,10 @@ function reports_line_revenue_plan_fact($period)
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
   // собрать все записи за период
-  $plan = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => $plan_bounds]);
-  $fact = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period]);
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
+
+  $plan = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'manual' => 0]);
+  $fact = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'manual' => 0]);
 
   if ($plan || $fact) {
     // сгруппировать помесячно
@@ -687,12 +689,14 @@ function reports_column_revenue_fact_compare($period)
 {
   $chart = dash_no_data_chart_get();
 
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
+
   // собрать данные периодов с DASH_YEAR_HISTORY_START года
   $data = [];
   foreach (dash_years_shift_list_get(null, date('n', $period['from'])) as $shift) {
     $period_shifted = dash_period_shifted_get($period, $shift);
 
-    $fact = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period_shifted]);
+    $fact = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted, 'manual' => 0]);
 
     $amount = 0;
     if ($fact) foreach ($fact as $record) {
@@ -1219,8 +1223,8 @@ function reports_bdds_table_output($period)
   ];
 
   // собрать все записи Прихода ДС за период
-  $plan = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_PLAN_DEPR, 'period' => $period]);
-  $fact = dash_plan_revenue_get_by_conditions(['type' => DASH_TYPE_FACT_DEPR, 'period' => $period]);
+  $plan = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $period, 'manual' => 0]);
+  $fact = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'manual' => 0]);
 
   // собрать за предыдущий полный месяц и за год
   if ($plan) foreach ($plan as $record) {

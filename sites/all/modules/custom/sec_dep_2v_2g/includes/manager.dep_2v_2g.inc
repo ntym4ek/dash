@@ -118,7 +118,7 @@ function dep_2v_2g_manager_6($period = null)
   // фильтр по регионам невозможен, тк в плане нет детализации по клиентам
   $output .= '<div class="row">';
   $output .=    '<div class="col-xs-12"><h5 class="chart-title">Выполнение плана поступления денежных средств (' . DASH_REV_SUFFIX . ')</h5></div>';
-  $data_arr =   dep_2v_2g_line_revenue_plan_fact('plan_revenue', $period);
+  $data_arr =   dep_2v_2g_line_revenue_plan_fact($period);
   $output .=    '<div id="plan-m-target" class="col-xs-12">' . drupal_render($data_arr) . '</div>';
   $output .= '</div>';
 
