@@ -192,7 +192,7 @@ function dep_2v_2g_import_ship_plan_td($array)
         $plan_wr = entity_metadata_wrapper('plan', $plan);
         $plan_wr->field_record_type_td = $plan_item['record_type'];
         $plan_wr->field_date = $plan_item['date'];
-        $plan_wr->field_client_td = $plan_item['client'];
+        $plan_wr->field_client = $plan_item['client'];
         $plan_wr->field_nomenklatura_td = $plan_item['nom'];
         $plan_wr->field_quantity_td = $plan_item['qty'];
         $plan_wr->field_amount = $plan_item['amount'];
@@ -249,7 +249,7 @@ function dep_2v_2g_import_pay_plan_td($array)
         $plan_wr = entity_metadata_wrapper('plan', $plan);
         $plan_wr->field_record_type_td = $plan_item['record_type'];
         $plan_wr->field_date = $plan_item['date'];
-//        $plan_wr->field_client_td = $plan_item['client']; // план выручки с 17.02.2023 выгружается без привязки к клиенту
+//        $plan_wr->field_client = $plan_item['client']; // план выручки с 17.02.2023 выгружается без привязки к клиенту
         $plan_wr->field_amount = $plan_item['amount'];
         $plan_wr->save();
       }

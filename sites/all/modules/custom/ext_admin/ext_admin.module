@@ -60,6 +60,12 @@ function ext_admin_cron_queue_info()
   $queues['database_processing_queue_2'] = array(
     'worker callback' => 'ext_admin_database_process_record_2',
   );
+  $queues['database_processing_queue_3'] = array(
+    'worker callback' => 'ext_admin_database_process_record_3',
+  );
+  $queues['database_processing_queue_5'] = array(
+    'worker callback' => 'ext_admin_database_process_record_5',
+  );
 
   return $queues;
 }
@@ -85,7 +91,7 @@ function ext_admin_settings_form($form, &$form_state)
 function ext_admin_migration_form($form, &$form_state)
 {
   $function = '';
-  $function = 'ext_admin_queue_database_processing_3';
+  $function = 'ext_admin_queue_database_processing_5';
 
   $form['message'] = array(
     '#markup' => ($function ? '<p>Будет запущена функция ' . $function . '</p>' : '<p>Функция для запуска не задана</p>'),
@@ -188,7 +194,10 @@ function ext_admin_queue_database_processing_2()
 
   if ($items = $q->execute()->fetchCol()) {
     $queue = DrupalQueue::get('database_processing_queue_2');
-    $queue->deleteQueue();
+    $q->leftjoin('field_data_field_revenue_company', 'frc', 'frc.entity_id = r.id');
+    $q->isNull('frc.field_revenue_company_value');
+
+//    $queue->deleteQueue();
 
     foreach($items as $item) {
       $queue->createItem($item);
@@ -202,29 +211,27 @@ function ext_admin_queue_database_processing_2()
 function ext_admin_database_process_record_2($record_id)
 {
   // обработать запись базы данных
-  $arr = [];
-  $revenue_wr = entity_metadata_wrapper('revenue', $record_id);
-  $arr['date'] = $revenue_wr->field_date->value();
-  $arr['type'] = $revenue_wr->field_revenue_type->value();
-  $arr['amount'] = $revenue_wr->field_amount->value();
-  $arr['company'] = $revenue_wr->field_company->value();
-  $arr['created'] = $revenue_wr->created->value();
+//  $arr = [];
+//  $revenue_wr = entity_metadata_wrapper('revenue', $record_id);
+//  $arr['date'] = $revenue_wr->field_date->value();
+//  $arr['type'] = $revenue_wr->field_revenue_type->value();
+//  $arr['amount'] = $revenue_wr->field_amount->value();
+//  $arr['company'] = $revenue_wr->field_company->value();
+//  $arr['created'] = $revenue_wr->created->value();
 
-  if ($arr['date'] && $arr['type'] && $arr['amount'] && $arr['company']) {
-    $revenue = entity_create('revenue', [
-      'type' => 'revenue',
-      'created' => $arr['created'],
-    ]);
-    entity_save('revenue', $revenue);
+//    $revenue = entity_create('revenue', [
+//      'type' => 'revenue',
+//      'created' => $arr['created'],
+//    ]);
+//    entity_save('revenue', $revenue);
     entity_delete('revenue', $record_id);
 
-    $new_wr = entity_metadata_wrapper('revenue', $revenue);
-    $new_wr->field_revenue_date = $arr['date'];
-    $new_wr->field_revenue_type = $arr['type'];
-    $new_wr->field_revenue_amount = $arr['amount'];
-    $new_wr->field_revenue_company = $arr['company'];
-    $new_wr->save();
-  }
+//    $new_wr = entity_metadata_wrapper('revenue', $revenue);
+//    $new_wr->field_revenue_date = $arr['date'];
+//    $new_wr->field_revenue_type = $arr['type'];
+//    $new_wr->field_revenue_amount = $arr['amount'];
+//    $new_wr->field_revenue_company = $arr['company'];
+//    $new_wr->save();
 
   watchdog('message', 'Обработана запись с id: ' . $record_id);
 }
@@ -234,7 +241,10 @@ function ext_admin_queue_database_processing_3()
   // получить записи с незаполненным полем и поставить в очередь
   $q = db_select('eck_remains', 'r');
   $q->condition('r.type', 'remains');
+//  $q->leftjoin('field_data_field_rm_date', 'fd', 'fd.entity_id = r.id');
+//  $q->isNull('fd.field_rm_date_value');
   $q->fields('r', array('id'));
+//  $q->range(0, 50000);
 
   if ($items = $q->execute()->fetchCol()) {
     $queue = DrupalQueue::get('database_processing_queue_3');
@@ -260,11 +270,9 @@ function ext_admin_database_process_record_3($record_id)
   $arr['price'] = $remains_wr->field_price->value();
   $arr['date'] = $remains_wr->field_date->value();
   $arr['date_exp'] = $remains_wr->field_date_expiration->value();
-  $arr['created'] = $remains_wr->created->value();
 
     $remains = entity_create('remains', [
       'type' => 'remains',
-      'created' => $arr['created'],
     ]);
     entity_save('remains', $remains);
     entity_delete('remains', $record_id);
@@ -277,6 +285,121 @@ function ext_admin_database_process_record_3($record_id)
     $new_wr->field_rm_date = $arr['date'];
     $new_wr->field_rm_date_exp = $arr['date_exp'];
     $new_wr->save();
+
+  watchdog('message', 'Обработана запись с id: ' . $record_id);
+}
+
+function ext_admin_queue_database_processing_4()
+{
+  // получить записи с незаполненным полем и поставить в очередь
+  $q = db_select('eck_plan', 'p');
+  $q->condition('p.type', 'plan_ship');
+  $q->fields('p', array('id'));
+
+  if ($items = $q->execute()->fetchCol()) {
+    $queue = DrupalQueue::get('database_processing_queue_4');
+//    $queue->deleteQueue();
+
+    foreach($items as $item) {
+      $queue->createItem($item);
+    }
+
+    drupal_set_message('Записей, помещённых в очередь: ' . count($items) . ' (' . $items[0] . ' - ' . array_pop($items) . ')');
+    return true;
+  }
+}
+
+function ext_admin_database_process_record_4($record_id)
+{
+  // обработать запись базы данных
+  $arr = [];
+  $plan_wr = entity_metadata_wrapper('plan', $record_id);
+  $arr['type'] = $plan_wr->field_record_type_td->value();
+  $arr['nom'] = $plan_wr->field_nomenklatura_td->value();
+  $arr['client'] = $plan_wr->field_client->value();
+  $arr['qty'] = $plan_wr->field_quantity_td->value();
+  $arr['date'] = $plan_wr->field_date->value();
+  $arr['amount'] = $plan_wr->field_amount->value();
+  $arr['net_cost'] = $plan_wr->field_net_cost->value();
+  $arr['manual'] = $plan_wr->field_is_manual->value();
+  $arr['created'] = $plan_wr->created->value();
+
+  $ship = entity_create('ship', [
+    'type' => 'ship',
+    'created' => $arr['created'],
+  ]);
+  entity_save('ship', $ship);
+  entity_delete('plan', $record_id);
+
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
+
+  $new_wr = entity_metadata_wrapper('ship', $ship);
+  $new_wr->field_s_company = $company->tid;
+  $new_wr->field_s_date = $arr['date'];
+  $new_wr->field_s_type = $arr['type']+1;
+  $new_wr->field_s_amount = $arr['amount'];
+  $new_wr->field_s_quantity = $arr['qty'];
+  $new_wr->field_s_net_cost = $arr['net_cost'];
+  $new_wr->field_s_is_manual = $arr['manual'];
+  $new_wr->field_s_nomenklatura = $arr['nom'];
+  $new_wr->field_s_client = $arr['']; // todo определить клиента, нужно сопоставить старый и новый словарь (или перенести из старого в новый)
+  $new_wr->save();
+
+  watchdog('message', 'Обработана запись с id: ' . $record_id);
+}
+
+function ext_admin_queue_database_processing_5()
+{
+  $dbr = db_select('taxonomy_term_data', 't');
+  $dbr->condition('t.vid', taxonomy_vocabulary_machine_name_load('clients_td')->vid);
+  $dbr->addField('t', 'tid');
+  if ($tids = $dbr->execute()->fetchCol()) {
+
+    $queue = DrupalQueue::get('database_processing_queue_5');
+    $queue->deleteQueue();
+
+    foreach($tids as $tid) {
+      $queue->createItem($tid);
+    }
+
+    drupal_set_message('Записей, помещённых в очередь: ' . count($tids));
+  }
+}
+
+function ext_admin_database_process_record_5($record_id)
+{
+  $arr = [];
+  $term_wr = entity_metadata_wrapper('taxonomy_term', $record_id);
+  $arr['name'] = $term_wr->label();
+  $arr['id1c'] = $term_wr->field_client_id->value();
+  $arr['status'] = $term_wr->field_status->value();
+  $arr['region'] = $term_wr->field_region->value();
+
+  $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
+  $term = (object)array(
+    'vid' => $vid,
+    'name' => $arr['name'],
+    'field_1c_id' => ['und' => [0 => ['value' => $arr['id1c']]]],
+    'field_kccc_company' => ['und' => [0 => ['tid' => 196472]]], // тд
+  );
+  taxonomy_term_save($term);
+
+  $new_wr = entity_metadata_wrapper('taxonomy_term', $term);
+  $new_wr->field_status = $arr['status'];
+  $new_wr->field_region = $arr['region'];
+  $new_wr->save();
+
+  $q = db_select('eck_plan', 'p');
+  $q->innerjoin('field_data_field_client_td', 'fc', 'fc.entity_id = p.id');
+  $q->condition('fc.field_client_td_tid', $record_id);
+  $q->fields('p', array('id'));
+  if ($items = $q->execute()->fetchCol()) {
+    foreach ($items as $item) {
+      $wr = entity_metadata_wrapper('plan', $item);
+      $wr->field_client = $term->tid;
+      $wr->save();
+    }
+  }
 
   watchdog('message', 'Обработана запись с id: ' . $record_id);
 }

@@ -819,9 +819,9 @@ function dep_2v_2g_pie_revenue_pay_plan($time_from, $time_to)
   $dbr->condition('ff.bundle', 'plan_revenue');
   $dbr->condition('ff.field_is_fact_value', DASH_TYPE_FACT_DEPR);
 
-  $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
+  $dbr->innerJoin('field_data_field_client', 'fct', 'fct.entity_id = p.id');
   $dbr->condition('fct.bundle', 'plan_revenue');
-  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
+  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
   $dbr->addField('fr', 'field_region_tid', 'region_tid');
   $dbr->groupBy('region_tid');
 
@@ -1844,9 +1844,9 @@ function dep_2v_2g_ship_plan_amount_region_filter_form($form, &$form_state)
   $dbr->condition('frd.field_date_value', $form_state['period']['from'], '>=');
   $dbr->condition('frd.field_date_value', $form_state['period']['to'], '<');
 
-  $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
+  $dbr->innerJoin('field_data_field_client', 'fct', 'fct.entity_id = p.id');
   $dbr->condition('fct.bundle', 'plan_ship');
-  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
+  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
 
   $dbr->addField('fr', 'field_region_tid');
   $regions = $dbr->execute()->fetchCol();
@@ -1894,9 +1894,9 @@ function dep_2v_2g_ship_plan_qty_region_filter_form($form, &$form_state)
   $dbr->condition('frd.field_date_value', $form_state['period']['from'], '>=');
   $dbr->condition('frd.field_date_value', $form_state['period']['to'], '<');
 
-  $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
+  $dbr->innerJoin('field_data_field_client', 'fct', 'fct.entity_id = p.id');
   $dbr->condition('fct.bundle', 'plan_ship');
-  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
+  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
 
   $dbr->addField('fr', 'field_region_tid');
   $regions = $dbr->execute()->fetchCol();
@@ -1945,9 +1945,9 @@ function dep_2v_2g_column_ship_plan_by_nom_filter_form($form, &$form_state)
   $dbr->condition('frd.field_date_value', $form_state['period']['from'], '>=');
   $dbr->condition('frd.field_date_value', $form_state['period']['to'], '<');
 
-  $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
+  $dbr->innerJoin('field_data_field_client', 'fct', 'fct.entity_id = p.id');
   $dbr->condition('fct.bundle', 'plan_ship');
-  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
+  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
 
   $dbr->addField('fr', 'field_region_tid');
   $regions = $dbr->execute()->fetchCol();
@@ -2000,9 +2000,9 @@ function dep_2v_2g_td_column_plan_ship_period_to_period_filter_form($form, &$for
   $dbr->condition('frd.field_date_value', $form_state['period']['from'], '>=');
   $dbr->condition('frd.field_date_value', $form_state['period']['to'], '<');
 
-  $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
+  $dbr->innerJoin('field_data_field_client', 'fct', 'fct.entity_id = p.id');
   $dbr->condition('fct.bundle', 'plan_ship');
-  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
+  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
 
   $dbr->addField('fr', 'field_region_tid');
   $regions = $dbr->execute()->fetchCol();
@@ -2055,9 +2055,9 @@ function dep_2v_2g_line_ship_plan_fact_by_month_filter_form($form, &$form_state)
   $dbr->condition('frd.field_date_value', $form_state['period']['from'], '>=');
   $dbr->condition('frd.field_date_value', $form_state['period']['to'], '<');
 
-  $dbr->innerJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
+  $dbr->innerJoin('field_data_field_client', 'fct', 'fct.entity_id = p.id');
   $dbr->condition('fct.bundle', 'plan_ship');
-  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
+  $dbr->innerJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
 
   $dbr->addField('fr', 'field_region_tid');
   $regions = $dbr->execute()->fetchCol();

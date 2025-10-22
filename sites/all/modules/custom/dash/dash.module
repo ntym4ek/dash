@@ -496,12 +496,12 @@ function dash_plan_ship_get_by_conditions($conditions)
     $dbr->leftJoin('field_data_field_nom_nds', 'fnds', 'fnds.entity_id = fn.field_nomenklatura_td_tid');
     $dbr->addField('fnds', 'field_nom_nds_value', 'nds');
 
-    $dbr->leftJoin('field_data_field_client_td', 'fct', 'fct.entity_id = p.id');
+    $dbr->leftJoin('field_data_field_client', 'fct', 'fct.entity_id = p.id');
     $dbr->condition(db_or()
       ->isNull('fct.bundle')
       ->condition('fct.bundle', 'plan_ship')
     );
-    $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
+    $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
     $dbr->leftJoin('taxonomy_term_data', 'tr', 'tr.tid = fr.field_region_tid');
     $dbr->addField('tr', 'tid', 'region_tid');
     $dbr->addField('tr', 'name', 'region_name');
@@ -598,12 +598,12 @@ function dash_ship_get_by_conditions($conditions)
 //    $dbr->leftJoin('field_data_field_nom_nds', 'fnds', 'fnds.entity_id = fn.field_s_nomenklatura_tid');
 //    $dbr->addField('fnds', 'field_nom_nds_value', 'nds');
 
-//    $dbr->leftJoin('field_data_field_client_td', 'fct', 'fct.entity_id = s.id');
+//    $dbr->leftJoin('field_data_field_client', 'fct', 'fct.entity_id = s.id');
 //    $dbr->condition(db_or()
 //      ->isNull('fct.bundle')
 //      ->condition('fct.bundle', 'plan_ship')
 //    );
-//    $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_td_tid');
+//    $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
 //    $dbr->leftJoin('taxonomy_term_data', 'tr', 'tr.tid = fr.field_region_tid');
 //    $dbr->addField('tr', 'tid', 'region_tid');
 //    $dbr->addField('tr', 'name', 'region_name');
@@ -1379,19 +1379,15 @@ function dash_nomenklatura_get_by_1c_artikul($company_inn, $artikul)
 function dash_client_get_by_1c_id($company_inn, $client_id)
 {
   // клиенты хранятся в разных словарях
-  // todo перенести данные ТД в общий словарь
-  $voc_name = ($company_inn == DASH_INN_TD) ? 'clients_td' : 'clients';
-  $vid = taxonomy_vocabulary_machine_name_load($voc_name)->vid;
+  $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
   $company = dash_term_get_by_1c_id('companies', $company_inn);
 
   if ($vid && $client_id) {
     $query = new EntityFieldQuery();
     $query->entityCondition('entity_type', 'taxonomy_term')
-          ->propertyCondition('vid', $vid)
-          ->fieldCondition('field_1c_id', 'value', $client_id);
-    if ($company_inn != DASH_INN_TD) {
-      $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
-    }
+      ->propertyCondition('vid', $vid)
+      ->fieldCondition('field_1c_id', 'value', $client_id);
+    $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
     $terms = $query->execute();
     if ($terms) {
       $term = current($terms['taxonomy_term']);
@@ -1758,7 +1754,7 @@ function dash_plan_ship_create($params)
     $plan_wr = entity_metadata_wrapper('plan', $plan);
     $plan_wr->field_record_type_td = $params['type'];
     $plan_wr->field_nomenklatura_td = $params['nom_id'] ?? 0;
-    $plan_wr->field_client_td = $params['client_id'] ?? 0;
+    $plan_wr->field_client = $params['client_id'] ?? 0;
     $plan_wr->field_date = $params['month_ts'];
     $plan_wr->field_quantity_td = $params['qty'] ?? 0;
     $plan_wr->field_amount = $params['amount'] ?? 0;
