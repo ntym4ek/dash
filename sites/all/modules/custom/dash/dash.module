@@ -478,22 +478,22 @@ function dash_plan_ship_get_by_conditions($conditions)
     );
     $dbr->addField('fnc', 'field_net_cost_value', 'net_cost');
 
-    $dbr->leftJoin('field_data_field_nomenklatura_td', 'fn', 'fn.entity_id = p.id');
+    $dbr->leftJoin('field_data_field_nomenklatura', 'fn', 'fn.entity_id = p.id');
     $dbr->condition(db_or()
       ->isNull('fn.bundle')
       ->condition('fn.bundle', 'plan_ship')
     );
-    $dbr->condition('fn.field_nomenklatura_td_tid', DASH_TD_NOM_ID_LIST_TO_EXCLUDE, 'NOT IN');
-    $dbr->leftJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklatura_td_tid');
+    $dbr->condition('fn.field_nomenklatura_tid', DASH_TD_NOM_ID_LIST_TO_EXCLUDE, 'NOT IN');
+    $dbr->leftJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklatura_tid');
     $dbr->fields('t', ['tid', 'name']);
     if (!empty($conditions['noms'])) {
-      $dbr->condition('fn.field_nomenklatura_td_tid', $conditions['noms'], 'IN');
+      $dbr->condition('fn.field_nomenklatura_tid', $conditions['noms'], 'IN');
     }
     if (!empty($conditions['exclude']['noms'])) {
-      $dbr->condition('fn.field_nomenklatura_td_tid', $conditions['exclude']['noms'], 'NOT IN');
+      $dbr->condition('fn.field_nomenklatura_tid', $conditions['exclude']['noms'], 'NOT IN');
     }
 
-    $dbr->leftJoin('field_data_field_nom_nds', 'fnds', 'fnds.entity_id = fn.field_nomenklatura_td_tid');
+    $dbr->leftJoin('field_data_field_nom_nds', 'fnds', 'fnds.entity_id = fn.field_nomenklatura_tid');
     $dbr->addField('fnds', 'field_nom_nds_value', 'nds');
 
     $dbr->leftJoin('field_data_field_client', 'fct', 'fct.entity_id = p.id');
@@ -1347,9 +1347,7 @@ function dash_term_get_by_1c_id($voc, $record_1c_id)
 function dash_nomenklatura_get_by_1c_artikul($company_inn, $artikul)
 {
   // номенклатура хранится в разных словарях
-  // todo перенести данные ТД в общий словарь
-  $voc_name = $company_inn == DASH_INN_TD ? 'nomenklatura_td' : 'nomenklatura';
-  $vid = taxonomy_vocabulary_machine_name_load($voc_name)->vid;
+  $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
   $company = dash_term_get_by_1c_id('companies', $company_inn);
   if ($vid && $artikul) {
     $query = new EntityFieldQuery();
@@ -1357,9 +1355,7 @@ function dash_nomenklatura_get_by_1c_artikul($company_inn, $artikul)
       ->entityCondition('entity_type', 'taxonomy_term')
       ->propertyCondition('vid', $vid)
       ->fieldCondition('field_nom_artikul', 'value', $artikul);
-    if ($company_inn != DASH_INN_TD) {
-      $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
-    }
+    $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
     $terms = $query->execute();
     if ($terms) {
       $term = current($terms['taxonomy_term']);
@@ -1753,7 +1749,7 @@ function dash_plan_ship_create($params)
 
     $plan_wr = entity_metadata_wrapper('plan', $plan);
     $plan_wr->field_record_type_td = $params['type'];
-    $plan_wr->field_nomenklatura_td = $params['nom_id'] ?? 0;
+    $plan_wr->field_nomenklatura = $params['nom_id'] ?? 0;
     $plan_wr->field_client = $params['client_id'] ?? 0;
     $plan_wr->field_date = $params['month_ts'];
     $plan_wr->field_quantity_td = $params['qty'] ?? 0;

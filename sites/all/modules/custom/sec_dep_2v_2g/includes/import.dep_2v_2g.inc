@@ -31,7 +31,7 @@ function dep_2v_2g_import_regions($array)
 function dep_2v_2g_import_clients_td($array)
 {
   if (is_array($array) && !empty($array['load'])) {
-    $vid = taxonomy_vocabulary_machine_name_load('clients_td')->vid;
+    $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
 
     $new_records = [];
     foreach ($array['load'] as $client) {
@@ -79,7 +79,7 @@ function dep_2v_2g_import_clients_td($array)
   }
 }
 
-function dep_2v_2g_import_nomenklatura_td($array)
+function dep_2v_2g_import_nomenklatura($array)
 {
   if (is_array($array) && !empty($array['load'])) {
     $new_records = [];
@@ -89,7 +89,7 @@ function dep_2v_2g_import_nomenklatura_td($array)
         $term = dash_nomenklatura_get_by_1c_artikul(DASH_INN_TD, $nom['art']);
         // если нет по артикулу, искать по ID или создать
         if (!$term) {
-          $term = dash_term_get_by_1c_id('nomenklatura_td', $nom['id']);
+          $term = dash_term_get_by_1c_id('nomenklatura', $nom['id']);
         }
 
         if ($term) {
@@ -110,7 +110,7 @@ function dep_2v_2g_import_nomenklatura_td($array)
 
     // если полное обновление справочника, то запомнить отсутствующие записи и сделать их неактивными для клиента
     if ($array['reload']) {
-      $vid = taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid;
+      $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
       $dbr = db_select('taxonomy_term_data', 't');
       $dbr->condition('t.vid', $vid);
       $dbr->addField('t', 'tid');
@@ -193,7 +193,7 @@ function dep_2v_2g_import_ship_plan_td($array)
         $plan_wr->field_record_type_td = $plan_item['record_type'];
         $plan_wr->field_date = $plan_item['date'];
         $plan_wr->field_client = $plan_item['client'];
-        $plan_wr->field_nomenklatura_td = $plan_item['nom'];
+        $plan_wr->field_nomenklatura = $plan_item['nom'];
         $plan_wr->field_quantity_td = $plan_item['qty'];
         $plan_wr->field_amount = $plan_item['amount'];
         $plan_wr->field_net_cost = $plan_item['net_cost'];

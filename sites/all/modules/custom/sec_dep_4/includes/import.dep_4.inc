@@ -84,14 +84,14 @@ function dep_4_import_analog_prices($array)
           dep_4_delete_analog_price_by_1c_ID($doc_id);
           foreach ($ap_items as $ap_item) {
             if ($ap_item['nom_id']) {
-              if ($nom = dash_term_get_by_1c_id('nomenklatura_td', $ap_item['nom_id'])) {
+              if ($nom = dash_term_get_by_1c_id('nomenklatura', $ap_item['nom_id'])) {
                 $date_arr = explode('.', $ap_item['date']);
                 $date_unix = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
 
                 $ap = entity_create('analog_price', ['type' => 'analog_price']);
                 $ap_wr = entity_metadata_wrapper('analog_price', $ap);
 
-                $ap_wr->field_ap_nom_td = $nom->tid;
+                $ap_wr->field_ap_nomenklatura = $nom->tid;
                 $ap_wr->field_ap_date = $date_unix;
                 $ap_wr->field_ap_doc_1c_id = $ap_item['doc_id'];
                 $ap_wr->field_ap_price = $ap_item['price'];

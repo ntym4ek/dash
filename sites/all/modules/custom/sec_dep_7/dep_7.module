@@ -237,7 +237,7 @@ function dep_7_get_registration_info($reg)
 
     // список Номенклатуры
     $noms_arr = ['list' => []];
-    foreach ($reg_wr->field_nomenklaturas_td->getIterator() as $nom_wr) {
+    foreach ($reg_wr->field_r_nomenklaturas->getIterator() as $nom_wr) {
       $noms_arr['list'][$nom_wr->getIdentifier()] = $nom_wr->label();
     }
     $noms_arr['string'] = $noms_arr['list'] ? implode(', ', $noms_arr['list']) : '';
@@ -363,9 +363,9 @@ function dep_7_reg_nom_filter_form($form, $form_state)
 {
   $dbr = db_select('eck_registration', 'r');
   $dbr->condition('r.type', 'registration');
-  $dbr->innerJoin('field_data_field_nomenklaturas_td', 'fn', 'fn.entity_id = r.id');
+  $dbr->innerJoin('field_data_field_r_nomenklaturas', 'fn', 'fn.entity_id = r.id');
   $dbr->condition('fn.bundle', 'registration');
-  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_nomenklaturas_td_tid');
+  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_r_nomenklaturas_tid');
   $dbr->fields('t', ['tid', 'name']);
   $dbr->orderBy('name');
   $nom = $dbr->execute()->fetchAllAssoc('tid');

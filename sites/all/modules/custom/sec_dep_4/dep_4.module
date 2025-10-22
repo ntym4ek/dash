@@ -75,9 +75,9 @@ function dash_4_get_data_by_conditions($conditions = [])
 {
   $dbr = db_select('eck_analog_price', 'ap');
   $dbr->addField('ap', 'id');
-  $dbr->innerJoin('field_data_field_ap_nom_td', 'fn', 'fn.entity_id = ap.id');
-  $dbr->condition('fn.field_ap_nom_td_tid', $conditions['nom']);
-  $dbr->leftJoin('taxonomy_term_data', 't', 't.tid = fn.field_ap_nom_td_tid');
+  $dbr->innerJoin('field_data_field_ap_nomenklatura', 'fn', 'fn.entity_id = ap.id');
+  $dbr->condition('fn.field_ap_nomenklatura_tid', $conditions['nom']);
+  $dbr->leftJoin('taxonomy_term_data', 't', 't.tid = fn.field_ap_nomenklatura_tid');
   $dbr->addField('t', 'tid', 'nom_id');
   $dbr->addField('t', 'name', 'nom_name');
   $dbr->leftJoin('field_data_field_ap_doc_1c_id', 'fdid', 'fdid.entity_id = ap.id');
@@ -349,7 +349,7 @@ function dep_4_get_analog_prices_filters_set()
     // -- Номенклатура
     $curr_nom_id = null;
     $dbr = db_select('taxonomy_term_data', 't');
-    $dbr->innerJoin('field_data_field_ap_nom_td', 'fn', 'fn.field_ap_nom_td_tid = t.tid');
+    $dbr->innerJoin('field_data_field_ap_nomenklatura', 'fn', 'fn.field_ap_nomenklatura_tid = t.tid');
     $dbr->distinct();
     $dbr->fields('t', ['tid', 'name']);
     if ($noms = $dbr->execute()->fetchAllAssoc('tid')) {

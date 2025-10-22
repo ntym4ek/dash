@@ -100,7 +100,7 @@ function dep_7_import_registrations($array)
         $reg_wr->field_r_cert_number = $reg_item['cert_num'];
         $reg_wr->field_r_number = $reg_item['reg_num'];
         $reg_wr->field_date_range = ['value' => $date_from, 'value2' => $date_to];
-        $reg_wr->field_nomenklaturas_td = $noms;
+        $reg_wr->field_r_nomenklaturas = $noms;
         $reg_wr->field_cultures = $cultures;
         $reg_wr->field_1c_id = $reg_item['id'];
         $reg_wr->field_r_base_cert = $base_reg ? $base_reg->id : null;

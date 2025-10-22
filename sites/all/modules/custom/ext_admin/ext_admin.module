@@ -351,7 +351,7 @@ function ext_admin_database_process_record_4($record_id)
 function ext_admin_queue_database_processing_5()
 {
   $dbr = db_select('taxonomy_term_data', 't');
-  $dbr->condition('t.vid', taxonomy_vocabulary_machine_name_load('clients_td')->vid);
+  $dbr->condition('t.vid', taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid);
   $dbr->addField('t', 'tid');
   if ($tids = $dbr->execute()->fetchCol()) {
 
@@ -371,32 +371,61 @@ function ext_admin_database_process_record_5($record_id)
   $arr = [];
   $term_wr = entity_metadata_wrapper('taxonomy_term', $record_id);
   $arr['name'] = $term_wr->label();
-  $arr['id1c'] = $term_wr->field_client_id->value();
+  $arr['id1c'] = $term_wr->field_1c_id->value();
+  $arr['art'] = $term_wr->field_nom_artikul->value();
+  $arr['unit'] = $term_wr->field_nom_unit->value();
+  $arr['nds'] = $term_wr->field_nom_nds->value();
   $arr['status'] = $term_wr->field_status->value();
-  $arr['region'] = $term_wr->field_region->value();
 
-  $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
-  $term = (object)array(
+  $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
+  $new_term = (object)array(
     'vid' => $vid,
     'name' => $arr['name'],
     'field_1c_id' => ['und' => [0 => ['value' => $arr['id1c']]]],
     'field_kccc_company' => ['und' => [0 => ['tid' => 196472]]], // тд
   );
-  taxonomy_term_save($term);
+  taxonomy_term_save($new_term);
 
-  $new_wr = entity_metadata_wrapper('taxonomy_term', $term);
+  $new_wr = entity_metadata_wrapper('taxonomy_term', $new_term);
   $new_wr->field_status = $arr['status'];
-  $new_wr->field_region = $arr['region'];
+  $new_wr->field_nom_artikul = $arr['art'];
+  $new_wr->field_nom_unit = $arr['unit'];
+  $new_wr->field_nom_nds = $arr['nds'];
   $new_wr->save();
 
   $q = db_select('eck_plan', 'p');
-  $q->innerjoin('field_data_field_client_td', 'fc', 'fc.entity_id = p.id');
-  $q->condition('fc.field_client_td_tid', $record_id);
+  $q->condition('p.type', 'plan_ship');
+  $q->innerjoin('field_data_field_nomenklatura_td', 'fc', 'fc.entity_id = p.id');
+  $q->condition('fc.field_nomenklatura_td_tid', $record_id);
   $q->fields('p', array('id'));
   if ($items = $q->execute()->fetchCol()) {
     foreach ($items as $item) {
       $wr = entity_metadata_wrapper('plan', $item);
-      $wr->field_client = $term->tid;
+      $wr->field_nomenklatura = $new_term->tid;
+      $wr->save();
+    }
+  }
+
+  $q = db_select('eck_analog_price', 'p');
+  $q->innerjoin('field_data_field_ap_nom_td', 'fc', 'fc.entity_id = p.id');
+  $q->condition('fc.field_ap_nom_td_tid', $record_id);
+  $q->fields('p', array('id'));
+  if ($items = $q->execute()->fetchCol()) {
+    foreach ($items as $item) {
+      $wr = entity_metadata_wrapper('analog_price', $item);
+      $wr->field_ap_nomenklatura = $new_term->tid;
+      $wr->save();
+    }
+  }
+
+  $q = db_select('eck_registration', 'r');
+  $q->innerjoin('field_data_field_nomenklaturas_td', 'fc', 'fc.entity_id = r.id');
+  $q->condition('fc.field_nomenklaturas_td_tid', $record_id);
+  $q->fields('r', array('id'));
+  if ($items = $q->execute()->fetchCol()) {
+    foreach ($items as $item) {
+      $wr = entity_metadata_wrapper('registration', $item);
+      $wr->field_r_nomenklaturas[] = $new_term->tid;
       $wr->save();
     }
   }
