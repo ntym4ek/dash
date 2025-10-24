@@ -14,8 +14,8 @@ function finance_menu()
     'menu_name' => 'main-menu',
     'weight' => 10,
     'page callback' => 'finance_page',
-    'access callback' => 'ext_user_has_roles_by_name',
-    'access arguments' => [['administrator', 'finance_user']],
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, FINANCE_USER_RID]],
     'type' => MENU_NORMAL_ITEM,
   );
 

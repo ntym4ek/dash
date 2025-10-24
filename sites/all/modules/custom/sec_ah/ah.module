@@ -505,7 +505,6 @@ function ah_column_prod_by_type_period_to_period($type, $time_from, $time_to)
 function ah_import_processors_alter(&$processors)
 {
   $path = drupal_get_path('module', 'ah') . '/includes/';
-  $processors['first_queue'][] = ['mask' => '/^scrum_dav.*\.json/', 'include' => $path . 'import.ah.inc', 'func' => 'ah_import_clients_ah', 'archive' => 'dash/ah']; // -- Справочник Клиентов АХ (давальцев)
-  $processors['first_queue'][] = ['mask' => '/^scrum_nom.*\.json/', 'include' => $path . 'import.ah.inc', 'func' => 'ah_import_nomenklatura', 'archive' => 'dash/ah']; // -- Справочник Номенклатуры АХ
-  $processors['last_queue'][] = ['mask' => '/^scrum_plan.*\.json/', 'include' => $path . 'import.ah.inc', 'func' => 'ah_import_production_plan', 'archive' => 'dash/ah']; // -- План производства
+  $processors['first_queue'][] = ['mask' => '/^scrum_nom.*\.json/',         'include' => $path . 'import.ah.inc', 'func' => 'ah_import_nomenklatura', 'archive' => 'dash/ah']; // -- Справочник Номенклатуры АХ
+  $processors['last_queue'][] = ['mask' => '/^scrum_plan.*\.json/',         'include' => $path . 'import.ah.inc', 'func' => 'ah_import_production_plan', 'archive' => 'dash/ah']; // -- План производства
 }

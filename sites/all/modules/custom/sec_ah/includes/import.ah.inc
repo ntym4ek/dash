@@ -1,54 +1,6 @@
 <?php
 
 
-function ah_import_clients_ah($array)
-{
-  if (is_array($array) && !empty($array['load'])) {
-    $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
-    $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
-
-    $new_records = [];
-    foreach ($array['load'] as $key => $client) {
-      if ($client['dav_id'] && $client['dav_name']) {
-
-        if ($term = dash_client_get_by_1c_id(DASH_INN_AH, $client['dav_id'])) {
-          $client_wr = entity_metadata_wrapper('taxonomy_term', $term);
-          $client_wr->name = $client['dav_name'];
-          $client_wr->field_status = 1;
-          $client_wr->field_kccc_company = $company->tid;
-          $client_wr->save();
-
-          $new_records[] = $client_wr->getIdentifier();
-        }
-      }
-    }
-
-    // если полное обновление справочника, то запомнить отсутствующие записи и сделать их неактивными
-    if ($array['reload']) {
-      $dbr = db_select('taxonomy_term_data', 't');
-      $dbr->condition('t.vid', $vid);
-      $dbr->addField('t', 'tid');
-      $terms_old = $dbr->execute()->fetchAllAssoc('tid');
-
-      foreach ($terms_old as $tid => $term_old) {
-        if (!in_array($tid, $new_records)) {
-          $term_wr = entity_metadata_wrapper('taxonomy_term', $tid);
-          $term_wr->field_status = 0;
-          $term_wr->save();
-        }
-      }
-    }
-
-    // drupal_set_message('Давальцы импортированы.');
-    watchdog('import', 'Давальцы импортированы.', [], WATCHDOG_INFO);
-    return true;
-  } else {
-    // drupal_set_message('Импорт давальцев не выполнен.', 'warning');
-    watchdog('import', 'Импорт давальцев не выполнен.', [], WATCHDOG_ERROR);
-    return false;
-  }
-}
-
 function ah_import_nomenklatura($array)
 {
   if (is_array($array) && !empty($array['load'])) {
@@ -65,7 +17,7 @@ function ah_import_nomenklatura($array)
           $term = dash_nomenklatura_get_by_1c_artikul(DASH_INN_AH, $nom['art']);
           // если нет по артикулу, искать по ID или создать
           if (!$term) {
-            $term = dash_term_get_by_1c_id('nomenklatura', $nom['id']);
+            $term = dash_nomenclature_get_by_1c_id(DASH_INN_AH, $nom['id']);
           }
 
           if ($term) {

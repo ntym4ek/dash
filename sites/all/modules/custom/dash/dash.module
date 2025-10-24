@@ -481,8 +481,8 @@ function dash_ship_get_by_conditions($conditions)
     $dbr->leftJoin('field_data_field_nom_nds', 'fnds', 'fnds.entity_id = fn.field_s_nomenklatura_tid');
     $dbr->addField('fnds', 'field_nom_nds_value', 'nds');
 
-    $dbr->leftJoin('field_data_field_client', 'fct', 'fct.entity_id = s.id');
-    $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_client_tid');
+    $dbr->leftJoin('field_data_field_s_client', 'fct', 'fct.entity_id = s.id');
+    $dbr->leftJoin('field_data_field_region', 'fr', 'fr.entity_id = fct.field_s_client_tid');
     $dbr->leftJoin('taxonomy_term_data', 'tr', 'tr.tid = fr.field_region_tid');
     $dbr->addField('tr', 'tid', 'region_tid');
     $dbr->addField('tr', 'name', 'region_name');
@@ -496,7 +496,10 @@ function dash_ship_get_by_conditions($conditions)
     // для полей, добавленных позже нужно учитывать, что данные могут быть не заданы
     $dbr->leftJoin('field_data_field_s_is_manual', 'fm', 'fm.entity_id = s.id');
     if (empty($conditions['manual'])) {
-      $dbr->condition('fm.field_s_is_manual_value', 0);
+      $dbr->condition(db_or()
+        ->isNull('fm.field_s_is_manual_value')
+        ->condition('fm.field_s_is_manual_value', 0)
+      );
     } else {
       $dbr->condition('fm.field_s_is_manual_value', 1);
     }
@@ -546,9 +549,6 @@ function dash_cash_income_get_by_conditions($conditions)
     $dbr->condition('frd.field_ci_date_value', $conditions['period']['to'], '<');
     $dbr->addField('frd', 'field_ci_date_value', 'date');
 
-    $dbr->innerJoin('field_data_field_ci_amount', 'fa', 'fa.entity_id = ci.id');
-    $dbr->addField('fa', 'field_ci_amount_value', 'amount');
-
     $dbr->innerJoin('field_data_field_ci_is_manual', 'fm', 'fm.entity_id = ci.id');
     if (empty($conditions['manual'])) {
       $dbr->condition('fm.field_ci_is_manual_value', 0);
@@ -556,6 +556,12 @@ function dash_cash_income_get_by_conditions($conditions)
       $dbr->condition('fm.field_ci_is_manual_value', 1);
     }
     $dbr->addField('fm', 'field_ci_is_manual_value', 'manual');
+
+    $dbr->innerJoin('field_data_field_ci_amount', 'fa', 'fa.entity_id = ci.id');
+    $dbr->addField('fa', 'field_ci_amount_value', 'amount');
+
+    $dbr->leftJoin('field_data_field_ci_client', 'fcl', 'fcl.entity_id = ci.id');
+    $dbr->addField('fcl', 'field_ci_client_tid', 'client');
 
     $dbr->orderBy('date');
     $result = $dbr->execute()->fetchAll();
@@ -910,6 +916,58 @@ function dash_manual_bdr_get_by_conditions($conditions)
   return $result;
 }
 
+
+/**
+ *  Вернуть данные по Остаткам готовой продукции и сырья (production/clients)
+ *  с учётом заданных параметров.
+ *
+ * @param $conditions
+ *   - period* - массив ['from' =>, 'to' => не включительно]
+ *   - type - тип записи (план/факт)
+ * @return array|mixed|null
+ */
+function dash_production_clients_get_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_production', 'p');
+    $dbr->condition('p.type', 'clients');
+    $dbr->addField('p', 'id');
+
+    $dbr->innerJoin('field_data_field_prod_date', 'frd', 'frd.entity_id = p.id');
+    $dbr->condition('frd.field_prod_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('frd.field_prod_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('frd', 'field_prod_date_value', 'date');
+
+    $dbr->innerJoin('field_data_field_prod_type', 'ft', 'ft.entity_id = p.id');
+    if (!empty($conditions['type'])) {
+      $dbr->condition('ft.field_prod_type_value', $conditions['type']);
+    }
+    $dbr->addField('ft', 'field_prod_type_value', 'type');
+
+    $dbr->innerJoin('field_data_field_prod_is_manual', 'fm', 'fm.entity_id = p.id');
+    if (empty($conditions['manual'])) {
+      $dbr->condition('fm.field_prod_is_manual_value', 0);
+    } else {
+      $dbr->condition('fm.field_prod_is_manual_value', 1);
+    }
+    $dbr->addField('fm', 'field_prod_is_manual_value', 'manual');
+
+    $dbr->innerJoin('field_data_field_prod_volume', 'fv', 'fv.entity_id = p.id');
+    $dbr->addField('fv', 'field_prod_volume_value', 'volume');
+
+    $dbr->innerJoin('field_data_field_prod_client', 'fc', 'fc.entity_id = p.id');
+    $dbr->addField('fc', 'field_prod_client_tid', 'client');
+
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
 /**
  * ----- Формы ---------------------------------------------------------------------------------------------------------
  */
@@ -1072,6 +1130,8 @@ function dash_period_time_bounds_get($month_num_start, $year_shift = 0)
 
 /**
  * Вернуть смещение заданного периода на заданное количество лет
+ *
+ * @param int $year_shift - смещение (0 - текущий год)
  */
 function dash_period_shifted_get($period, $year_shift = 0)
 {
@@ -1251,7 +1311,6 @@ function dash_nomenklatura_get_by_1c_artikul($company_inn, $artikul)
  */
 function dash_client_get_by_1c_id($company_inn, $client_id)
 {
-  // клиенты хранятся в разных словарях
   $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
   $company = dash_term_get_by_1c_id('companies', $company_inn);
 
@@ -1275,6 +1334,71 @@ function dash_client_get_by_1c_id($company_inn, $client_id)
     }
     $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
   }
+  return empty($entities) ? 0: current($entities);
+}
+
+/**
+ * Найти номенклатуру по 1c_id или создать, если не найден
+ * @param $company_inn - справочник какой компании KCCC проверять
+ * @param $nom_id
+ * @return false|int|mixed
+ */
+function dash_nomenclature_get_by_1c_id($company_inn, $nom_id)
+{
+  $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
+  $company = dash_term_get_by_1c_id('companies', $company_inn);
+
+  if ($vid && $nom_id && $company) {
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'taxonomy_term')
+          ->propertyCondition('vid', $vid)
+          ->fieldCondition('field_1c_id', 'value', $nom_id);
+    $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
+    $terms = $query->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+    } else {
+      $term = (object)array(
+        'vid' => $vid,
+        'name' => '',
+        'field_1c_id' => ['und' => [0 => ['value' => $nom_id]]],
+        'field_kccc_company' => ['und' => [0 => ['tid' => $company->tid]]],
+      );
+      taxonomy_term_save($term);
+    }
+    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+  }
+  return empty($entities) ? 0: current($entities);
+}
+
+/**
+ * Найти направление по 1c_id или создать, если не найден
+
+ * @param $direction_id - 1c ID
+ * @return false|int|mixed
+ */
+function dash_direction_get_by_1c_id($direction_id)
+{
+  // клиенты хранятся в разных словарях
+  $vid = taxonomy_vocabulary_machine_name_load('directions')->vid;
+
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'taxonomy_term')
+    ->propertyCondition('vid', $vid)
+    ->fieldCondition('field_1c_id', 'value', $direction_id);
+  $terms = $query->execute();
+  if ($terms) {
+    $term = current($terms['taxonomy_term']);
+  } else {
+    $term = (object)array(
+      'vid' => $vid,
+      'name' => '',
+      'field_1c_id' => ['und' => [0 => ['value' => $direction_id]]],
+    );
+    taxonomy_term_save($term);
+  }
+  $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+
   return empty($entities) ? 0: current($entities);
 }
 
@@ -1429,7 +1553,7 @@ function dash_years_shift_get($period = null)
  * Вернуть список смещений с заданного периода до DASH_YEAR_HISTORY_START года, но не более DASH_HISTORY_LENGTH
  * (например, за 3 года с текущего = [-2, -1, 0])
  */
-function dash_years_shift_list_get($period = null, $month_num_start = DASH_PERIOD_START_MONTH_TD)
+function dash_years_shift_list_get($period, $month_num_start = DASH_PERIOD_START_MONTH_TD)
 {
   if (!$period) $period = dash_year_time_bounds_get($month_num_start);
 
@@ -1545,6 +1669,8 @@ function dash_cash_income_create($params)
     $ci_wr->field_ci_type = $params['type'];
     $ci_wr->field_ci_is_manual = $params['manual'] ?? 0;
     $ci_wr->field_ci_amount = $params['amount'] ?? 0;
+    $ci_wr->field_ci_client = $params['client_id'] ?? 0;
+    $ci_wr->field_ci_direction = $params['direction_id'] ?? 0;
     $ci_wr->save();
   } catch (Exception $e) {
     $transaction->rollback();
@@ -1674,6 +1800,34 @@ function dash_debt_create($params)
   }
 
   return $debt ?? false;
+}
+
+/**
+ * Создать Запись таблицы Производство / Клиенты
+ */
+function dash_production_clients_create($params)
+{
+  $transaction = db_transaction();
+  try {
+    $prod = entity_create('production', [
+      'type' => 'clients',
+      'created' => $params['created'],
+    ]);
+    entity_save('production', $prod);
+
+    $prod_wr = entity_metadata_wrapper('production', $prod);
+    $prod_wr->field_prod_date = $params['date_ts'];
+    $prod_wr->field_prod_type = $params['type'];
+    $prod_wr->field_prod_client = $params['client_id'];
+    $prod_wr->field_prod_volume = $params['volume'];
+    $prod_wr->field_prod_is_manual = $params['manual'] ?? 0;
+    $prod_wr->save();
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('database', $e);
+  }
+
+  return $prod ?? false;
 }
 
 /**

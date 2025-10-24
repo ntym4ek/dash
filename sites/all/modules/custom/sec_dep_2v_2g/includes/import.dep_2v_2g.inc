@@ -41,8 +41,8 @@ function dep_2v_2g_import_clients_td($array)
           $client_wr = entity_metadata_wrapper('taxonomy_term', $term);
           $client_wr->name = $client['name'];
           $client_wr->field_status = 1;
-          if ($region_tid = dash_region_get_by_1c_id($client['region_id'])) {
-            $client_wr->field_region = $region_tid;
+          if ($region = dash_region_get_by_1c_id($client['region_id'])) {
+            $client_wr->field_region = $region;
           } else {
             watchdog('import', 'Не найден регион ' . $client['region_id'] . ' при импорте клиентов ТД', [], WATCHDOG_ERROR);
           }
@@ -89,7 +89,7 @@ function dep_2v_2g_import_nomenklatura($array)
         $term = dash_nomenklatura_get_by_1c_artikul(DASH_INN_TD, $nom['art']);
         // если нет по артикулу, искать по ID или создать
         if (!$term) {
-          $term = dash_term_get_by_1c_id('nomenklatura', $nom['id']);
+          $term = dash_nomenclature_get_by_1c_id(DASH_INN_TD, $nom['id']);
         }
 
         if ($term) {
@@ -140,13 +140,12 @@ function dep_2v_2g_import_nomenklatura($array)
 function dep_2v_2g_import_ship_plan_td($array)
 {
   if (is_array($array) && !empty($array['load'])) {
-    if ($array['fact'] == 0) $record_type = DASH_TYPE_PLAN;
-    if ($array['fact'] == 1) $record_type = DASH_TYPE_FACT;
-
-    $plan_import_time = REQUEST_TIME;
+    if ($array['fact'] == 0) $type = DASH_TYPE_PLAN;
+    if ($array['fact'] == 1) $type = DASH_TYPE_FACT;
+    if ($array['fact'] == 2) $type = DASH_TYPE_DEAL;
 
     // подготовка Плана на месяц
-    $plan = [];
+    $ship = [];
     foreach ($array['load'] as $load_item) {
       $client = dash_client_get_by_1c_id(DASH_INN_TD, $load_item['clients_id']);
       if (isset($client->tid)) {
@@ -156,8 +155,8 @@ function dep_2v_2g_import_ship_plan_td($array)
           $date_arr = explode('.', $load_item['date']);
           $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
 
-          $plan[] = [
-            'record_type' => $record_type,
+          $ship[] = [
+            'type' => $type,
             'date' => $date_start,
             'client' => $client->tid,
             'nom' => $nom->tid,
@@ -173,45 +172,40 @@ function dep_2v_2g_import_ship_plan_td($array)
       }
     }
 
-    if ($plan) {
+    $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
+
+    if ($ship && isset($type) && $company) {
       // удалить старый план на месяц
       // для Неоплаченных контрактов месяц не задан, тк это срез на момент импорта
-      $month_start = null;
+      $params = ['type' => $type, 'company_id' => $company->tid, 'manual' => 0];
       if (isset($array['month'])) {
-        $month_arr = explode('.', $array['month']);
-        $month_start = gmmktime(0, 0, 0, $month_arr[1], 1, $month_arr[2]);
+        $params['month_start'] = helper_datetime_to_timestamp($array['month']);
       }
-      $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-      dash_ship_delete_by_month(['month_start' => $month_start, 'type' => $record_type, 'company_id' => $company->tid, 'manual' => 0]);
+      dash_ship_delete_by_month($params);
 
       // создание Плана на месяц
-      foreach ($plan as $plan_item) {
-        $plan = entity_create('ship', [
-          'type' => 'ship',
-          'created' => $plan_import_time,
+      foreach ($ship as $plan_item) {
+        dash_ship_create([
+          'created' => REQUEST_TIME,
+          'company_id' => $company->tid,
+          'month_ts' => $plan_item['date'],
+          'type' => $plan_item['type'],
+          'manual' => 0,
+          'amount' => $plan_item['amount'],
+          'qty' => $plan_item['qty'],
+          'net_cost' => $plan_item['net_cost'],
+          'nom_id' => $plan_item['nom'],
+          'client_id' => $plan_item['client'],
         ]);
-        entity_save('ship', $plan);
-
-        $plan_wr = entity_metadata_wrapper('ship', $plan);
-        $plan_wr->field_s_type = $plan_item['record_type'];
-        $plan_wr->field_s_date = $plan_item['date'];
-        $plan_wr->field_s_client = $plan_item['client'];
-        $plan_wr->field_s_nomenklatura = $plan_item['nom'];
-        $plan_wr->field_s_quantity = $plan_item['qty'];
-        $plan_wr->field_s_amount = $plan_item['amount'];
-        $plan_wr->field_s_net_cost = $plan_item['net_cost'];
-        $plan_wr->field_s_is_manual = 0;
-        $plan_wr->save();
       }
 
       watchdog('import', 'План отгрузки ТД импортирован.', [], WATCHDOG_INFO);
-//      drupal_set_message('План отгрузки ТД импортирован.');
-      return $plan;
+      return $ship;
     }
-  } else {
-    watchdog('import', 'Импорт плана отгрузки ТД не выполнен.', [], WATCHDOG_ERROR);
-    return false;
   }
+
+  watchdog('import', 'Импорт плана отгрузки ТД не выполнен.', [], WATCHDOG_ERROR);
+  return false;
 }
 
 function dep_2v_2g_import_pay_plan_td($array)

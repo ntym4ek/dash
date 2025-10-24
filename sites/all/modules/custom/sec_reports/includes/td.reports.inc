@@ -1047,7 +1047,7 @@ function reports_column_ship_plan_fact_compare_revenue($period)
     ];
 
     $percent = '-';
-    if ($data[$key]['fact_amount']) $percent = number_format($data[$key]['fact_amount'] / $data[$key]['plan_amount'] * 100, 0, ',', ' ');
+    if ($data[$key]['plan_amount']) $percent = number_format($data[$key]['fact_amount'] / $data[$key]['plan_amount'] * 100, 0, ',', ' ');
     $tooltip =
       '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
       '<div><div style="display:inline-block; font-weight: 700;">' . $label . '</div></div>' .
@@ -1183,7 +1183,7 @@ function reports_column_ship_plan_fact_compare_qty($period)
     ];
 
     $percent = '-';
-    if ($data[$key]['fact_qty']) $percent = number_format($data[$key]['fact_qty'] / $data[$key]['plan_qty'] * 100, 0, ',', ' ');
+    if ($data[$key]['plan_qty']) $percent = number_format($data[$key]['fact_qty'] / $data[$key]['plan_qty'] * 100, 0, ',', ' ');
     $tooltip =
       '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
       '<div><div style="display:inline-block; font-weight: 700;">' . $label . '</div></div>' .
@@ -1284,11 +1284,11 @@ function reports_bdds_table_output($period)
   $rows[] = [
     'data' => [
       '1. Приход (итого)',
-      ['data' => helper_number_format($data['income']['total']['plan_month'], 0, ' ', false), 'align' => 'right'],
-      ['data' => helper_number_format($data['income']['total']['fact_month'], 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
       ['data' => ($data['income']['total']['plan_month'] ? helper_number_format($data['income']['total']['fact_month']/$data['income']['total']['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
-      ['data' => helper_number_format($data['income']['total']['plan_period'], 0, ' ', false), 'align' => 'right'],
-      ['data' => helper_number_format($data['income']['total']['fact_period'], 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
       ['data' => ($data['income']['total']['plan_period'] ? helper_number_format($data['income']['total']['fact_period']/$data['income']['total']['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
     ],
   ];
@@ -1296,11 +1296,11 @@ function reports_bdds_table_output($period)
   $rows[] = [
     'data' => [
       '2. Расход (итого), в т.ч.:',
-      ['data' => helper_number_format($data['outcome']['total']['plan_month'], 0, ' ', false), 'align' => 'right'],
-      ['data' => helper_number_format($data['outcome']['total']['fact_month'], 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
       ['data' => ($data['outcome']['total']['plan_month'] ? helper_number_format($data['outcome']['total']['fact_month']/$data['outcome']['total']['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
-      ['data' => helper_number_format($data['outcome']['total']['plan_period'], 0, ' ', false), 'align' => 'right'],
-      ['data' => helper_number_format($data['outcome']['total']['fact_period'], 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
       ['data' => ($data['outcome']['total']['plan_period'] ? helper_number_format($data['outcome']['total']['fact_period']/$data['outcome']['total']['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
     ],
   ];
@@ -1310,11 +1310,11 @@ function reports_bdds_table_output($period)
     $rows[] = [
       'data' => [
         '&nbsp;&nbsp;- ' . drupal_strtolower($term->name),
-        ['data' => helper_number_format($cat['plan_month'], 0, ' ', false), 'align' => 'right'],
-        ['data' => helper_number_format($cat['fact_month'], 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
         ['data' => ($cat['plan_month'] ? helper_number_format($cat['fact_month']/$cat['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
-        ['data' => helper_number_format($cat['plan_period'], 0, ' ', false), 'align' => 'right'],
-        ['data' => helper_number_format($cat['fact_period'], 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
         ['data' => ($cat['plan_period'] ? helper_number_format($cat['fact_period']/$cat['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
       ],
     ];
@@ -1379,10 +1379,10 @@ function reports_debt_debitors_table_output($period)
       $rows[] = [
         'data' => [
           ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
-          ['data' => helper_number_format($item[$prev_year_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$prev_year_month_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$year_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$month_start], 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$prev_year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$prev_year_month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
         ],
         'class' => [$key == 'row3' ? 'tfoot': ''],
       ];
@@ -1449,10 +1449,10 @@ function reports_debt_creditors_table_output($period)
       $rows[] = [
         'data' => [
           ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
-          ['data' => helper_number_format($item[$prev_year_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$prev_year_month_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$year_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$month_start], 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$prev_year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$prev_year_month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
         ],
         'class' => [$key == 'row3' ? 'tfoot': ''],
       ];
@@ -1525,10 +1525,10 @@ function reports_debt_credits_loans_table_output($period)
       $rows[] = [
         'data' => [
           ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
-          ['data' => helper_number_format($item[$prev_year_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$prev_year_month_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$year_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$month_start], 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$prev_year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$prev_year_month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
           ['data' => isset($item['percent'][$month_start]) ? helper_number_format($item['percent'][$month_start], 1, ' ', false) : '', 'align' => 'right'],
         ],
         'class' => [$key == 'row2' ? 'tfoot': ''],
@@ -1718,8 +1718,7 @@ function reports_remains_progress_table_output($period)
     }
 
     $data[$row_key][$remain->date] = $remain->amount / DASH_REV_DIVIDER;
-    if (!isset($data['row3'][$remain->date])) $data['row3'][$remain->name][$remain->date] = 0;
-    $data['row3'][$remain->date] += $remain->amount / DASH_REV_DIVIDER;
+    $data['row3'][$remain->date] = ($data['row3'][$remain->date] ?? 0) + $remain->amount / DASH_REV_DIVIDER;
   }
 
   // формируем таблицу
@@ -1741,10 +1740,10 @@ function reports_remains_progress_table_output($period)
       $rows[] = [
         'data' => [
           $name,
-          ['data' => helper_number_format($row[$prev_year_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($row[$prev_year_month_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($row[$year_start], 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($row[$month_start], 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($row[$prev_year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($row[$prev_year_month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($row[$year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($row[$month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
         ],
         'class' => [$key == 'row3' ? 'tfoot' : ''],
       ];
@@ -1913,8 +1912,8 @@ function reports_manual_bdr_table_output($period)
       $rows[] = [
         'data' => [
           $label,
-          ['data' => helper_number_format($item['plan_period'], 0, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item['fact_period'], 0, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
           ['data' => ($item['plan_period'] ? helper_number_format($item['fact_period'] / $item['plan_period'] * 100, 0, ' ', false) . ' %' : '-'), 'align' => 'right'],
         ],
       ];

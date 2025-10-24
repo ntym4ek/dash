@@ -55,13 +55,11 @@ function dep_2d_import_remains($file_arr)
     $import_arr = [];
     foreach ($file_arr['load'] as $load_item) {
       $warehouse  = dash_term_get_by_1c_id('warehouses', $load_item['storage_id']);
-      $nom        = dash_term_get_by_1c_id('nomenklatura_td', $load_item['nom_id']);
-      $date_arr   = explode('.', $load_item['date']);
-      $date_prod  = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
+      $nom        = dash_nomenclature_get_by_1c_id(DASH_INN_TD, $load_item['nom_id']);
+      $date_prod  = helper_datetime_to_timestamp($load_item['date']);
       $date_expire = '';
       if ($load_item['expiration_date']) {
-        $date_arr = explode('.', $load_item['expiration_date']);
-        $date_expire = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
+        $date_expire = helper_datetime_to_timestamp($load_item['expiration_date']);
       }
 
       if ($date_prod && $warehouse && $nom) {
@@ -78,10 +76,9 @@ function dep_2d_import_remains($file_arr)
 
     if ($import_arr) {
       // удалить старые остатки за период
-      $date_arr   = explode('.', $file_arr['start_date']);
-      $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
+      $date_start = helper_datetime_to_timestamp($file_arr['start_date']);
       $date_arr   = explode('.', $file_arr['end_date']);
-      $date_end   = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0]+1, $date_arr[2]); // включительно
+      $date_end   = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0]+1, $date_arr[2]); // данные приходят включительно $file_arr['end_date']
       dash_remains_delete_by_period($date_start, $date_end);
 
       // создание Плана на месяц
@@ -105,8 +102,8 @@ function dep_2d_import_remains($file_arr)
       watchdog('import', 'Остатки ТД импортированы.', [], WATCHDOG_INFO);
       return $import_arr;
     }
-  } else {
-    watchdog('import', 'Импорт остатков ТД не выполнен.', [], WATCHDOG_ERROR);
-    return false;
   }
+
+  watchdog('import', 'Импорт остатков ТД не выполнен.', [], WATCHDOG_ERROR);
+  return false;
 }

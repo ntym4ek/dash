@@ -3,6 +3,7 @@
 // постоянное подключение, т.к в файле есть функции для ajax вызовов
 include ('includes/td.reports.inc');
 include ('includes/jp.reports.inc');
+include ('includes/ah.reports.inc');
 
 /**
  * Implementation of hook_menu().
@@ -17,7 +18,7 @@ function reports_menu()
     'page callback' => 'drupal_get_form',
     'page arguments' => ['reports_td_period_to_form'],
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, FINANCE_USER_RID, AGROHIMIKAT_USER_RID]],
   );
   $items['reports/td'] = array(
     'title' => 'Торговый Дом',
@@ -27,6 +28,16 @@ function reports_menu()
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
     'weight' => 17,
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['reports/ah'] = array(
+    'title' => 'Агрохимикат',
+    'menu_name' => 'main-menu',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['reports_ah_period_to_form'],
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, AGROHIMIKAT_USER_RID]],
+    'weight' => 19,
     'type' => MENU_NORMAL_ITEM,
   );
   $items['reports/jp'] = array(
@@ -98,12 +109,16 @@ function reports_import_processors_alter(&$processors)
   // Справочник Статей расходов
   $processors['first_queue'][] = ['mask' => '/^scrum_hb_outcome_categories_.*\.json/',  'include' => $path . 'import.reports.inc', 'func' => 'reports_outcome_categories_import', 'archive' => 'dash/rp'];
 
+  // План и факт прихода ДС
+  $processors['last_queue'][] = ['mask' => '/^scrum_cash_income_.*\.json/',             'include' => $path . 'import.reports.inc', 'func' => 'reports_cash_income_import', 'archive' => 'dash/rp']; // -- План факт поступления денежных средств
   // План и факт расхода ДС
   $processors['last_queue'][] = ['mask' => '/^scrum_cash_outcome_.*\.json/',            'include' => $path . 'import.reports.inc', 'func' => 'reports_cash_outcome_import', 'archive' => 'dash/rp'];
   // Кредиты и задолженности (из бухгалтерии)
   $processors['last_queue'][] = ['mask' => '/^scrum_debt_.*\.json/',                    'include' => $path . 'import.reports.inc', 'func' => 'reports_debt_import', 'archive' => 'dash/rp'];
   // Остатки готовой продукции и сырья
   $processors['last_queue'][] = ['mask' => '/^scrum_remains_brief_\d.*\.json/',         'include' => $path . 'import.reports.inc', 'func' => 'reports_remains_brief_import', 'archive' => 'dash/rp'];
+  // Производство/Клиенты
+  $processors['last_queue'][] = ['mask' => '/^scrum_production_clients_\d.*\.json/',    'include' => $path . 'import.reports.inc', 'func' => 'reports_production_clients_import', 'archive' => 'dash/rp'];
 }
 
 /**
@@ -850,7 +865,7 @@ function reports_cash_income_data_edit_form_submit($form, $form_state)
   }
 
   // добавить Запись плана
-  $record = dash_cash_income_create([
+  dash_cash_income_create([
     'created' => REQUEST_TIME,
     'company_id' => $form_state['values']['company_id'],
     'month_ts' => $month_start,

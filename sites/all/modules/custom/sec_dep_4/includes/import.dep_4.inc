@@ -84,7 +84,7 @@ function dep_4_import_analog_prices($array)
           dep_4_delete_analog_price_by_1c_ID($doc_id);
           foreach ($ap_items as $ap_item) {
             if ($ap_item['nom_id']) {
-              if ($nom = dash_term_get_by_1c_id('nomenklatura', $ap_item['nom_id'])) {
+              if ($nom = dash_nomenclature_get_by_1c_id(DASH_INN_TD, $ap_item['nom_id'])) {
                 $date_arr = explode('.', $ap_item['date']);
                 $date_unix = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
 
