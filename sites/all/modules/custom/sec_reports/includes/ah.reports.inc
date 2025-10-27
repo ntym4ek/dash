@@ -555,23 +555,19 @@ function reports_ah_cash_income_fact_table($period)
 
     $fact = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
     foreach ($fact as $record) {
-      // определить направление деятельности из параметров клиента
-      // и брать данные только если оно задано
-      $client_wr = entity_metadata_wrapper('taxonomy_term', $record['client']);
-      if ($client_wr->value()) {
-        $direction_wr = entity_metadata_wrapper('taxonomy_term', $client_wr->field_client_direction->getIdentifier());
-        if ($direction_wr->value()) {
-          $direction_name = $direction_wr->label();
+      // брать данные только если задано направление
+      $direction_wr = entity_metadata_wrapper('taxonomy_term', $record['direction']);
+      if ($direction_wr->value()) {
+        $direction_name = $direction_wr->label();
 
-          if ($month_start <= $record['date'] && $record['date'] < $next_month_start) {
-            $data[$direction_name]['month'][$month_start] = ($data[$direction_name]['month'][$month_start] ?? 0) + $record['amount'];
-            $total['month'][$month_start] = ($total['month'][$month_start] ?? 0) + $record['amount'];
-          }
-
-          $data[$direction_name]['period'][$period_shifted['from']] = ($data[$direction_name]['period'][$period_shifted['from']] ?? 0) + $record['amount'];
-
-          $total['period'][$period_shifted['from']] = ($total['period'][$period_shifted['from']] ?? 0) + $record['amount'];
+        if ($month_start <= $record['date'] && $record['date'] < $next_month_start) {
+          $data[$direction_name]['month'][$month_start] = ($data[$direction_name]['month'][$month_start] ?? 0) + $record['amount'];
+          $total['month'][$month_start] = ($total['month'][$month_start] ?? 0) + $record['amount'];
         }
+
+        $data[$direction_name]['period'][$period_shifted['from']] = ($data[$direction_name]['period'][$period_shifted['from']] ?? 0) + $record['amount'];
+
+        $total['period'][$period_shifted['from']] = ($total['period'][$period_shifted['from']] ?? 0) + $record['amount'];
       }
     }
   }

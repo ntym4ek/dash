@@ -111,16 +111,19 @@ function dep_2v_2g_import_nomenklatura($array)
     // если полное обновление справочника, то запомнить отсутствующие записи и сделать их неактивными для клиента
     if ($array['reload']) {
       $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
+
       $dbr = db_select('taxonomy_term_data', 't');
       $dbr->condition('t.vid', $vid);
       $dbr->addField('t', 'tid');
-      $noms_old = $dbr->execute()->fetchAllAssoc('tid');
+      $terms_old = $dbr->execute()->fetchAllAssoc('tid');
 
-      foreach ($noms_old as $n_tid => $nom_old) {
-        if (!in_array($n_tid, $new_records)) {
-          $term_wr = entity_metadata_wrapper('taxonomy_term', $n_tid);
-          $term_wr->field_status = 0;
-          $term_wr->save();
+      foreach ($terms_old as $tid => $term_old) {
+        if (!in_array($tid, $new_records)) {
+          $term_wr = entity_metadata_wrapper('taxonomy_term', $tid);
+          if ($term_wr->field_kccc_company->value() == $company->tid) {
+            $term_wr->field_status = 0;
+            $term_wr->save();
+          }
         }
       }
     }

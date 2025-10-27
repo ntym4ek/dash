@@ -179,7 +179,6 @@ function import_clients($array)
   if (is_array($array) && !empty($array['load'])) {
 
     if ($array['inn']) {
-      $company = dash_term_get_by_1c_id('companies', $array['inn']);
 
       $new_records = [];
       foreach ($array['load'] as $client) {
@@ -191,7 +190,6 @@ function import_clients($array)
           $client_wr->name = $client['name'];
           $client_wr->field_client_group = $client['group'] ?? '';
           $client_wr->field_status = 1;
-          $client_wr->field_kccc_company = $company->tid;
 
           if (!empty($array['region_id'])) {
             $region = dash_term_get_by_1c_id('regions', $array['region_id']);
@@ -206,12 +204,23 @@ function import_clients($array)
 
       // если полное обновление справочника, то отключить записи, которых нет в файле
       if ($array['reload']) {
-        db_update('field_data_field_status')
-          ->fields(['field_status_value' => 0])
-          ->condition('entity_type', 'taxonomy_term')
-          ->condition('bundle', 'clients')
-          ->condition('entity_id', $new_records, 'NOT IN')
-          ->execute();
+        $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
+        $company = dash_term_get_by_1c_id('companies', $array['inn']);
+
+        $dbr = db_select('taxonomy_term_data', 't');
+        $dbr->condition('t.vid', $vid);
+        $dbr->addField('t', 'tid');
+        $terms_old = $dbr->execute()->fetchAllAssoc('tid');
+
+        foreach ($terms_old as $tid => $term_old) {
+          if (!in_array($tid, $new_records)) {
+            $term_wr = entity_metadata_wrapper('taxonomy_term', $tid);
+            if ($term_wr->field_kccc_company->value() == $company->tid) {
+              $term_wr->field_status = 0;
+              $term_wr->save();
+            }
+          }
+        }
       }
 
       watchdog('import', 'Клиенты импортированы.', [], WATCHDOG_INFO);
@@ -263,7 +272,7 @@ function import_directions($array)
 function import_nomenclature($array)
 {
   if (is_array($array) && $array['inn'] && !empty($array['load'])) {
-    if ($company = dash_term_get_by_1c_id('companies', $array['inn'])) {
+    if ($array['inn']) {
 
       $new_records = [];
       foreach($array['load'] as $nom) {
@@ -286,7 +295,6 @@ function import_nomenclature($array)
               $term_wr->field_nom_unit = $nom['ei'] ?? '';
               $term_wr->field_nom_type = $nom['vid'];
               $term_wr->field_nom_client = $client->tid;
-              $term_wr->field_kccc_company = $company->tid;
               $term_wr->field_status = 1;
               $term_wr->save();
 
@@ -301,12 +309,23 @@ function import_nomenclature($array)
 
       // если полное обновление справочника, то отключить записи, которых нет в файле
       if ($array['reload']) {
-        db_update('field_data_field_status')
-          ->fields(['field_status_value' => 0])
-          ->condition('entity_type', 'taxonomy_term')
-          ->condition('bundle', 'nomenklatura')
-          ->condition('entity_id', $new_records, 'NOT IN')
-          ->execute();
+        $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
+        $company = dash_term_get_by_1c_id('companies', $array['inn']);
+
+        $dbr = db_select('taxonomy_term_data', 't');
+        $dbr->condition('t.vid', $vid);
+        $dbr->addField('t', 'tid');
+        $noms_old = $dbr->execute()->fetchAllAssoc('tid');
+
+        foreach ($noms_old as $n_tid => $nom_old) {
+          if (!in_array($n_tid, $new_records)) {
+            $term_wr = entity_metadata_wrapper('taxonomy_term', $n_tid);
+            if ($term_wr->field_kccc_company->value() == $company->tid) {
+              $term_wr->field_status = 0;
+              $term_wr->save();
+            }
+          }
+        }
       }
 
       // drupal_set_message('Номенклатура импортирована.');

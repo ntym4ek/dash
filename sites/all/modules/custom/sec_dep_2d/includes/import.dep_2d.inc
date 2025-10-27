@@ -6,7 +6,7 @@ function dep_2d_import_storages($array)
 
   if (is_array($array) && !empty($array['load'])) {
 
-    $terms_new = [];
+    $new_records = [];
     foreach($array['load'] as $record) {
       if ($record['name'] && $record['id']) {
         // проверить наличие записи в справочнике или создать её
@@ -18,24 +18,18 @@ function dep_2d_import_storages($array)
         $term_wr->field_status = 1;
         $term_wr->save();
 
-        $terms_new[] = $term_wr->getIdentifier();
+        $new_records[] = $term_wr->getIdentifier();
       }
     }
 
     // если полное обновление справочника, то запомнить отсутствующие записи и сделать их неактивными для клиента
     if ($array['reload']) {
-      $dbr = db_select('taxonomy_term_data', 't');
-      $dbr->condition('t.vid', $voc->vid);
-      $dbr->addField('t', 'tid');
-      $terms_old = $dbr->execute()->fetchAllAssoc('tid');
-
-      foreach ($terms_old as $tid => $term_old) {
-        if (!in_array($tid, $terms_new)) {
-          $term_wr = entity_metadata_wrapper('taxonomy_term', $tid);
-          $term_wr->field_status = 0;
-          $term_wr->save();
-        }
-      }
+      db_update('field_data_field_status')
+        ->fields(['field_status_value' => 0])
+        ->condition('entity_type', 'taxonomy_term')
+        ->condition('bundle', 'warehouses')
+        ->condition('entity_id', $new_records, 'NOT IN')
+        ->execute();
     }
 
     watchdog('import', 'Справочник ' . $voc->name . ' импортирован.', [], WATCHDOG_INFO);

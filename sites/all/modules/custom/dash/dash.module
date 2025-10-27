@@ -563,6 +563,9 @@ function dash_cash_income_get_by_conditions($conditions)
     $dbr->leftJoin('field_data_field_ci_client', 'fcl', 'fcl.entity_id = ci.id');
     $dbr->addField('fcl', 'field_ci_client_tid', 'client');
 
+    $dbr->leftJoin('field_data_field_ci_direction', 'fd', 'fd.entity_id = ci.id');
+    $dbr->addField('fd', 'field_ci_direction_tid', 'direction');
+
     $dbr->orderBy('date');
     $result = $dbr->execute()->fetchAll();
   }
