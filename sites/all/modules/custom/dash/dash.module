@@ -1375,6 +1375,37 @@ function dash_nomenclature_get_by_1c_id($company_inn, $nom_id)
 }
 
 /**
+ * Найти номенклатуру по 1c_id или создать, если не найден
+ * @param $company_inn - справочник какой компании KCCC проверять
+ * @param $nom_id
+ * @return false|int|mixed
+ */
+function dash_nomenclature_depr_get_by_1c_id($nom_id)
+{
+  $vid = taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid;
+
+  if ($vid && $nom_id) {
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'taxonomy_term')
+          ->propertyCondition('vid', $vid)
+          ->fieldCondition('field_1c_id', 'value', $nom_id);
+    $terms = $query->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+    } else {
+      $term = (object)array(
+        'vid' => $vid,
+        'name' => '',
+        'field_1c_id' => ['und' => [0 => ['value' => $nom_id]]],
+      );
+      taxonomy_term_save($term);
+    }
+    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+  }
+  return empty($entities) ? 0: current($entities);
+}
+
+/**
  * Найти направление по 1c_id или создать, если не найден
 
  * @param $direction_id - 1c ID
