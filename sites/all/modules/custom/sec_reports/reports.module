@@ -118,7 +118,7 @@ function reports_import_processors_alter(&$processors)
   // Остатки готовой продукции и сырья
   $processors['last_queue'][] = ['mask' => '/^scrum_remains_brief_\d.*\.json/',         'include' => $path . 'import.reports.inc', 'func' => 'reports_remains_brief_import', 'archive' => 'dash/rp'];
   // Производство/Клиенты
-  $processors['last_queue'][] = ['mask' => '/^scrum_production_clients_\d.*\.json/',    'include' => $path . 'import.reports.inc', 'func' => 'reports_production_clients_import', 'archive' => 'dash/rp'];
+  $processors['last_queue'][] = ['mask' => '/^scrum_production_clients_\w_\d.*\.json/',    'include' => $path . 'import.reports.inc', 'func' => 'reports_production_clients_import', 'archive' => 'dash/rp'];
 }
 
 /**

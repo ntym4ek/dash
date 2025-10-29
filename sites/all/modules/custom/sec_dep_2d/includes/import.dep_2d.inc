@@ -49,7 +49,6 @@ function dep_2d_import_remains($file_arr)
     $import_arr = [];
     foreach ($file_arr['load'] as $load_item) {
       $warehouse  = dash_term_get_by_1c_id('warehouses', $load_item['storage_id']);
-      $nom_depr   = dash_nomenclature_depr_get_by_1c_id($load_item['nom_id']);                                    // todo удалить после заполнения поля field_rm_nomenclature
       $nom        = dash_nomenclature_get_by_1c_id(DASH_INN_TD, $load_item['nom_id']);
       $date_prod  = helper_datetime_to_timestamp($load_item['date']);
       $date_expire = '';
@@ -57,12 +56,11 @@ function dep_2d_import_remains($file_arr)
         $date_expire = helper_datetime_to_timestamp($load_item['expiration_date']);
       }
 
-      if ($date_prod && $warehouse && $nom_depr) {
+      if ($date_prod && $warehouse && $nom) {
         $import_arr[] = [
           'date' => $date_prod,
           'date_expire' => $date_expire,
           'warehouse' => $warehouse->tid,
-          'nom_depr' => $nom_depr->tid,
           'nom' => $nom->tid,
           'qty' => $load_item['quantity'] ?? 0,
           'price' => $load_item['price'] ?? 0,
@@ -89,7 +87,6 @@ function dep_2d_import_remains($file_arr)
         $remains_wr->field_rm_date = $plan_item['date'];
         $remains_wr->field_rm_date_exp = $plan_item['date_expire'] ?: null;
         $remains_wr->field_rm_warehouse = $plan_item['warehouse'];
-        $remains_wr->field_rm_nomenklatura = $plan_item['nom_depr'];
         $remains_wr->field_rm_nomenclature = $plan_item['nom'];
         $remains_wr->field_rm_quantity = $plan_item['qty'];
         $remains_wr->field_rm_price = $plan_item['price'];

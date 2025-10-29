@@ -106,18 +106,20 @@ function reports_cash_income_import($array)
 {
   if (is_array($array) && !empty($array['load']) && !empty($array['inn'])) {
     $month_start = helper_datetime_to_timestamp($array['month']);
+    $company = dash_term_get_by_1c_id('companies', $array['inn']);
 
     // подготовка массива на заданный месяц
     $cash_income = [];
     foreach ($array['load'] as $arr_item) {
+      $client = dash_client_get_by_1c_id($array['inn'], $arr_item['client_id']);
+      $direction = dash_direction_get_by_1c_id($arr_item['direction_id']);
       $cash_income[] = [
         'date' => helper_datetime_to_timestamp($arr_item['date']),
-        'client_id' => $arr_item['client_id'] ?? 0,
+        'client_id' => $client->tid ?? 0,
+        'direction_id' => $direction->tid ?? 0,
         'amount' => $arr_item['amount'],
       ];
     }
-
-    $company = dash_term_get_by_1c_id('companies', $array['inn']);
 
     if ($cash_income && in_array($array['type'], [DASH_TYPE_PLAN, DASH_TYPE_FACT, DASH_TYPE_DEAL])) {
 
@@ -132,6 +134,7 @@ function reports_cash_income_import($array)
           'type' => $array['type'],
           'month_ts' => $item['date'],
           'client_id' => $item['client_id'],
+          'direction_id' => $item['direction_id'],
           'amount' => $item['amount'],
           'manual' => 0,
         ]);
@@ -280,12 +283,13 @@ function reports_production_clients_import($array)
           ]);
         }
 
-        watchdog('import', 'Записи Остатков готовой продукции и сырья импортированы.', [], WATCHDOG_INFO);
+        watchdog('import', 'Записи Объёмов производства импортированы.', [], WATCHDOG_INFO);
         return true;
       }
     }
   }
-  watchdog('import', 'Импорт записей Остатков готовой продукции и сырья не выполнен.', [], WATCHDOG_ERROR);
+
+  watchdog('import', 'Импорт записей Объёмов производства не выполнен.', [], WATCHDOG_ERROR);
   return false;
 }
 

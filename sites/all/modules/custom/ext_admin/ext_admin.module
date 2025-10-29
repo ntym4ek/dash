@@ -94,7 +94,7 @@ function ext_admin_settings_form($form, &$form_state)
 function ext_admin_migration_form($form, &$form_state)
 {
   $function = '';
-  $function = 'ext_admin_queue_database_processing_4';
+  $function = 'ext_admin_queue_database_processing_2';
 
   $form['message'] = array(
     '#markup' => ($function ? '<p>Будет запущена функция ' . $function . '</p>' : '<p>Функция для запуска не задана</p>'),
@@ -194,23 +194,28 @@ function ext_admin_queue_database_processing_2()
   // получить записи с незаполненным полем и поставить в очередь
   $q = db_select('eck_revenue', 'r');
   $q->fields('r', array('id'));
+  $q->leftjoin('field_data_field_revenue_amount', 'fra', 'fra.entity_id = r.id');
+  $q->condition(db_or()
+    ->isNull('fra.field_revenue_amount_value')
+    ->condition('fra.field_revenue_amount_value', 0)
+  );
+  $q->leftjoin('field_data_field_revenue_company', 'frc', 'frc.entity_id = r.id');
+  $q->condition(db_or()
+    ->isNull('frc.field_revenue_company_value')
+    ->condition('frc.field_revenue_company_value', '')
+  );
 
   if ($items = $q->execute()->fetchCol()) {
-    $queue = DrupalQueue::get('database_processing_queue_2');
-    $q->leftjoin('field_data_field_revenue_amount', 'frc', 'frc.entity_id = r.id');
-    $q->isNull('frc.field_revenue_amount_value');
-    $q->condition(db_or()
-      ->isNull('frc.field_revenue_amount_value')
-      ->condition('frc.field_revenue_amount_value', 0)
-    );
 
+//    $queue = DrupalQueue::get('database_processing_queue_2');
 //    $queue->deleteQueue();
 
     foreach($items as $item) {
-      $queue->createItem($item);
+//      $queue->createItem($item);
+      entity_delete_multiple('revenue', $items);
     }
 
-    drupal_set_message('Записей, помещённых в очередь: ' . count($items));
+    drupal_set_message('Записей, помещённых в очередь: ' . count($items) . ' (' . $items[0] . ' - ' . array_pop($items) . ')');
     return true;
   }
 }
@@ -306,14 +311,12 @@ function ext_admin_queue_database_processing_4()
   $q = db_select('eck_remains', 'r');
   $q->condition('r.type', 'remains');
   $q->leftjoin('field_data_field_rm_nomenklatura', 'fn', 'fn.entity_id = r.id');
+  $q->isNotNull('fn.field_rm_nomenklatura_tid');
+  $q->condition('fn.field_rm_nomenklatura_tid', 0, '!=');
+  $q->leftjoin('field_data_field_rm_nomenclature', 'fnn', 'fnn.entity_id = r.id');
   $q->condition(db_or()
-    ->isNull('fn.field_rm_nomenklatura_tid')
-    ->condition('fn.field_rm_nomenklatura_tid', 0)
-  );
-  $q->leftjoin('field_data_field_rm_warehouse', 'fw', 'fw.entity_id = r.id');
-  $q->condition(db_or()
-    ->isNull('fw.field_rm_warehouse_tid')
-    ->condition('fw.field_rm_warehouse_tid', 0)
+    ->isNull('fnn.field_rm_nomenclature_tid')
+    ->condition('fnn.field_rm_nomenclature_tid', 0)
   );
   $q->fields('r', array('id'));
 
@@ -335,12 +338,14 @@ function ext_admin_database_process_record_4($record_id)
   // обработать запись базы данных
   $remains_wr = entity_metadata_wrapper('remains', $record_id);
   if ($remains_wr->value()) {
-    if (!$remains_wr->field_rm_nomenklatura->value() && !$remains_wr->field_rm_warehouse->value()) {
-      entity_delete('remains', $record_id);
+    $nom_1c_id = $remains_wr->field_rm_nomenklatura->field_1c_id->value();
+    if ($nom_id = dash_nomenclature_get_by_1c_id(DASH_INN_TD, $nom_1c_id)) {
+      $remains_wr->field_rm_nomenclature = $nom_id;
+      $remains_wr->save();
     }
   }
 
-  watchdog('message', 'Обработана запись с id: ' . $record_id);
+  watchdog('message', 'Обработана запись остатков с id: ' . $record_id);
 }
 
 function ext_admin_queue_database_processing_5()

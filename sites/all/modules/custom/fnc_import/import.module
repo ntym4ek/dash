@@ -194,7 +194,7 @@ function import_clients($array)
           if (!empty($array['region_id'])) {
             $region = dash_term_get_by_1c_id('regions', $array['region_id']);
           }
-          $client_wr->field_region = empty($region) ? 0 : $region->tid;
+          $client_wr->field_region = $region->tid ?? 0;
 
           $client_wr->save();
 

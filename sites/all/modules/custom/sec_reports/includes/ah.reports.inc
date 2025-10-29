@@ -88,10 +88,10 @@ function reports_ah_page_content($period_to)
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12 col-lg-8">';
+  $output .=   '<div class="col-xs-12">';
   $output .=     '<div class="ajax-load" data-func="ah_block_21" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
-  $output .=   '<div class="col-xs-12 col-lg-4">';
+  $output .=   '<div class="col-xs-12">';
   $output .=     '<div class="ajax-load" data-func="ah_block_22" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
@@ -224,18 +224,30 @@ function reports_ah_production_fact_table($period)
     $fact = dash_production_clients_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
     foreach ($fact as $record) {
       // получить группу клиентов
-      $client = dash_client_get_by_1c_id(DASH_INN_AH, $record['client']);
-      $group = $client->field_client_group['und'][0]['value'];
+      $client = entity_metadata_wrapper('taxonomy_term', $record->client);
+      $group = $client->field_client_group->value() ?: 'Прочее';
 
-      if ($month_start <= $record['date'] && $record['date'] < $next_month_start) {
-        $data[$group]['month'][$month_start] = ($data[$group]['month'][$month_start] ?? 0) + $record['volume'];
-        $total['month'][$month_start] = ($total['month'][$month_start] ?? 0) + $record['volume'];
+      if (!isset($data[$group]['month'][$month_start])) $data[$group]['month'][$month_start] = 0;
+      if (!isset($data[$group]['period'][$period_shifted['from']])) $data[$group]['period'][$period_shifted['from']] = 0;
+      if (!isset($total['month'][$month_start])) $total['month'][$month_start] = 0;
+      if (!isset($total['period'][$period_shifted['from']])) $total['period'][$period_shifted['from']] = 0;
+
+      if ($month_start <= $record->date && $record->date < $next_month_start) {
+        $data[$group]['month'][$month_start] += $record->volume;
+        $total['month'][$month_start] += $record->volume;
       }
 
-      $data[$group]['period'][$period_shifted['from']] = ($data[$group]['period'][$period_shifted['from']] ?? 0) + $record['volume'];
+      $data[$group]['period'][$period_shifted['from']] += $record->volume;
 
-      $total['period'][$period_shifted['from']] = ($total['period'][$period_shifted['from']] ?? 0) + $record['volume'];
+      $total['period'][$period_shifted['from']] += $record->volume;
     }
+  }
+
+  // переместить Прочее на последнее место
+  if (isset($data['Прочее'])) {
+    $row = $data['Прочее'];
+    unset($data['Прочее']);
+    $data['Прочее'] = $row;
   }
   if ($total) $data['Итого'] = $total;
 
@@ -245,31 +257,33 @@ function reports_ah_production_fact_table($period)
     $header = [
       ['data' => 'Партнёры', 'align' => 'center', 'class' => ['td-name']],
     ];
-    foreach ($data as $key_g => $group) {
-      foreach ($group['month'] as $period_start => $volume) {
-        $header = ['data' => helper_month_label_ru(date('n', $period_start)) . ' ' . date('Y', $period_start), 'align' => 'center'];
-      }
-      foreach ($group['period'] as $period_start => $volume) {
-        $header = ['data' => helper_month_label_ru(1) . '-' . helper_month_label_ru(date('n', $period_start)) . ' ' . date('Y', $period_start), 'align' => 'center'];
-      }
+    foreach ($data['Итого']['month'] as $period_start => $volume) {
+      $header[] = ['data' => helper_month_label_ru(date('n', $period_start)) . ' ' . date('Y', $period_start), 'align' => 'center'];
+    }
+    foreach ($data['Итого']['period'] as $period_start => $volume) {
+      $header[] = ['data' => helper_month_label_ru(1) . '-' . helper_month_label_ru(date('n', $period['to'])-1) . ' ' . date('Y', $period_start), 'align' => 'center'];
     }
 
-    foreach ($data as $key_g => $group) {
-      $row = ['data' => [$key_g]];
-      foreach ($group['month'] as $volume) {
-        $row['data'][] = ['data' => helper_number_format($volume, 2, ' ', false), 'align' => 'right'];
+    foreach ($data as $key => $group) {
+      $row = [$key];
+      // проходим по колонкам Итого, так как в самих Группах могут быть пропущены месяцы (нет данных)
+      foreach ($data['Итого']['month'] as $key_m => $aux) {
+        $row[] = ['data' => helper_number_format($group['month'][$key_m] / DASH_PROD_DIVIDER ?? 0, 2, ' ', false), 'align' => 'right'];
       }
-      foreach ($group['period'] as $volume) {
-        $row['data'][] = ['data' => helper_number_format($volume, 2, ' ', false), 'align' => 'right'];
+      // проходим по колонкам Итого, так как в самих Группах может не быть периодов (нет данных по ним)
+      foreach ($data['Итого']['period'] as $key_p => $aux) {
+        $row[] = ['data' => helper_number_format($group['period'][$key_p] / DASH_PROD_DIVIDER ?? 0, 2, ' ', false), 'align' => 'right'];
       }
-      $rows[] = $row;
+      if ($key == 'Итого') {
+        $rows[] = ['data' => $row,'class' => ['tfoot']];
+      } else $rows[] = $row;
     }
   }
 
   $output = theme('table', [
     'header' => $header,
     'rows' => $rows,
-    'attributes' => ['class' => ['table', 'table-intersect']],
+    'attributes' => ['class' => ['table', 'table-intersect', 'table--xs']],
     'sticky' => false,
     'empty' => 'нет данных',
   ]);
@@ -293,10 +307,13 @@ function reports_ah_production_fact_line($period)
 
     $fact = dash_production_clients_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
     foreach ($fact as $record) {
-      if ($month_start <= $fact['date'] && $fact['date'] < $next_month_start) {
-        $total[$period_shifted['from']]['month'] = ($total[$period_shifted['from']]['month'] ?? 0) + $record['volume'];
+      if (!isset($total[$period_shifted['from']]['month'])) $total[$period_shifted['from']]['month'] = 0;
+      if (!isset($total[$period_shifted['from']]['period'])) $total[$period_shifted['from']]['period'] = 0;
+
+      if ($month_start <= $record->date && $record->date < $next_month_start) {
+        $total[$period_shifted['from']]['month'] += $record->volume;
       }
-      $total[$period_shifted['from']]['period'] = ($total[$period_shifted['from']]['period'] ?? 0) + $record['volume'];
+      $total[$period_shifted['from']]['period'] += $record->volume;
     }
   }
 
@@ -351,8 +368,8 @@ function reports_ah_production_fact_line($period)
     foreach ($total as $period_start => $item) {
       $chart['xaxis']['#labels'][] = date('Y', $period_start);
 
-      $month_volume = -1 * $item['month'] / DASH_PROD_DIVIDER;
-      $period_volume = -1 * $item['period'] / DASH_PROD_DIVIDER;
+      $month_volume = $item['month'] / DASH_PROD_DIVIDER;
+      $period_volume = $item['period'] / DASH_PROD_DIVIDER;
 
       $chart['month']['#data'][] = $month_volume;
       $chart['period']['#data'][] = $period_volume;
@@ -377,31 +394,36 @@ function reports_ah_production_plan_fact_table($period)
   $fact = dash_production_clients_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period]);
 
   foreach ($plan as $record) {
-    $client = dash_client_get_by_1c_id(DASH_INN_AH, $record['client']);
-    $client_name = $client->name;
+    $client = entity_metadata_wrapper('taxonomy_term', $record->client);
+    $client_name = $client->label();
 
-    if ($month_start <= $record['date'] && $record['date'] < $next_month_start) {
-      $data[$client_name]['month']['plan'] = ($data[$client_name]['month']['plan'] ?? 0) + $record['volume'];
-      $total['month']['plan'] = ($total['month']['plan'] ?? 0) + $record['volume'];
+    if ($month_start <= $record->date && $record->date < $next_month_start) {
+      $data[$client_name]['month']['plan'] = ($data[$client_name]['month']['plan'] ?? 0) + $record->volume;
+      $total['month']['plan'] = ($total['month']['plan'] ?? 0) + $record->volume;
     }
 
-    $data[$client_name]['period']['plan'] = ($data[$client_name]['period']['plan'] ?? 0) + $record['volume'];
+    $data[$client_name]['period']['plan'] = ($data[$client_name]['period']['plan'] ?? 0) + $record->volume;
 
-    $total['period']['plan'] = ($total['period']['plan'] ?? 0) + $record['volume'];
+    $total['period']['plan'] = ($total['period']['plan'] ?? 0) + $record->volume;
   }
 
   foreach ($fact as $record) {
-    $client = dash_client_get_by_1c_id(DASH_INN_AH, $record['client']);
-    $client_name = $client->name;
+    $client = entity_metadata_wrapper('taxonomy_term', $record->client);
+    $client_name = $client->label();
 
-    if ($month_start <= $record['date'] && $record['date'] < $next_month_start) {
-      $data[$client_name]['month']['fact'] = ($data[$client_name]['month']['fact'] ?? 0) + $record['volume'];
-      $total['month']['fact'] = ($total['month']['fact'] ?? 0) + $record['volume'];
+    if (!isset($data[$client_name]['month']['fact'])) $data[$client_name]['month']['fact'] = 0;
+    if (!isset($data[$client_name]['period']['fact'])) $data[$client_name]['period']['fact'] = 0;
+    if (!isset($total['month']['fact'])) $total['month']['fact'] = 0;
+    if (!isset($total['period']['fact'])) $total['period']['fact'] = 0;
+
+    if ($month_start <= $record->date && $record->date < $next_month_start) {
+      $data[$client_name]['month']['fact'] += $record->volume;
+      $total['month']['fact'] += $record->volume;
     }
 
-    $data[$client_name]['period']['fact'] = ($data[$client_name]['period']['fact'] ?? 0) + $record['volume'];
+    $data[$client_name]['period']['fact'] += $record->volume;
 
-    $total['period']['fact'] = ($total['period']['fact'] ?? 0) + $record['volume'];
+    $total['period']['fact'] += $record->volume;
   }
 
   if ($total) $data['Итого'] = $total;
@@ -423,27 +445,29 @@ function reports_ah_production_plan_fact_table($period)
     ];
 
     foreach ($data as $key => $client) {
-      $row[] = $key;
-      $row['data'][] = ['data' => helper_number_format($client['month']['plan'], 2, ' ', false), 'align' => 'right'];
-      $row['data'][] = ['data' => helper_number_format($client['month']['fact'], 2, ' ', false), 'align' => 'right'];
-      $prc = $client['month']['fact'] / $client['month']['plan'] * 100;
-      $row['data'][] = ['data' => helper_number_format($prc, 2, ' ', false), 'align' => 'right'];
-      $row['data'][] = ['data' => helper_number_format($client['month']['fact'] - $client['month']['plan'], 2, ' ', false), 'align' => 'right'];
+      $row = [$key];
+      $row[] = ['data' => helper_number_format($client['month']['plan'] / DASH_PROD_DIVIDER, 2, ' ', false), 'align' => 'right'];
+      $row[] = ['data' => helper_number_format($client['month']['fact'] / DASH_PROD_DIVIDER, 2, ' ', false), 'align' => 'right'];
+      $prc = $client['month']['plan'] ? helper_number_format(($client['month']['fact'] / $client['month']['plan'] * 100), 2, ' ', false) : '-';
+      $row[] = ['data' => $prc, 'align' => 'right'];
+      $row[] = ['data' => helper_number_format(($client['month']['fact'] - $client['month']['plan']) / DASH_PROD_DIVIDER, 2, ' ', false), 'align' => 'right'];
 
-      $row['data'][] = ['data' => helper_number_format($client['period']['plan'], 2, ' ', false), 'align' => 'right'];
-      $row['data'][] = ['data' => helper_number_format($client['period']['fact'], 2, ' ', false), 'align' => 'right'];
-      $prc = $client['period']['fact'] / $client['period']['plan'] * 100;
-      $row['data'][] = ['data' => helper_number_format($prc, 2, ' ', false), 'align' => 'right'];
-      $row['data'][] = ['data' => helper_number_format($client['period']['fact'] - $client['month']['plan'], 2, ' ', false), 'align' => 'right'];
+      $row[] = ['data' => helper_number_format($client['period']['plan'] / DASH_PROD_DIVIDER, 2, ' ', false), 'align' => 'right'];
+      $row[] = ['data' => helper_number_format($client['period']['fact'] / DASH_PROD_DIVIDER, 2, ' ', false), 'align' => 'right'];
+      $prc = $client['period']['plan'] ? helper_number_format(($client['period']['fact'] / $client['period']['plan'] * 100), 2, ' ', false) : '-';
+      $row[] = ['data' => $prc, 'align' => 'right'];
+      $row[] = ['data' => helper_number_format(($client['period']['fact'] - $client['month']['plan']) / DASH_PROD_DIVIDER, 2, ' ', false), 'align' => 'right'];
 
-      $rows[] = $row;
+      if ($key == 'Итого') {
+        $rows[] = ['data' => $row,'class' => ['tfoot']];
+      } else $rows[] = $row;
     }
   }
 
   $output = theme('table', [
     'header' => $header,
     'rows' => $rows,
-    'attributes' => ['class' => ['table', 'table-intersect']],
+    'attributes' => ['class' => ['table', 'table-intersect', 'table--xs']],
     'sticky' => false,
     'empty' => 'нет данных',
   ]);
@@ -466,25 +490,30 @@ function reports_ah_production_plan_fact_column($period)
   $fact = dash_production_clients_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period]);
 
   foreach ($plan as $record) {
-    $client = dash_client_get_by_1c_id(DASH_INN_AH, $record['client']);
-    $client_name = $client->name;
+    $client = entity_metadata_wrapper('taxonomy_term', $record->client);
+    $client_name = $client->label();
 
-    if ($month_start <= $record['date'] && $record['date'] < $next_month_start) {
-      $data[$client_name]['month']['plan'] = ($data[$client_name]['month']['plan'] ?? 0) + $record['volume'];
-      $total['month']['plan'] = ($total['month']['plan'] ?? 0) + $record['volume'];
+    if (!isset($data[$client_name]['month']['plan'])) $data[$client_name]['month']['plan'] = 0;
+    if (!isset($data[$client_name]['period']['plan'])) $data[$client_name]['period']['plan'] = 0;
+    if (!isset($total['month']['plan'])) $total['month']['plan'] = 0;
+    if (!isset($total['period']['plan'])) $total['period']['plan'] = 0;
+
+    if ($month_start <= $record->date && $record->date < $next_month_start) {
+      $data[$client_name]['month']['plan'] += $record->volume;
+      $total['month']['plan'] += $record->volume;
     }
 
-    $data[$client_name]['period']['plan'] = ($data[$client_name]['period']['plan'] ?? 0) + $record['volume'];
+    $data[$client_name]['period']['plan'] += $record->volume;
 
-    $total['period']['plan'] = ($total['period']['plan'] ?? 0) + $record['volume'];
+    $total['period']['plan'] += $record->volume;
   }
 
   foreach ($fact as $record) {
-    if ($month_start <= $record['date'] && $record['date'] < $next_month_start) {
-      $total['month']['fact'] = ($total['month']['fact'] ?? 0) + $record['volume'];
+    if ($month_start <= $record->date && $record->date < $next_month_start) {
+      $total['month']['fact'] = ($total['month']['fact'] ?? 0) + $record->volume;
     }
 
-    $total['period']['fact'] = ($total['period']['fact'] ?? 0) + $record['volume'];
+    $total['period']['fact'] = ($total['period']['fact'] ?? 0) + $record->volume;
   }
 
   if ($total) {
@@ -555,21 +584,28 @@ function reports_ah_cash_income_fact_table($period)
 
     $fact = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
     foreach ($fact as $record) {
-      // брать данные только если задано направление
-      $direction_wr = entity_metadata_wrapper('taxonomy_term', $record['direction']);
-      if ($direction_wr->value()) {
-        $direction_name = $direction_wr->label();
+      $direction_wr = entity_metadata_wrapper('taxonomy_term', $record->direction);
+      $direction_name = $direction_wr->label() ?? 'Прочее';
+      if (!isset($data[$direction_name]['month'][$month_start])) $data[$direction_name]['month'][$month_start] = 0;
+      if (!isset($data[$direction_name]['period'][$period_shifted['from']])) $data[$direction_name]['period'][$period_shifted['from']] = 0;
+      if (!isset($total['month'][$month_start])) $total['month'][$month_start] = 0;
+      if (!isset($total['period'][$period_shifted['from']])) $total['period'][$period_shifted['from']] = 0;
 
-        if ($month_start <= $record['date'] && $record['date'] < $next_month_start) {
-          $data[$direction_name]['month'][$month_start] = ($data[$direction_name]['month'][$month_start] ?? 0) + $record['amount'];
-          $total['month'][$month_start] = ($total['month'][$month_start] ?? 0) + $record['amount'];
-        }
-
-        $data[$direction_name]['period'][$period_shifted['from']] = ($data[$direction_name]['period'][$period_shifted['from']] ?? 0) + $record['amount'];
-
-        $total['period'][$period_shifted['from']] = ($total['period'][$period_shifted['from']] ?? 0) + $record['amount'];
+      if ($month_start <= $record->date && $record->date < $next_month_start) {
+        $data[$direction_name]['month'][$month_start] = ($data[$direction_name]['month'][$month_start] ?? 0) + $record->amount;
+        $total['month'][$month_start] += $record->amount;
       }
+
+      $data[$direction_name]['period'][$period_shifted['from']] += $record->amount;
+
+      $total['period'][$period_shifted['from']] += $record->amount;
     }
+  }
+  // переместить Прочее на последнее место
+  if (isset($data['Прочее'])) {
+    $row = $data['Прочее'];
+    unset($data['Прочее']);
+    $data['Прочее'] = $row;
   }
   if ($total) $data['Итого'] = $total;
 
@@ -579,32 +615,35 @@ function reports_ah_cash_income_fact_table($period)
     $header = [
       ['data' => 'Направления', 'align' => 'center', 'class' => ['td-name']],
     ];
-    foreach ($data as $item_d) {
-      foreach ($item_d['month'] as $period_start => $amount) {
-        $header = ['data' => helper_month_label_ru(date('n', $period_start)) . ' ' . date('Y', $period_start), 'align' => 'center'];
-      }
-      foreach ($item_d['period'] as $period_start => $amount) {
-        $header = ['data' => helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $period_start)) . ' ' . date('Y', $period_start), 'align' => 'center'];
-      }
+    foreach ($data['Итого']['month'] as $period_start => $amount) {
+      $header[] = ['data' => helper_month_label_ru(date('n', $period_start)) . ' ' . date('Y', $period_start), 'align' => 'center'];
+    }
+    foreach ($data['Итого']['period'] as $period_start => $amount) {
+      $header[] = ['data' => helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $period['to'])-1) . ' ' . date('Y', $period['to']), 'align' => 'center'];
     }
 
 
     foreach ($data as $direction_name => $item_d) {
-      $row = ['data' => [$direction_name]];
-      foreach ($item_d['month'] as $amount) {
-        $row['data'][] = ['data' => helper_number_format($amount, 2, ' ', false), 'align' => 'right'];
+      $row = [$direction_name];
+      // проходим по колонкам Итого, так как в самих Группах могут быть пропущены месяцы (нет данных)
+      foreach ($data['Итого']['month'] as $key_m => $aux) {
+        $row[] = ['data' => helper_number_format($item_d['month'][$key_m] / DASH_REV_DIVIDER, 2, ' ', false), 'align' => 'right'];
       }
-      foreach ($item_d['period'] as $amount) {
-        $row['data'][] = ['data' => helper_number_format($amount, 2, ' ', false), 'align' => 'right'];
+      // проходим по колонкам Итого, так как в самих Группах может не быть периодов (нет данных по ним)
+      foreach ($data['Итого']['period'] as $key_p => $aux) {
+        $row[] = ['data' => helper_number_format($item_d['period'][$key_p] / DASH_REV_DIVIDER, 2, ' ', false), 'align' => 'right'];
       }
-      $rows[] = $row;
+
+      if ($direction_name == 'Итого') {
+        $rows[] = ['data' => $row,'class' => ['tfoot']];
+      } else $rows[] = $row;
     }
   }
 
   $output = theme('table', [
     'header' => $header,
     'rows' => $rows,
-    'attributes' => ['class' => ['table', 'table-intersect']],
+    'attributes' => ['class' => ['table', 'table-intersect', 'table--xs']],
     'sticky' => false,
     'empty' => 'нет данных',
   ]);
@@ -630,11 +669,14 @@ function reports_ah_cash_income_fact_column($period)
 
     $fact = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
     foreach ($fact as $record) {
-      if ($month_start <= $record['date'] && $record['date'] < $next_month_start) {
-        $total[$year]['month'] = ($total[$year]['month'] ?? 0) + $record['amount'];
+      if (!isset($total[$year]['month'])) $total[$year]['month'] = 0;
+      if (!isset($total[$year]['period'])) $total[$year]['period'] = 0;
+
+      if ($month_start <= $record->date && $record->date < $next_month_start) {
+        $total[$year]['month'] += $record->amount;
       }
 
-      $total[$year]['period'] = ($total[$year]['period'] ?? 0) + $record['amount'];
+      $total[$year]['period'] += $record->amount;
     }
   }
 
@@ -671,7 +713,7 @@ function reports_ah_cash_income_fact_column($period)
     foreach ($total as $year => $record) {
       $chart[$year] = [
         '#type' => 'chart_data',
-        '#title' => $year,
+        '#title' => (string)$year,
         '#data' => [],
       ];
     }
@@ -680,8 +722,8 @@ function reports_ah_cash_income_fact_column($period)
     $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $month_start));
 
     foreach ($total as $year => $record) {
-      $chart[$year]['#data'][] = $record['month'] / DASH_PROD_DIVIDER;
-      $chart[$year]['#data'][] = $record['period'] / DASH_PROD_DIVIDER;
+      $chart[$year]['#data'][] = $record['month'] / DASH_REV_DIVIDER;
+      $chart[$year]['#data'][] = $record['period'] / DASH_REV_DIVIDER;
     }
   }
 

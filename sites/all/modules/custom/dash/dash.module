@@ -70,7 +70,7 @@ function dash_menu()
   $items['ajax-load'] = array(
     'page callback' => 'dash_ajax_load',
     'access callback' => 'ext_user_has_roles',  // todo доступ нужно проверять на уровне функции, иначе роли из списка могут получить данные друг друга
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_2V2G_USER_RID]],
+    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID, FINANCE_USER_RID, TRADE_HOUSE_USER_RID, DEP_2A_USER_RID, DEP_2V2G_USER_RID, DEP_4_USER_RID, DEP_7_USER_RID]],
     'type' => MENU_CALLBACK,
   );
 
@@ -579,14 +579,14 @@ function dash_cash_income_get_by_conditions($conditions)
  *
  * @param $conditions
  *   - company_id* - tid компании kccc
- *   - month_start - массив ['from' =>, 'to' => не включительно]           * - обязательно
- *   - type - тип записи (план, факт, неотгруженные контракты)
- *   - manual - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
+ *   - month_start* - массив ['from' =>, 'to' => не включительно]           * - обязательно
+ *   - type* - тип записи (план, факт, неотгруженные контракты)
+ *   - manual* - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
  * @return array|mixed|null
  */
 function dash_cash_income_delete_by_month($conditions)
 {
-  if ($conditions['company_id'] && $conditions['month_start'] && $conditions['type'] && $conditions['manual']) {
+  if ($conditions['company_id'] && $conditions['month_start'] && $conditions['type'] && isset($conditions['manual'])) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $conditions['month_start'])+1, 1, date('Y', $conditions['month_start']));
 
     $efquery = new EntityFieldQuery();
@@ -595,7 +595,7 @@ function dash_cash_income_delete_by_month($conditions)
       ->entityCondition('bundle', 'cash_income')
       ->fieldCondition('field_ci_date', 'value', $conditions['month_start'], '>=')
       ->fieldCondition('field_ci_date', 'value', $next_month_start, '<')
-      ->fieldCondition('field_ci_company', 'value', $conditions['company_id'])
+      ->fieldCondition('field_ci_company', 'tid', $conditions['company_id'])
       ->fieldCondition('field_ci_type', 'value', $conditions['type'])
       ->fieldCondition('field_ci_is_manual', 'value', $conditions['manual']);
 
@@ -1255,53 +1255,59 @@ function dash_term_siblings_get($parent_tid)
  */
 function dash_term_get_by_1c_id($voc, $record_1c_id)
 {
-  $fid = drupal_hash_base64(__FUNCTION__ . serialize($voc . '_' . $record_1c_id));
-  $result = &drupal_static($fid);
+  if ($voc && $record_1c_id) {
+    $fid = drupal_hash_base64(__FUNCTION__ . serialize($voc . '_' . $record_1c_id));
+    $result = &drupal_static($fid);
 
-  if (isset($result)) return $result;
+    if (isset($result)) return $result;
 
-  $vid = is_numeric($voc) ? $voc : taxonomy_vocabulary_machine_name_load($voc)->vid;
+    $vid = is_numeric($voc) ? $voc : taxonomy_vocabulary_machine_name_load($voc)->vid;
 
-  if ($vid && $record_1c_id) {
-    $query = new EntityFieldQuery();
-    $terms = $query
-      ->entityCondition('entity_type', 'taxonomy_term')
-      ->propertyCondition('vid', $vid)
-      ->fieldCondition('field_1c_id', 'value', $record_1c_id)
-      ->execute();
-    if ($terms) {
-      $term = current($terms['taxonomy_term']);
-    } else {
-      $term = (object)array(
-        'vid' => $vid,
-        'name' => '',
-        'field_1c_id' => ['und' => [0 => ['value' => $record_1c_id]]],
-      );
-      taxonomy_term_save($term);
+    if ($vid && $record_1c_id) {
+      $query = new EntityFieldQuery();
+      $terms = $query
+        ->entityCondition('entity_type', 'taxonomy_term')
+        ->propertyCondition('vid', $vid)
+        ->fieldCondition('field_1c_id', 'value', $record_1c_id)
+        ->execute();
+      if ($terms) {
+        $term = current($terms['taxonomy_term']);
+      } else {
+        $term = (object)array(
+          'vid' => $vid,
+          'name' => '',
+          'field_1c_id' => ['und' => [0 => ['value' => $record_1c_id]]],
+        );
+        taxonomy_term_save($term);
+      }
+      $entities = entity_load('taxonomy_term', [$term->tid]);
     }
-    $entities = entity_load('taxonomy_term', [$term->tid]);
   }
+
   return empty($entities) ? false : current($entities);
 }
 
 function dash_nomenklatura_get_by_1c_artikul($company_inn, $artikul)
 {
-  // номенклатура хранится в разных словарях
-  $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
-  $company = dash_term_get_by_1c_id('companies', $company_inn);
-  if ($vid && $artikul) {
-    $query = new EntityFieldQuery();
-    $query
-      ->entityCondition('entity_type', 'taxonomy_term')
-      ->propertyCondition('vid', $vid)
-      ->fieldCondition('field_nom_artikul', 'value', $artikul);
-    $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
-    $terms = $query->execute();
-    if ($terms) {
-      $term = current($terms['taxonomy_term']);
-      $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+  if ($company_inn && $artikul) {
+    // номенклатура хранится в разных словарях
+    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
+    $company = dash_term_get_by_1c_id('companies', $company_inn);
+    if ($vid && $artikul) {
+      $query = new EntityFieldQuery();
+      $query
+        ->entityCondition('entity_type', 'taxonomy_term')
+        ->propertyCondition('vid', $vid)
+        ->fieldCondition('field_nom_artikul', 'value', $artikul);
+      $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
+      $terms = $query->execute();
+      if ($terms) {
+        $term = current($terms['taxonomy_term']);
+        $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
+      }
     }
   }
+
   return empty($entities) ? 0 : current($entities);
 }
 
@@ -1314,29 +1320,32 @@ function dash_nomenklatura_get_by_1c_artikul($company_inn, $artikul)
  */
 function dash_client_get_by_1c_id($company_inn, $client_id)
 {
-  $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
-  $company = dash_term_get_by_1c_id('companies', $company_inn);
+  if ($company_inn && $client_id) {
+    $vid = taxonomy_vocabulary_machine_name_load('clients')->vid;
+    $company = dash_term_get_by_1c_id('companies', $company_inn);
 
-  if ($vid && $client_id) {
-    $query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'taxonomy_term')
-      ->propertyCondition('vid', $vid)
-      ->fieldCondition('field_1c_id', 'value', $client_id);
-    $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
-    $terms = $query->execute();
-    if ($terms) {
-      $term = current($terms['taxonomy_term']);
-    } else {
-      $term = (object)array(
-        'vid' => $vid,
-        'name' => '',
-        'field_1c_id' => ['und' => [0 => ['value' => $client_id]]],
-        'field_kccc_company' => ['und' => [0 => ['tid' => $company->tid]]],
-      );
-      taxonomy_term_save($term);
+    if ($vid && $client_id) {
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'taxonomy_term')
+        ->propertyCondition('vid', $vid)
+        ->fieldCondition('field_1c_id', 'value', $client_id);
+      $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
+      $terms = $query->execute();
+      if ($terms) {
+        $term = current($terms['taxonomy_term']);
+      } else {
+        $term = (object)array(
+          'vid' => $vid,
+          'name' => '',
+          'field_1c_id' => ['und' => [0 => ['value' => $client_id]]],
+          'field_kccc_company' => ['und' => [0 => ['tid' => $company->tid]]],
+        );
+        taxonomy_term_save($term);
+      }
+      $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
     }
-    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
   }
+
   return empty($entities) ? 0: current($entities);
 }
 
@@ -1348,29 +1357,32 @@ function dash_client_get_by_1c_id($company_inn, $client_id)
  */
 function dash_nomenclature_get_by_1c_id($company_inn, $nom_id)
 {
-  $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
-  $company = dash_term_get_by_1c_id('companies', $company_inn);
+  if ($company_inn && $nom_id) {
+    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura')->vid;
+    $company = dash_term_get_by_1c_id('companies', $company_inn);
 
-  if ($vid && $nom_id && $company) {
-    $query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'taxonomy_term')
-          ->propertyCondition('vid', $vid)
-          ->fieldCondition('field_1c_id', 'value', $nom_id);
-    $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
-    $terms = $query->execute();
-    if ($terms) {
-      $term = current($terms['taxonomy_term']);
-    } else {
-      $term = (object)array(
-        'vid' => $vid,
-        'name' => '',
-        'field_1c_id' => ['und' => [0 => ['value' => $nom_id]]],
-        'field_kccc_company' => ['und' => [0 => ['tid' => $company->tid]]],
-      );
-      taxonomy_term_save($term);
+    if ($vid && $nom_id && $company) {
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'taxonomy_term')
+        ->propertyCondition('vid', $vid)
+        ->fieldCondition('field_1c_id', 'value', $nom_id);
+      $query->fieldCondition('field_kccc_company', 'tid', $company->tid);
+      $terms = $query->execute();
+      if ($terms) {
+        $term = current($terms['taxonomy_term']);
+      } else {
+        $term = (object)array(
+          'vid' => $vid,
+          'name' => '',
+          'field_1c_id' => ['und' => [0 => ['value' => $nom_id]]],
+          'field_kccc_company' => ['und' => [0 => ['tid' => $company->tid]]],
+        );
+        taxonomy_term_save($term);
+      }
+      $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
     }
-    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
   }
+
   return empty($entities) ? 0: current($entities);
 }
 
@@ -1382,26 +1394,29 @@ function dash_nomenclature_get_by_1c_id($company_inn, $nom_id)
  */
 function dash_nomenclature_depr_get_by_1c_id($nom_id)
 {
-  $vid = taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid;
+  if ($nom_id) {
+    $vid = taxonomy_vocabulary_machine_name_load('nomenklatura_td')->vid;
 
-  if ($vid && $nom_id) {
-    $query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'taxonomy_term')
-          ->propertyCondition('vid', $vid)
-          ->fieldCondition('field_1c_id', 'value', $nom_id);
-    $terms = $query->execute();
-    if ($terms) {
-      $term = current($terms['taxonomy_term']);
-    } else {
-      $term = (object)array(
-        'vid' => $vid,
-        'name' => '',
-        'field_1c_id' => ['und' => [0 => ['value' => $nom_id]]],
-      );
-      taxonomy_term_save($term);
+    if ($vid && $nom_id) {
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'taxonomy_term')
+        ->propertyCondition('vid', $vid)
+        ->fieldCondition('field_1c_id', 'value', $nom_id);
+      $terms = $query->execute();
+      if ($terms) {
+        $term = current($terms['taxonomy_term']);
+      } else {
+        $term = (object)array(
+          'vid' => $vid,
+          'name' => '',
+          'field_1c_id' => ['und' => [0 => ['value' => $nom_id]]],
+        );
+        taxonomy_term_save($term);
+      }
+      $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
     }
-    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
   }
+
   return empty($entities) ? 0: current($entities);
 }
 
@@ -1413,25 +1428,27 @@ function dash_nomenclature_depr_get_by_1c_id($nom_id)
  */
 function dash_direction_get_by_1c_id($direction_id)
 {
-  // клиенты хранятся в разных словарях
-  $vid = taxonomy_vocabulary_machine_name_load('directions')->vid;
+  if ($direction_id) {
+    // клиенты хранятся в разных словарях
+    $vid = taxonomy_vocabulary_machine_name_load('directions')->vid;
 
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', 'taxonomy_term')
-    ->propertyCondition('vid', $vid)
-    ->fieldCondition('field_1c_id', 'value', $direction_id);
-  $terms = $query->execute();
-  if ($terms) {
-    $term = current($terms['taxonomy_term']);
-  } else {
-    $term = (object)array(
-      'vid' => $vid,
-      'name' => '',
-      'field_1c_id' => ['und' => [0 => ['value' => $direction_id]]],
-    );
-    taxonomy_term_save($term);
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'taxonomy_term')
+      ->propertyCondition('vid', $vid)
+      ->fieldCondition('field_1c_id', 'value', $direction_id);
+    $terms = $query->execute();
+    if ($terms) {
+      $term = current($terms['taxonomy_term']);
+    } else {
+      $term = (object)array(
+        'vid' => $vid,
+        'name' => '',
+        'field_1c_id' => ['und' => [0 => ['value' => $direction_id]]],
+      );
+      taxonomy_term_save($term);
+    }
+    $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
   }
-  $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
 
   return empty($entities) ? 0: current($entities);
 }
@@ -1458,6 +1475,7 @@ function dash_region_get_by_1c_id($region_1c_id)
     }
     $entities = $term ? entity_load('taxonomy_term', [$term->tid]) : null;
   }
+
   return empty($entities) ? 0: current($entities);
 }
 
@@ -1701,10 +1719,10 @@ function dash_cash_income_create($params)
     $ci_wr->field_ci_company = $params['company_id'];
     $ci_wr->field_ci_date = $params['month_ts'];
     $ci_wr->field_ci_type = $params['type'];
-    $ci_wr->field_ci_is_manual = $params['manual'] ?? 0;
     $ci_wr->field_ci_amount = $params['amount'] ?? 0;
     $ci_wr->field_ci_client = $params['client_id'] ?? 0;
     $ci_wr->field_ci_direction = $params['direction_id'] ?? 0;
+    $ci_wr->field_ci_is_manual = $params['manual'] ?? 0;
     $ci_wr->save();
   } catch (Exception $e) {
     $transaction->rollback();
