@@ -89,22 +89,22 @@ function reports_td_page_content($period_to)
   $output .= '<div class="ajax-load" data-func="td_block_2" data-delay="200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 3
-  $url = url('/data/ship/edit', ['query' => ['blocks' => ['td_block_31', 'td_block_32'], 'inn' => DASH_INN_TD]]);
-  $output .=  '<div class="section-title">' .
-               '<h3>Отгрузки + контракты на 1 ' . helper_month_label_ru(date('n')) . ' в сравнении по сезонам ' . (date('y', $season_10['from'])-1) . '-' . (date('y', $season_10['end'])-1) . ' / ' . date('y', $season_10['from']) . '-' . date('y', $season_10['end']) . '</h3>' .
-               '<a class="edit-link autodialog" data-dialog-width="500" href="' . $url . '">Редактировать данные</a>' .
-               '<div class="underline"></div>' .
-              '</div>';
-  $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12 col-md-6">';
-  $output .=     '<h5 class="chart-title">В млрд рублей с НДС</h5>';
-  $output .=     '<div class="ajax-load" data-func="td_block_31" data-delay="310"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-  $output .=   '</div>';
-  $output .=   '<div class="col-xs-12 col-md-6">';
-  $output .=     '<h5 class="chart-title">В млн литров</h5>';
-  $output .=     '<div class="ajax-load" data-func="td_block_32" data-delay="320"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-  $output .=   '</div>';
-  $output .= '</div>';
+//  $url = url('/data/ship/edit', ['query' => ['blocks' => ['td_block_31', 'td_block_32'], 'inn' => DASH_INN_TD]]);
+//  $output .=  '<div class="section-title">' .
+//               '<h3>Отгрузки + контракты на 1 ' . helper_month_label_ru(date('n', $season_10['to'])) . ' в сравнении по сезонам ' . (date('y', $season_10['from'])-1) . '-' . (date('y', $season_10['end'])-1) . ' / ' . date('y', $season_10['from']) . '-' . date('y', $season_10['end']) . '</h3>' .
+//               '<a class="edit-link autodialog" data-dialog-width="500" href="' . $url . '">Редактировать данные</a>' .
+//               '<div class="underline"></div>' .
+//              '</div>';
+//  $output .= '<div class="row">';
+//  $output .=   '<div class="col-xs-12 col-md-6">';
+//  $output .=     '<h5 class="chart-title">В млрд рублей с НДС</h5>';
+//  $output .=     '<div class="ajax-load" data-func="td_block_31" data-delay="310"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+//  $output .=   '</div>';
+//  $output .=   '<div class="col-xs-12 col-md-6">';
+//  $output .=     '<h5 class="chart-title">В млн литров</h5>';
+//  $output .=     '<div class="ajax-load" data-func="td_block_32" data-delay="320"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+//  $output .=   '</div>';
+//  $output .= '</div>';
 
   // слайд 4
   $output .=  '<div class="section-title">' .

@@ -15,8 +15,7 @@ function reports_menu()
     'menu_name' => 'main-menu',
     'expanded' => true,
     'weight' => 15,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['reports_td_period_to_form'],
+    'page callback' => 'reports_goto_front',
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, FINANCE_USER_RID, AGROHIMIKAT_USER_RID]],
   );
@@ -97,6 +96,12 @@ function reports_menu()
   ];
 
   return $items;
+}
+
+
+function reports_goto_front()
+{
+  drupal_goto('<front>');
 }
 
 /**
