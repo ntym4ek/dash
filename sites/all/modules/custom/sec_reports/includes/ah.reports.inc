@@ -1582,49 +1582,135 @@ function reports_ah_manual_bdr_table_output($period)
 {
   $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
 
-  // собрать все записи Прихода ДС за период
-  $data = [];
-  if ($bdr = dash_manual_bdr_get_by_conditions(['company_id' => $company->tid, 'period' => $period])) {
-    foreach ($bdr as $record) {
-      if (!isset($data[$record->category_id])) $data[$record->category_id] = ['name' => $record->category_name, 'plan_period' => 0, 'fact_period' => 0];
-      if ($record->type == DASH_TYPE_PLAN) {
-        $data[$record->category_id]['plan_period'] = $record->amount;
-      }
-      if ($record->type == DASH_TYPE_FACT) {
-        $data[$record->category_id]['fact_period'] = $record->amount;
-      }
-    }
+  $prev_month_start = gmmktime(0, 0, 0, date('n', $period['to']) - 1, 1, date('Y', $period['to']));
+
+  $data = [
+    'income' => [
+      'total' => [
+        'plan_month' => 0, 'fact_month' => 0,
+        'plan_period' => 0, 'fact_period' => 0,
+      ],
+    ],
+    'outcome' => [
+      'total' => [
+        'plan_month' => 0, 'fact_month' => 0,
+        'plan_period' => 0, 'fact_period' => 0,
+      ],
+      'categories' => [],
+    ],
+  ];
+
+  // По родительскому термину Доходы определить список id терминов потомков
+  $income_term_ids = dash_term_siblings_get(227895);
+
+  // собрать доходы, входящие в подкатегории Доходы
+  $plan = dash_manual_bdr_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $period, 'category_ids' => $income_term_ids, 'manual' => 1]);
+  $fact = dash_manual_bdr_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'category_ids' => $income_term_ids, 'manual' => 1]);
+
+  // собрать за предыдущий полный месяц и за год
+  if ($plan) foreach ($plan as $record) {
+    $data['income']['total']['plan_period'] += $record->amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['income']['total']['plan_month'] += $record->amount;
+
+    if (!isset($data['income']['categories'][$record->category_id])) $data['income']['categories'][$record->category_id] = ['name' => $record->category_name, 'plan_month' => 0, 'fact_month' => 0, 'plan_period' => 0, 'fact_period' => 0];
+    $data['income']['categories'][$record->category_id]['plan_period'] += $record->amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['income']['categories'][$record->category_id]['plan_month'] += $record->amount;
+  }
+  if ($fact) foreach ($fact as $record) {
+    $data['income']['total']['fact_period'] += $record->amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['income']['total']['fact_month'] += $record->amount;
+
+    if (!isset($data['income']['categories'][$record->category_id])) $data['income']['categories'][$record->category_id] = ['name' => $record->category_name, 'plan_month' => 0, 'fact_month' => 0, 'plan_period' => 0, 'fact_period' => 0];
+    $data['income']['categories'][$record->category_id]['fact_period'] += $record->amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['income']['categories'][$record->category_id]['fact_month'] += $record->amount;
+  }
+
+  // По родительскому термину Расходы определить список id терминов потомков
+  $outcome_term_ids = dash_term_siblings_get(1041788);
+
+  // собрать расходы, входящие в подкатегории Расходы
+  $plan = dash_manual_bdr_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $period, 'category_ids' => $outcome_term_ids, 'manual' => 1]);
+  $fact = dash_manual_bdr_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'category_ids' => $outcome_term_ids, 'manual' => 1]);
+
+  // собрать за предыдущий полный месяц и за год
+  if ($plan) foreach ($plan as $record) {
+    $data['outcome']['total']['plan_period'] += $record->amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['total']['plan_month'] += $record->amount;
+
+    if (!isset($data['outcome']['categories'][$record->category_id])) $data['outcome']['categories'][$record->category_id] = ['name' => $record->category_name, 'plan_month' => 0, 'fact_month' => 0, 'plan_period' => 0, 'fact_period' => 0];
+    $data['outcome']['categories'][$record->category_id]['plan_period'] += $record->amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['categories'][$record->category_id]['plan_month'] += $record->amount;
+  }
+  if ($fact) foreach ($fact as $record) {
+    $data['outcome']['total']['fact_period'] += $record->amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['total']['fact_month'] += $record->amount;
+
+    if (!isset($data['outcome']['categories'][$record->category_id])) $data['outcome']['categories'][$record->category_id] = ['name' => $record->category_name, 'plan_month' => 0, 'fact_month' => 0, 'plan_period' => 0, 'fact_period' => 0];
+    $data['outcome']['categories'][$record->category_id]['fact_period'] += $record->amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['categories'][$record->category_id]['fact_month'] += $record->amount;
   }
 
   // формируем таблицу
   $header = [
     ['data' => 'Наименование', 'align' => 'center', 'class' => ['td-name']],
-    ['data' => 'План (месяц)', 'align' => 'center'],
-    ['data' => 'Факт (месяц)', 'align' => 'center'],
+    ['data' => 'План (мес.)', 'align' => 'center'],
+    ['data' => 'Факт (мес.)', 'align' => 'center'],
+    ['data' => '% вып.', 'align' => 'center'],
+    ['data' => 'План (год)', 'align' => 'center'],
+    ['data' => 'Факт (год)', 'align' => 'center'],
     ['data' => '% вып.', 'align' => 'center'],
   ];
 
-  $rows = [];
-  $terms = taxonomy_get_tree(taxonomy_vocabulary_machine_name_load('bdr')->vid);
-  foreach ($terms as $term) {
-    $item = $data[$term->tid];
-    if ($item['plan_period'] || $item['fact_period']) {
-      // сформировать имя с учётом иерархии
-      $label = $term->name;
-      if ($term->depth) {
-        $label = '&nbsp;&nbsp;' . $label;
-        for($i=1; $i <= $term->depth; $i++) { $label = '-' . $label; }
-      }
+  $rows[] = [
+    'data' => [
+      '1. Доходы (итого), в т.ч.:',
+      ['data' => helper_number_format($data['income']['total']['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => ($data['income']['total']['plan_month'] ? helper_number_format($data['income']['total']['fact_month']/$data['income']['total']['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => ($data['income']['total']['plan_period'] ? helper_number_format($data['income']['total']['fact_period']/$data['income']['total']['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
+    ],
+  ];
 
-      $rows[] = [
-        'data' => [
-          $label,
-          ['data' => helper_number_format($item['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
-          ['data' => ($item['plan_period'] ? helper_number_format($item['fact_period'] / $item['plan_period'] * 100, 0, ' ', false) . ' %' : '-'), 'align' => 'right'],
-        ],
-      ];
-    }
+  foreach ($data['income']['categories'] as $cat) {
+    $rows[] = [
+      'data' => [
+        '&nbsp;&nbsp;- ' . drupal_strtolower($cat['name']),
+        ['data' => helper_number_format($cat['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => ($cat['plan_month'] ? helper_number_format($cat['fact_month']/$cat['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
+        ['data' => helper_number_format($cat['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => ($cat['plan_period'] ? helper_number_format($cat['fact_period']/$cat['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
+      ],
+    ];
+  }
+
+  $rows[] = [
+    'data' => [
+      '2. Расходы (итого), в т.ч.:',
+      ['data' => helper_number_format($data['outcome']['total']['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => ($data['outcome']['total']['plan_month'] ? helper_number_format($data['outcome']['total']['fact_month']/$data['outcome']['total']['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => ($data['outcome']['total']['plan_period'] ? helper_number_format($data['outcome']['total']['fact_period']/$data['outcome']['total']['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
+    ],
+  ];
+
+  foreach ($data['outcome']['categories'] as $cat) {
+    $rows[] = [
+      'data' => [
+        '&nbsp;&nbsp;- ' . drupal_strtolower($cat['name']),
+        ['data' => helper_number_format($cat['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => ($cat['plan_month'] ? helper_number_format($cat['fact_month']/$cat['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
+        ['data' => helper_number_format($cat['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => ($cat['plan_period'] ? helper_number_format($cat['fact_period']/$cat['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
+      ],
+    ];
   }
 
   $output = theme('table', [

@@ -1873,18 +1873,22 @@ function reports_column_registration_plan_fact($period)
  */
 function reports_manual_bdr_table_output($period)
 {
+  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-2, 1, date('Y', $period['from']));
+
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
 
   // собрать все записи Прихода ДС за период
   $data = [];
   if ($bdr = dash_manual_bdr_get_by_conditions(['company_id' => $company->tid, 'period' => $period])) {
     foreach ($bdr as $record) {
-      if (!isset($data[$record->category_id])) $data[$record->category_id] = ['name' => $record->category_name, 'plan_period' => 0, 'fact_period' => 0];
-      if ($record->type == DASH_TYPE_PLAN) {
-        $data[$record->category_id]['plan_period'] = $record->amount;
-      }
-      if ($record->type == DASH_TYPE_FACT) {
-        $data[$record->category_id]['fact_period'] = $record->amount;
+      if ($record->date == $month_start) {
+        if (!isset($data[$record->category_id])) $data[$record->category_id] = ['name' => $record->category_name, 'plan_period' => 0, 'fact_period' => 0];
+        if ($record->type == DASH_TYPE_PLAN) {
+          $data[$record->category_id]['plan_period'] = $record->amount;
+        }
+        if ($record->type == DASH_TYPE_FACT) {
+          $data[$record->category_id]['fact_period'] = $record->amount;
+        }
       }
     }
   }

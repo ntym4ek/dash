@@ -933,7 +933,7 @@ function dash_debt_get_by_conditions($conditions)
  *   - company_id* - tid компании
  *   - period* - массив ['from' =>, 'to' => не включительно]
  *   - type - тип записи (план, факт, неотгруженные контракты)
- *   - category_id - статья Бюджета доходов и расходов
+ *   - category_ids - статьи Бюджета доходов и расходов
  * @return array|mixed|null
  */
 function dash_manual_bdr_get_by_conditions($conditions)
@@ -966,8 +966,8 @@ function dash_manual_bdr_get_by_conditions($conditions)
 
     $dbr->innerJoin('field_data_field_m_category', 'fct', 'fct.entity_id = m.id');
     $dbr->condition('fct.bundle', 'bdr');
-    if (isset($conditions['category_id'])) {
-      $dbr->condition('fct.field_m_category_tid', $conditions['category_id']);
+    if (isset($conditions['category_ids'])) {
+      $dbr->condition('fct.field_m_category_tid', $conditions['category_ids'], 'IN');
     }
     $dbr->innerJoin('taxonomy_term_data', 'tc', 'tc.tid = fct.field_m_category_tid');
     $dbr->addField('tc', 'tid', 'category_id');
