@@ -96,6 +96,23 @@ function reports_ah_page_content($period_to)
   $output .=   '</div>';
   $output .= '</div>';
 
+  // слайд 3
+  $url = url('/data/manual-production-by-directions/edit', ['query' => ['blocks' => ['ah_block_030'], 'inn' => DASH_INN_AH]]);
+  $output .=  '<div class="section-title">' .
+                '<h3>План-факт. Производство продукции и оказание услуг (в шт.)</h3>' .
+                '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
+                '<div class="underline"></div>' .
+              '</div>';
+  $output .= '<div class="row">';
+  $output .=   '<div class="col-xs-12 col-lg-8">';
+  $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season_01['to'])-1) . '</h5>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_031" data-delay="1300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .=   '<div class="col-xs-12 col-lg-4">';
+  $output .=     '<div class="ajax-load" data-func="ah_block_032" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .= '</div>';
+
   // слайд 6
   $output .=  '<div class="section-title">' .
                 '<h3>Динамика поступления денежных средств ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ' с НДС)</h3>' .
@@ -110,14 +127,31 @@ function reports_ah_page_content($period_to)
   $output .=   '</div>';
   $output .= '</div>';
 
+  // слайд 8
+  $output .=  '<div class="section-title">' .
+                '<h3>Динамика отгрузки продукции и оказания услуг ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ' с НДС)</h3>' .
+                '<div class="underline"></div>' .
+              '</div>';
+  $output .= '<div class="row">';
+  $output .=   '<div class="col-xs-12 col-lg-8">';
+  $output .=     '<div class="ajax-load" data-func="ah_block_081" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .=   '<div class="col-xs-12 col-lg-4">';
+  $output .=     '<div class="ajax-load" data-func="ah_block_082" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .= '</div>';
+
   // слайд 9
   $output .=  '<div class="section-title">' .
                 '<h3>Кредиты и внутренние займы (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_090" data-delay="000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '<div class="col-xs-12 col-lg-8">';
+  $output .=     '<div class="ajax-load" data-func="ah_block_091" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .=   '<div class="col-xs-12 col-lg-4">';
+  $output .=     '<div class="ajax-load" data-func="ah_block_092" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -140,6 +174,21 @@ function reports_ah_page_content($period_to)
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
   $output .=     '<div class="ajax-load" data-func="ah_block_120" data-delay="000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .= '</div>';
+
+
+  // слайд 20
+  $url = url('/data/manual-bdr/edit', ['query' => ['blocks' => ['ah_block_200'], 'inn' => DASH_INN_AH]]);
+  $output .=  '<div class="section-title">' .
+                '<h3>План-факт. Бюджет доходов и расходов (в ' . DASH_REV_SUFFIX . ' без НДС)</h3>' .
+                '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
+                '<div class="underline"></div>' .
+              '</div>';
+  $output .= '<div class="row">';
+  $output .=   '<div class="col-xs-12">';
+  $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season_01['from'])) . '-' . helper_month_label_ru(date('n', $season_01['to'])-2) . '</h5>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_200" data-delay="00"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -207,6 +256,32 @@ function reports_ah_block_022()
   return drupal_render($data_arr);
 }
 
+function reports_ah_block_031()
+{
+  // за предыдущий заданному месяц
+  $period = [
+    'from' => gmmktime(0, 0, 0, date('n', $_GET['period_to'])-1, 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')-1, 1, date('Y')),
+    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+  ];
+
+  return reports_ah_manual_production_by_directions_table_html($period);
+}
+function reports_ah_block_032()
+{
+  // за предыдущий заданному месяц
+  $period = [
+    'from' => gmmktime(0, 0, 0, date('n', $_GET['period_to'])-1, 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')-1, 1, date('Y')),
+    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+  ];
+
+  // факт производства продукции по группам
+  $data_arr = reports_ah_manual_production_by_directions_column($period);
+
+  return drupal_render($data_arr);
+}
+
 function reports_ah_block_061()
 {
   // период с начала года по начало заданного месяца
@@ -217,11 +292,8 @@ function reports_ah_block_061()
   ];
 
   // факт производства продукции по группам
-  $html = reports_ah_cash_income_fact_table($period);
-
-  return $html;
+  return reports_ah_cash_income_fact_table_html($period);
 }
-
 function reports_ah_block_062()
 {
   // период с начала года по начало заданного месяца
@@ -237,6 +309,59 @@ function reports_ah_block_062()
   return drupal_render($data_arr);
 }
 
+function reports_ah_block_081()
+{
+  // период с начала года по начало заданного месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
+    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to'])+1, 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+  ];
+
+  // факт производства продукции по группам
+  return reports_ah_ship_accounts_fact_table_html($period);
+}
+function reports_ah_block_082()
+{
+  // период с начала года по начало заданного месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
+    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to'])+1, 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+  ];
+
+  // факт производства продукции по группам
+  $data_arr = reports_ah_ship_accounts_fact_column($period);
+
+  return drupal_render($data_arr);
+}
+
+function reports_ah_block_091()
+{
+  // период с начала года по начало текущего месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+  ];
+
+  return reports_ah_debt_credits_loans_table_html($period);
+}
+function reports_ah_block_092()
+{
+  // период с начала года по начало заданного месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+  ];
+
+  // план-факт отгрузки продукции
+  $data_arr = reports_ah_debt_credits_loans_column($period);
+
+  return drupal_render($data_arr);
+}
+
 function reports_ah_block_100()
 {
   // период с начала года по начало текущего месяца
@@ -248,6 +373,7 @@ function reports_ah_block_100()
 
   return reports_ah_debt_debitors_table_output($period);
 }
+
 function reports_ah_block_120()
 {
   // период с начала года по начало текущего месяца
@@ -259,16 +385,17 @@ function reports_ah_block_120()
 
   return reports_ah_debt_creditors_table_output($period);
 }
-function reports_ah_block_090()
+
+function reports_ah_block_200()
 {
   // период с начала года по начало текущего месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
-  return reports_ah_debt_credits_loans_table_output($period);
+  return reports_ah_manual_bdr_table_output($period);
 }
 
 /**
@@ -635,8 +762,167 @@ function reports_ah_production_plan_fact_column($period)
   return $chart;
 }
 
+// слайд 3
+function reports_ah_manual_production_by_directions_table_html($period)
+{
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
+
+  // собрать данные по Направлениям за месяц
+  $data = [];
+  $total = ['name' => 'Итого', 'plan_period' => 0, 'fact_period' => 0];[];
+  if ($pbd = dash_manual_production_by_directions_get_by_conditions(['company_id' => $company->tid, 'period' => $period])) {
+    foreach ($pbd as $record) {
+      if (!isset($data[$record->direction_id])) $data[$record->direction_id] = ['name' => $record->direction_name, 'plan_period' => 0, 'fact_period' => 0];
+      if ($record->type == DASH_TYPE_PLAN) {
+        $data[$record->direction_id]['plan_period'] = $record->volume;
+        $total['plan_period'] += $record->volume;
+      }
+      if ($record->type == DASH_TYPE_FACT) {
+        $data[$record->direction_id]['fact_period'] = $record->volume;
+        $total['fact_period'] += $record->volume;
+      }
+    }
+
+    if ($total) $data[] = $total;
+  }
+
+  // формируем таблицу
+  $header = [
+    ['data' => 'Направление', 'align' => 'center', 'class' => ['td-name']],
+    ['data' => 'План (год)', 'align' => 'center'],
+    ['data' => 'Факт (год)', 'align' => 'center'],
+    ['data' => '% вып.', 'align' => 'center'],
+  ];
+
+  $rows = [];
+  foreach ($data as $item) {
+    if ($item['plan_period'] || $item['fact_period']) {
+
+      $row = [
+        'data' => [
+          $item['name'],
+          ['data' => helper_number_format($item['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+          ['data' => ($item['plan_period'] ? helper_number_format($item['fact_period'] / $item['plan_period'] * 100, 0, ' ', false) . ' %' : '-'), 'align' => 'right'],
+        ],
+      ];
+
+      if ($item['name'] == 'Итого') {
+        $row['class'] = ['tfoot'];
+      }
+      $rows[] = $row;
+    }
+  }
+
+  $output = theme('table', [
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table', 'table-intersect']],
+    'sticky' => false,
+    'empty' => 'нет данных',
+  ]);
+
+  return '<div class="production-by-directions-table">' . $output . '</div>';
+}
+
+function reports_ah_manual_production_by_directions_column($period)
+{
+  $chart = dash_no_data_chart_get();
+
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
+
+  // собрать данные по Направлениям за месяц
+
+  $total = ['plan_period' => 0, 'fact_period' => 0];
+  if ($pbd = dash_manual_production_by_directions_get_by_conditions(['company_id' => $company->tid, 'period' => $period])) {
+    foreach ($pbd as $record) {
+      if ($record->type == DASH_TYPE_PLAN) {
+        $total['plan_period'] += $record->volume;
+      }
+      if ($record->type == DASH_TYPE_FACT) {
+        $total['fact_period'] += $record->volume;
+      }
+    }
+  }
+
+  // собрать все записи за период
+  if ($total['plan_period'] || $total['fact_period']) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'column',
+      '#colors' => ['#ccc', DASH_COLOR_BLUE],
+      '#font' => 'Montserrat',
+      '#height' => '350',
+      '#legend_position' => 'top',
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontSize' => '16'],
+        'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
+        'annotations' => [
+          'datum' => ['stem' => ['color' => 'transparent']],
+          'textStyle' => ['fontSize' => 14, 'bold' => 'true'],
+        ],
+        'chartArea' => [
+          'width' => '90%',
+          'left' => 70,
+        ],
+        'tooltip' => ['isHtml' => true],
+      ],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+      ],
+      'plan' => [
+        '#type' => 'chart_data',
+        '#title' => 'План',
+        '#data' => [],
+      ],
+      'fact' => [
+        '#type' => 'chart_data',
+        '#title' => 'Факт',
+        '#data' => [],
+      ],
+    );
+
+    $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $period['from']));
+
+    $plan = (float)$total['plan_period'];
+    $fact = (float)$total['fact_period'];
+
+    $chart['plan']['#data'][] = $plan;
+    $chart['fact']['#data'][] = $fact;
+
+    $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+      '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $period['from'])) . '</div></div>' .
+      '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b></div></div>' .
+      '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b></div></div>' .
+      '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
+      '</div>';
+
+    $chart['fact'][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+      '#raw_options' => [
+        'annotation' => $fact ? number_format($fact, 0, null, ' ') : null,
+      ],
+    );
+    $chart['plan'][] = array(
+      '#type' => 'chart_data_item',
+      '#title' => $tooltip,
+      '#raw_options' => [
+        'annotation' => $plan ? number_format($plan, 0, null, ' ') : null,
+      ],
+    );
+
+  }
+
+  return $chart;
+}
+
 // слайд 6
-function reports_ah_cash_income_fact_table($period)
+function reports_ah_cash_income_fact_table_html($period)
 {
   $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
 
@@ -717,7 +1003,6 @@ function reports_ah_cash_income_fact_table($period)
 
   return '<div class="cash-income-fact-table">' . $output . '</div>';
 }
-
 function reports_ah_cash_income_fact_column($period)
 {
   $chart = dash_no_data_chart_get();
@@ -797,7 +1082,352 @@ function reports_ah_cash_income_fact_column($period)
   return $chart;
 }
 
+// слайд 8
+function reports_ah_ship_accounts_fact_table_html($period)
+{
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
+
+  // собрать данные за 3 года и сгруппировать по направлениям
+  $data = [];
+  $total = [];
+  foreach ([-2, -1, 0] as $shift) {
+    $period_shifted = dash_period_shifted_get($period, $shift);
+
+    $month_start = gmmktime(0, 0, 0, date('n', $period_shifted['to'])-1, 1, date('Y', $period_shifted['to']));
+    $next_month_start = gmmktime(0, 0, 0, date('n', $period_shifted['to']), 1, date('Y', $period_shifted['to']));
+
+    $fact = dash_ship_accounts_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
+    foreach ($fact as $record) {
+      $direction_name = $record->direction_name ?? 'Прочее';
+      if (!isset($data[$direction_name]['month'][$month_start])) $data[$direction_name]['month'][$month_start] = 0;
+      if (!isset($data[$direction_name]['period'][$period_shifted['from']])) $data[$direction_name]['period'][$period_shifted['from']] = 0;
+      if (!isset($total['month'][$month_start])) $total['month'][$month_start] = 0;
+      if (!isset($total['period'][$period_shifted['from']])) $total['period'][$period_shifted['from']] = 0;
+
+      if ($month_start <= $record->date && $record->date < $next_month_start) {
+        $data[$direction_name]['month'][$month_start] = ($data[$direction_name]['month'][$month_start] ?? 0) + $record->amount;
+        $total['month'][$month_start] += $record->amount;
+      }
+
+      $data[$direction_name]['period'][$period_shifted['from']] += $record->amount;
+
+      $total['period'][$period_shifted['from']] += $record->amount;
+    }
+  }
+  // переместить Прочее на последнее место
+  if (isset($data['Прочее'])) {
+    $row = $data['Прочее'];
+    unset($data['Прочее']);
+    $data['Прочее'] = $row;
+  }
+  if ($total) $data['Итого'] = $total;
+
+  // формируем таблицу
+  $header = $rows = [];
+  if ($data) {
+    $header = [
+      ['data' => 'Направления', 'align' => 'center', 'class' => ['td-name']],
+    ];
+    foreach ($data['Итого']['month'] as $period_start => $amount) {
+      $header[] = ['data' => helper_month_label_ru(date('n', $period_start)) . ' ' . date('Y', $period_start), 'align' => 'center'];
+    }
+    foreach ($data['Итого']['period'] as $period_start => $amount) {
+      $header[] = ['data' => helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $period['to'])-1) . ' ' . date('Y', $period['to']), 'align' => 'center'];
+    }
+
+
+    foreach ($data as $direction_name => $item_d) {
+      $row = [$direction_name];
+      // проходим по колонкам Итого, так как в самих Группах могут быть пропущены месяцы (нет данных)
+      foreach ($data['Итого']['month'] as $key_m => $aux) {
+        $row[] = ['data' => helper_number_format($item_d['month'][$key_m] / DASH_REV_DIVIDER, 2, ' ', false), 'align' => 'right'];
+      }
+      // проходим по колонкам Итого, так как в самих Группах может не быть периодов (нет данных по ним)
+      foreach ($data['Итого']['period'] as $key_p => $aux) {
+        $row[] = ['data' => helper_number_format($item_d['period'][$key_p] / DASH_REV_DIVIDER, 2, ' ', false), 'align' => 'right'];
+      }
+
+      if ($direction_name == 'Итого') {
+        $rows[] = ['data' => $row,'class' => ['tfoot']];
+      } else $rows[] = $row;
+    }
+  }
+
+  $output = theme('table', [
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table', 'table-intersect', 'table--xs']],
+    'sticky' => false,
+    'empty' => 'нет данных',
+  ]);
+
+  return '<div class="cash-income-fact-table">' . $output . '</div>';
+}
+function reports_ah_ship_accounts_fact_column($period)
+{
+  $chart = dash_no_data_chart_get();
+
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
+
+  // собрать данные за 3 года
+  $total = [];
+  foreach ([-2, -1, 0] as $shift) {
+    $period_shifted = dash_period_shifted_get($period, $shift);
+
+    $month_start = gmmktime(0, 0, 0, date('n', $period_shifted['to'])-1, 1, date('Y', $period_shifted['to']));
+    $next_month_start = gmmktime(0, 0, 0, date('n', $period_shifted['to']), 1, date('Y', $period_shifted['to']));
+
+    $year = date('Y', $period_shifted['from']);
+
+    $fact = dash_ship_accounts_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
+    foreach ($fact as $record) {
+      if (!isset($total[$year]['month'])) $total[$year]['month'] = 0;
+      if (!isset($total[$year]['period'])) $total[$year]['period'] = 0;
+
+      if ($month_start <= $record->date && $record->date < $next_month_start) {
+        $total[$year]['month'] += $record->amount;
+      }
+
+      $total[$year]['period'] += $record->amount;
+    }
+  }
+
+  if ($total) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'column',
+      '#colors' => [DASH_COLOR_GREEN, DASH_COLOR_BLUE],
+      '#font' => 'Montserrat',
+      '#height' => '350',
+      '#legend_position' => 'top',
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontSize' => '16'],
+        'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
+        'annotations' => [
+          'datum' => ['stem' => ['color' => 'transparent']],
+          'textStyle' => ['fontSize' => 14, 'bold' => 'true'],
+        ],
+        'chartArea' => [
+          'width' => '90%',
+          'left' => 70,
+        ],
+        'tooltip' => ['isHtml' => true],
+      ],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+      ],
+    );
+
+    foreach ($total as $year => $record) {
+      $chart[$year] = [
+        '#type' => 'chart_data',
+        '#title' => (string)$year,
+        '#data' => [],
+      ];
+    }
+
+    $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month_start));
+    $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $month_start));
+
+    foreach ($total as $year => $record) {
+      $chart[$year]['#data'][] = $record['month'] / DASH_REV_DIVIDER;
+      $chart[$year]['#data'][] = $record['period'] / DASH_REV_DIVIDER;
+    }
+  }
+
+  return $chart;
+}
+
 // слайд 9
+function reports_ah_debt_credits_loans_table_html($period)
+{
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
+
+  // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
+  // то есть данные за июль выводятся под заголовком 1 августа.
+  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
+  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
+  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
+  $year_start = $period['from'];
+  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
+  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $data = [
+    'row1' => [],
+    'row2' => [],
+    'kccc' => [],
+  ];
+
+  // собрать все записи по всем кредитам и займам (kinds = 3,4)
+  $debts  = dash_debt_get_by_conditions([
+    'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDIT, DASH_DEBT_KIND_LOAN],
+    'period' => ['from' => $prev_year_start, 'to' => $period['to']]
+  ]);
+  $loan = 'Внутренние займы всего с %, в т.ч.:';
+  foreach($debts as $debt) {
+    if ($debt->kind == DASH_DEBT_KIND_CREDIT) {
+      $data['row1'][$debt->name][$debt->date] = $debt->amount / DASH_REV_DIVIDER;
+    }
+    elseif ($debt->kind == DASH_DEBT_KIND_LOAN && $debt->category == 2) {
+      if (!isset($data['row2'][$loan][$debt->date])) $data['row2'][$loan][$debt->date] = 0;
+      $data['row2'][$loan][$debt->date]                   += $debt->amount / DASH_REV_DIVIDER;
+      $data['kccc'][$debt->name][$debt->date]             = $debt->amount / DASH_REV_DIVIDER;
+    }
+  }
+
+  // формируем таблицу
+  $header = [
+    ['data' => 'Наименование', 'align' => 'center', 'class' => ['td-name']],
+    ['data' => date('d.m.Y', $prev_year_start), 'align' => 'center'],
+    ['data' => date('d.m.Y', $prev_year_next_month_start), 'align' => 'center'],
+    ['data' => date('d.m.Y', $year_start), 'align' => 'center'],
+    ['data' => date('d.m.Y', $next_month_start), 'align' => 'center'],
+  ];
+
+  $rows = [];
+  foreach ($data as $key => $row) {
+    foreach ($row as $name => $item) {
+      $rows[] = [
+        'data' => [
+          ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
+          ['data' => helper_number_format($item[$prev_year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$prev_year_month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item[$month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
+        ],
+        'class' => [$key == 'row2' ? 'tfoot': ''],
+      ];
+    }
+  }
+
+  $output = theme('table', [
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => ['class' => ['table', 'table-intersect']],
+    'sticky' => false,
+    'empty' => 'нет данных',
+  ]);
+
+  return '<div class="credits-loans-table">' . $output . '</div>';
+}
+function reports_ah_debt_credits_loans_column($period)
+{
+  $chart = dash_no_data_chart_get();
+
+  // собрать все записи за период
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
+
+  // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
+  // то есть данные за июль выводятся под заголовком 1 августа.
+  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
+  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
+  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
+  $year_start = $period['from'];
+  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
+  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $data = [];
+
+  // собрать все записи по всем кредитам и займам (kinds = 3,4)
+  if ($debts_prev  = dash_debt_get_by_conditions([
+        'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDIT],
+        'period' => ['from' => $prev_year_month_start, 'to' => $prev_year_next_month_start]
+      ]))
+  {
+    foreach ($debts_prev as $debt) {
+
+    }
+  }
+  $debts  = dash_debt_get_by_conditions([
+    'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDIT],
+    'period' => ['from' => $month_start, 'to' => $next_month_start]
+  ]);
+
+
+  if ($data) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'column',
+      '#colors' => ['#ccc', DASH_COLOR_BLUE],
+      '#font' => 'Montserrat',
+      '#height' => '350',
+      '#legend_position' => 'top',
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontSize' => '16'],
+        'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
+        'annotations' => [
+          'datum' => ['stem' => ['color' => 'transparent']],
+          'textStyle' => ['fontSize' => 14, 'bold' => 'true'],
+        ],
+        'chartArea' => [
+          'width' => '90%',
+          'left' => 70,
+        ],
+        'tooltip' => ['isHtml' => true],
+      ],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+      ],
+      'plan' => [
+        '#type' => 'chart_data',
+        '#title' => 'План',
+        '#data' => [],
+      ],
+      'fact' => [
+        '#type' => 'chart_data',
+        '#title' => 'Факт',
+        '#data' => [],
+      ],
+    );
+
+    foreach ($plan_fact_by_month as $month) {
+      if ($month['plan_output'] || $month['fact_output']) {
+        $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
+
+        $plan = $month['plan_output'] / DASH_PROD_DIVIDER;
+        $fact = $month['fact_output'] / DASH_PROD_DIVIDER;
+
+        $chart['plan']['#data'][] = $plan;
+        $chart['fact']['#data'][] = $fact;
+
+        $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+          '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
+          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
+          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
+          '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
+          '</div>';
+
+        $chart['fact'][] = array(
+          '#type' => 'chart_data_item',
+          '#title' => $tooltip,
+          '#raw_options' => [
+            'annotation' => $fact ? number_format($fact, 0, null, ' ') : null,
+          ],
+        );
+        $chart['plan'][] = array(
+          '#type' => 'chart_data_item',
+          '#title' => $tooltip,
+          '#raw_options' => [
+            'annotation' => $plan ? number_format($plan, 0, null, ' ') : null,
+          ],
+        );
+      }
+    }
+  }
+
+  return $chart;
+}
+
+
+// слайд 10
 function reports_ah_debt_debitors_table_output($period)
 {
   $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
@@ -867,7 +1497,7 @@ function reports_ah_debt_debitors_table_output($period)
   return '<div class="debt-debitors-table">' . $output . '</div>';
 }
 
-// слайд 10
+// слайд 12
 function reports_ah_debt_creditors_table_output($period)
 {
   $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
@@ -938,69 +1568,61 @@ function reports_ah_debt_creditors_table_output($period)
   return '<div class="debt-creditors-table">' . $output . '</div>';
 }
 
-// слайд 12
-function reports_ah_debt_credits_loans_table_output($period)
+// слайд 20
+/** todo
+ * Данные для этой таблицы должны заноситься накопительным итогом
+ * (в отличие от таблицы для ТД, для которой Бобков заносит данные в итоговыми значениями на месяц).
+ *
+ *
+ * Нужно учитывать, что данные за месяц вносятся в конце следующего месяца.
+ * Например, в таблице "План-факт. Бюджет доходов и расходов" (block_13)
+ * при выводе данных на начало октября нужно выводить по август.
+ */
+function reports_ah_manual_bdr_table_output($period)
 {
   $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
 
-  // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
-  // то есть данные за июль выводятся под заголовком 1 августа.
-  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
-  $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
-
-  $data = [
-    'row1' => [],
-    'row2' => [],
-    'kccc' => [],
-  ];
-
-  // собрать все записи по всем кредитам и займам (category = 3,4)
-  $debts  = dash_debt_get_by_conditions([
-    'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDIT, DASH_DEBT_KIND_LOAN],
-    'period' => ['from' => $prev_year_start, 'to' => $period['to']]
-  ]);
-  $loan = 'Внутренние займы всего с %, в т.ч.:';
-  foreach($debts as $debt) {
-    if ($debt->kind == 3) {
-      $data['row1'][$debt->name][$debt->date] = $debt->amount / DASH_REV_DIVIDER;
-    }
-    elseif ($debt->kind == 4 && $debt->category == 2) {
-      if (!isset($data['row2'][$loan][$debt->date])) $data['row2'][$loan][$debt->date] = 0;
-      if (!isset($data['row2'][$loan]['percent'][$debt->date])) $data['row2'][$loan]['percent'][$debt->date] = 0;
-      $data['row2'][$loan][$debt->date]                   += $debt->amount / DASH_REV_DIVIDER;
-      $data['row2'][$loan]['percent'][$debt->date]        += $debt->amount2 / DASH_REV_DIVIDER;
-      $data['kccc'][$debt->name][$debt->date]             = $debt->amount / DASH_REV_DIVIDER;
-      $data['kccc'][$debt->name]['percent'][$debt->date]  = $debt->amount2 / DASH_REV_DIVIDER;
+  // собрать все записи Прихода ДС за период
+  $data = [];
+  if ($bdr = dash_manual_bdr_get_by_conditions(['company_id' => $company->tid, 'period' => $period])) {
+    foreach ($bdr as $record) {
+      if (!isset($data[$record->category_id])) $data[$record->category_id] = ['name' => $record->category_name, 'plan_period' => 0, 'fact_period' => 0];
+      if ($record->type == DASH_TYPE_PLAN) {
+        $data[$record->category_id]['plan_period'] = $record->amount;
+      }
+      if ($record->type == DASH_TYPE_FACT) {
+        $data[$record->category_id]['fact_period'] = $record->amount;
+      }
     }
   }
 
   // формируем таблицу
   $header = [
     ['data' => 'Наименование', 'align' => 'center', 'class' => ['td-name']],
-    ['data' => date('d.m.Y', $prev_year_start), 'align' => 'center'],
-    ['data' => date('d.m.Y', $prev_year_next_month_start), 'align' => 'center'],
-    ['data' => date('d.m.Y', $year_start), 'align' => 'center'],
-    ['data' => date('d.m.Y', $next_month_start), 'align' => 'center'],
-    ['data' => 'Неопл. % по займам', 'align' => 'center'],
+    ['data' => 'План (месяц)', 'align' => 'center'],
+    ['data' => 'Факт (месяц)', 'align' => 'center'],
+    ['data' => '% вып.', 'align' => 'center'],
   ];
 
   $rows = [];
-  foreach ($data as $key => $row) {
-    foreach ($row as $name => $item) {
+  $terms = taxonomy_get_tree(taxonomy_vocabulary_machine_name_load('bdr')->vid);
+  foreach ($terms as $term) {
+    $item = $data[$term->tid];
+    if ($item['plan_period'] || $item['fact_period']) {
+      // сформировать имя с учётом иерархии
+      $label = $term->name;
+      if ($term->depth) {
+        $label = '&nbsp;&nbsp;' . $label;
+        for($i=1; $i <= $term->depth; $i++) { $label = '-' . $label; }
+      }
+
       $rows[] = [
         'data' => [
-          ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
-          ['data' => helper_number_format($item[$prev_year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$prev_year_month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => isset($item['percent'][$month_start]) ? helper_number_format($item['percent'][$month_start], 1, ' ', false) : '', 'align' => 'right'],
+          $label,
+          ['data' => helper_number_format($item['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($item['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+          ['data' => ($item['plan_period'] ? helper_number_format($item['fact_period'] / $item['plan_period'] * 100, 0, ' ', false) . ' %' : '-'), 'align' => 'right'],
         ],
-        'class' => [$key == 'row2' ? 'tfoot': ''],
       ];
     }
   }
@@ -1013,5 +1635,5 @@ function reports_ah_debt_credits_loans_table_output($period)
     'empty' => 'нет данных',
   ]);
 
-  return '<div class="credits-loans-table">' . $output . '</div>';
+  return '<div class="bdds-table">' . $output . '</div>';
 }

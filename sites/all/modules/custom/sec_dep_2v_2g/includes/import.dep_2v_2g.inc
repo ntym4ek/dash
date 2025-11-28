@@ -159,11 +159,10 @@ function dep_2v_2g_import_ship_plan_td($array)
           $date_start = gmmktime(0, 0, 0, $date_arr[1], $date_arr[0], $date_arr[2]);
 
           $ship[] = [
-            'type' => $type,
             'date' => $date_start,
-            'client' => $client->tid,
-            'nom' => $nom->tid,
-            'qty' => $load_item['quantity'] ?? 0,
+            'client_id' => $client->tid,
+            'nom_id' => $nom->tid,
+            'quantity' => $load_item['quantity'] ?? 0,
             'amount' => $load_item['amount'] ?? 0,
             'net_cost' => $load_item['net_amount'] ?? 0,
           ];
@@ -189,16 +188,14 @@ function dep_2v_2g_import_ship_plan_td($array)
       // создание Плана на месяц
       foreach ($ship as $plan_item) {
         dash_ship_create([
-          'created' => REQUEST_TIME,
           'company_id' => $company->tid,
-          'month_ts' => $plan_item['date'],
-          'type' => $plan_item['type'],
-          'manual' => 0,
+          'date_ts' => $plan_item['date'],
+          'type' => $type,
           'amount' => $plan_item['amount'],
-          'qty' => $plan_item['qty'],
+          'quantity' => $plan_item['quantity'],
           'net_cost' => $plan_item['net_cost'],
-          'nom_id' => $plan_item['nom'],
-          'client_id' => $plan_item['client'],
+          'nom_id' => $plan_item['nom_id'],
+          'client_id' => $plan_item['client_id'],
         ]);
       }
 

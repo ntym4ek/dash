@@ -293,6 +293,86 @@ function reports_production_clients_import($array)
   return false;
 }
 
+function reports_ship_import($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $month_start = helper_datetime_to_timestamp($array['month']);
+    // для компаний инн является 1c_id
+    $company = dash_term_get_by_1c_id('companies', $array['company_inn']);
+    $company_inn = trim($array['company_inn']);
+
+    $table = '';
+    if (empty($array['source']) || $array['source'] == 'ship') {
+      $table = 'ship';
+    } elseif ($array['source'] == 'accounts') {
+      $table = 'accounts';
+    }
+
+    // подготовка Записей
+    $ship = [];
+    foreach ($array['load'] as $load_item) {
+      $ship[] = [
+        'amount' => $load_item['amount'] ?? 0,
+      ];
+
+      if ($table == 'ship') {
+        $client = dash_client_get_by_1c_id($company_inn, $load_item['clients_id']);
+        $nom = dash_nomenclature_get_by_1c_id($company_inn, $load_item['nom_id']);
+        $date_start = helper_datetime_to_timestamp($load_item['date']);
+
+        $ship[] = [
+          'date' => $date_start,
+          'client_id' => $client->tid,
+          'nom_id' => $nom->tid,
+          'quantity' => $load_item['quantity'] ?? 0,
+          'net_cost' => $load_item['net_cost'] ?? 0,
+        ];
+      }
+      if ($table == 'accounts') {
+        $direction = dash_direction_get_by_1c_id($load_item['direction_id']);
+        $ship[] = [
+          'date' => $month_start,
+          'direction_id' => $direction->tid,
+        ];
+      }
+    }
+
+
+    if ($ship && isset($array['type']) && $company) {
+      // удалить старый план на месяц
+      // для Неоплаченных контрактов месяц не задан, тк это срез на момент импорта
+      $params = ['type' => $array['type'], 'company_id' => $company->tid, 'manual' => 0, 'table' => $table];
+      if (isset($array['month'])) {
+        $params['month_start'] = helper_datetime_to_timestamp($array['month']);
+      }
+      dash_ship_delete_by_month($params);
+
+      // создание Плана на месяц
+      foreach ($ship as $ship_item) {
+        dash_ship_create([
+          'table' => $table,
+          'type' => $array['type'],
+          'company_id' => $company->tid,
+          'date_ts' => $ship_item['date'],
+          'amount' => $ship_item['amount'],
+          'quantity' => $ship_item['quantity'] ?? 0,
+          'net_cost' => $ship_item['net_cost'] ?? 0,
+          'nom_id' => $ship_item['nom_id'] ?? 0,
+          'client_id' => $ship_item['client_id'] ?? 0,
+          'direction_id' => $ship_item['direction_id'] ?? 0,
+        ]);
+      }
+
+      watchdog('import', 'План отгрузки ТД импортирован.', [], WATCHDOG_INFO);
+      return $ship;
+    }
+  }
+
+  watchdog('import', 'Импорт плана отгрузки ТД не выполнен.', [], WATCHDOG_ERROR);
+  return false;
+}
+
+
 /**
  * Удалить записи определённого типа за месяц.
  * Удаляем только данные из 1с, введённые вручную не трогаем

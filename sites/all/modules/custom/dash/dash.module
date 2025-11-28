@@ -422,13 +422,13 @@ function dash_column_revenue_by_types($company, $time_from, $time_to)
  */
 
 /**
- *  Вернуть данные по ОТГРУЗКЕ продукции (сущность ship/ship)
+ *  Вернуть данные по ОТГРУЗКЕ продукции по данным ERP (сущность ship/ship)
  *  с учётом заданных параметров
  *
  * @param $conditions
  *   - company_id* - по какой компании KCCC собирать данные
  *   - type - тип записи (план, факт, неотгруженные контракты)
- *   - period - массив ['from' => , 'to' => не включительно]
+ *   - period - массив ['from' => unix_ts, 'to' => не включительно]
  *   - manual (bool) - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
  * @return array|mixed|null
  */
@@ -492,6 +492,71 @@ function dash_ship_get_by_conditions($conditions)
     if (!empty($conditions['exclude']['regions'])) {
       $dbr->condition('fr.field_region_tid', $conditions['exclude']['regions'], 'NOT IN');
     }
+
+    // для полей, добавленных позже нужно учитывать, что данные могут быть не заданы
+    $dbr->leftJoin('field_data_field_s_is_manual', 'fm', 'fm.entity_id = s.id');
+    if (empty($conditions['manual'])) {
+      $dbr->condition(db_or()
+        ->isNull('fm.field_s_is_manual_value')
+        ->condition('fm.field_s_is_manual_value', 0)
+      );
+    } else {
+      $dbr->condition('fm.field_s_is_manual_value', 1);
+    }
+    $dbr->addField('fm', 'field_s_is_manual_value', 'manual');
+
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+/**
+ *  Вернуть данные по ОТГРУЗКЕ продукции по данных Бухгалтерии (сущность ship/accounts)
+ *  с учётом заданных параметров
+ *
+ * @param $conditions
+ *   - company_id* - по какой компании KCCC собирать данные
+ *   - type - тип записи (план, факт, неотгруженные контракты)
+ *   - period - массив ['from' => unix_ts, 'to' => не включительно]
+ *   - manual (bool) - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
+ * @return array|mixed|null
+ */
+function dash_ship_accounts_get_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_ship', 's');
+    $dbr->condition('s.type', 'accounts');
+    $dbr->addField('s', 'id');
+
+    $dbr->innerJoin('field_data_field_s_company', 'fc', 'fc.entity_id = s.id');
+    $dbr->condition('fc.field_s_company_tid', $conditions['company_id']);
+    $dbr->addField('fc', 'field_s_company_tid', 'company');
+
+    $dbr->innerJoin('field_data_field_s_type', 'ft', 'ft.entity_id = s.id');
+    if (!empty($conditions['type'])) {
+      $dbr->condition('ft.field_s_type_value', $conditions['type']);
+    }
+    $dbr->addField('ft', 'field_s_type_value', 'type');
+
+    $dbr->innerJoin('field_data_field_s_date', 'frd', 'frd.entity_id = s.id');
+    if (!empty($conditions['period'])) {
+      $dbr->condition('frd.field_s_date_value', $conditions['period']['from'], '>=');
+      $dbr->condition('frd.field_s_date_value', $conditions['period']['to'], '<');
+    }
+    $dbr->addField('frd', 'field_s_date_value', 'date');
+
+    $dbr->innerJoin('field_data_field_s_amount', 'fa', 'fa.entity_id = s.id');
+    $dbr->addField('fa', 'field_s_amount_value', 'amount');
+
+    $dbr->leftJoin('field_data_field_s_direction', 'fd', 'fd.entity_id = s.id');
+    $dbr->addField('fd', 'field_s_direction_tid', 'direction_id');
+    $dbr->leftJoin('taxonomy_term_data', 'tc', 'tc.tid = fd.field_s_direction_tid');
+    $dbr->addField('tc', 'name', 'direction_name');
 
     // для полей, добавленных позже нужно учитывать, что данные могут быть не заданы
     $dbr->leftJoin('field_data_field_s_is_manual', 'fm', 'fm.entity_id = s.id');
@@ -911,6 +976,59 @@ function dash_manual_bdr_get_by_conditions($conditions)
     $dbr->innerJoin('field_data_field_m_amount', 'fa', 'fa.entity_id = m.id');
     $dbr->condition('fa.bundle', 'bdr');
     $dbr->addField('fa', 'field_m_amount_value', 'amount');
+
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+/**
+ *  Вернуть данные по из таблицы Производства Страды по направлениям (ручной ввод данных) (manual/production_strada)
+ *  с учётом заданных параметров
+ * @param $conditions
+ *   - company_id* - tid компании
+ *   - period* - массив ['from' =>, 'to' => не включительно]
+ *   - type - тип записи (план, факт, неотгруженные контракты)
+ *   - direction_id - id записи из справочника Направления деятельности. Ручной ввод
+ * @return array|mixed|null
+ */
+function dash_manual_production_by_directions_get_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_manual', 'm');
+    $dbr->condition('m.type', 'production_by_directions');
+    $dbr->addField('m', 'id');
+
+    $dbr->innerJoin('field_data_field_m_date', 'frd', 'frd.entity_id = m.id');
+    $dbr->condition('frd.bundle', 'production_by_directions');
+    $dbr->condition('frd.field_m_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('frd.field_m_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('frd', 'field_m_date_value', 'date');
+
+    $dbr->innerJoin('field_data_field_m_type', 'frt', 'frt.entity_id = m.id');
+    $dbr->condition('frt.bundle', 'production_by_directions');
+    if (isset($conditions['type'])) {
+      $dbr->condition('frt.field_m_type_value', $conditions['type']);
+    }
+    $dbr->addField('frt', 'field_m_type_value', 'type');
+
+    $dbr->innerJoin('field_data_field_m_direction', 'fdir', 'fdir.entity_id = m.id');
+    $dbr->condition('fdir.bundle', 'production_by_directions');
+    if (isset($conditions['direction_id'])) {
+      $dbr->condition('fdir.field_m_direction_tid', $conditions['direction_id']);
+    }
+    $dbr->innerJoin('taxonomy_term_data', 'tc', 'tc.tid = fdir.field_m_direction_tid');
+    $dbr->addField('tc', 'tid', 'direction_id');
+    $dbr->addField('tc', 'name', 'direction_name');
+
+    $dbr->innerJoin('field_data_field_m_volume', 'fv', 'fv.entity_id = m.id');
+    $dbr->condition('fv.bundle', 'production_by_directions');
+    $dbr->addField('fv', 'field_m_volume_value', 'volume');
 
     $dbr->orderBy('date');
     $result = $dbr->execute()->fetchAll();
@@ -1707,26 +1825,40 @@ function dash_select_tree_get($tree, $parent_term = null, $tids_include_only = [
  */
 function dash_cash_income_create($params)
 {
-  $transaction = db_transaction();
-  try {
-    $ci = entity_create('cash_income', [
-      'type' => 'cash_income',
-      'created' => $params['created'],
-    ]);
-    entity_save('cash_income', $ci);
+  if (empty($params['table'])) $params['table'] = 'cash_income';
 
-    $ci_wr = entity_metadata_wrapper('cash_income', $ci);
-    $ci_wr->field_ci_company = $params['company_id'];
-    $ci_wr->field_ci_date = $params['month_ts'];
-    $ci_wr->field_ci_type = $params['type'];
-    $ci_wr->field_ci_amount = $params['amount'] ?? 0;
-    $ci_wr->field_ci_client = $params['client_id'] ?? 0;
-    $ci_wr->field_ci_direction = $params['direction_id'] ?? 0;
-    $ci_wr->field_ci_is_manual = $params['manual'] ?? 0;
-    $ci_wr->save();
-  } catch (Exception $e) {
-    $transaction->rollback();
-    watchdog_exception('migration', $e);
+  if (in_array($params['table'], ['cash_income', 'accounts'])) {
+    $transaction = db_transaction();
+    try {
+      $ci = entity_create('cash_income', [
+        'type' => $params['table'],
+        'created' => $params['created'],
+      ]);
+      entity_save('cash_income', $ci);
+      $ci_wr = entity_metadata_wrapper('cash_income', $ci);
+
+      if ($params['table'] == 'cash_income') {
+        $ci_wr->field_ci_company = $params['company_id'];
+        $ci_wr->field_ci_date = $params['month_ts'];
+        $ci_wr->field_ci_type = $params['type'];
+        $ci_wr->field_ci_amount = $params['amount'] ?? 0;
+        $ci_wr->field_ci_client = $params['client_id'] ?? 0;
+        $ci_wr->field_ci_direction = $params['direction_id'] ?? 0;
+        $ci_wr->field_ci_is_manual = $params['manual'] ?? 0;
+      }
+
+      if ($params['table'] == 'accounts') {
+        $ci_wr->field_ci_company = $params['company_id'];
+        $ci_wr->field_ci_date = $params['month_ts'];
+        $ci_wr->field_ci_amount = $params['amount'] ?? 0;
+        $ci_wr->field_ci_direction = $params['direction_id'] ?? 0;
+      }
+      $ci_wr->save();
+
+    } catch (Exception $e) {
+      $transaction->rollback();
+      watchdog_exception('migration', $e);
+    }
   }
 
   return $ci ?? false;
@@ -1794,28 +1926,37 @@ function dash_plan_prod_create($params)
  */
 function dash_ship_create($params)
 {
-  $transaction = db_transaction();
-  try {
-    $ship = entity_create('ship', [
-      'type' => 'ship',
-      'created' => $params['created'],
-    ]);
-    entity_save('ship', $ship);
+  if (empty($params['table'])) $params['table'] = 'ship';
 
-    $ship_wr = entity_metadata_wrapper('ship', $ship);
-    $ship_wr->field_s_company = $params['company_id'];
-    $ship_wr->field_s_type = $params['type'];
-    $ship_wr->field_s_date = $params['month_ts'];
-    $ship_wr->field_s_quantity = $params['qty'] ?? 0;
-    $ship_wr->field_s_amount = $params['amount'] ?? 0;
-    $ship_wr->field_s_is_manual = $params['manual'] ?? 0;
-    $ship_wr->field_s_net_cost = $params['net_cost'] ?? 0;
-    $ship_wr->field_s_nomenklatura = $params['nom_id'] ?? 0;
-    $ship_wr->field_s_client = $params['client_id'] ?? 0;
-    $ship_wr->save();
-  } catch (Exception $e) {
-    $transaction->rollback();
-    watchdog_exception('database', $e);
+  if (in_array($params['table'], ['ship', 'accounts'])) {
+    $transaction = db_transaction();
+    try {
+      $ship = entity_create('ship', [
+        'type' => $params['table'],
+        'created' => $params['created'] ?? REQUEST_TIME,
+      ]);
+      entity_save('ship', $ship);
+      $ship_wr = entity_metadata_wrapper('ship', $ship);
+      $ship_wr->field_s_company = $params['company_id'];
+      $ship_wr->field_s_date = $params['date_ts'];
+      $ship_wr->field_s_type = $params['type'];
+      $ship_wr->field_s_amount = $params['amount'] ?? 0;
+      $ship_wr->field_s_is_manual = $params['manual'] ?? 0;
+
+      if ($params['table'] == 'ship') {
+        $ship_wr->field_s_quantity = $params['quantity'] ?? 0;
+        $ship_wr->field_s_net_cost = $params['net_cost'] ?? 0;
+        $ship_wr->field_s_nomenklatura = $params['nom_id'] ?? 0;
+        $ship_wr->field_s_client = $params['client_id'] ?? 0;
+      }
+      if ($params['table'] == 'accounts') {
+        $ship_wr->field_s_direcion = $params['direction_id'] ?? 0;
+      }
+      $ship_wr->save();
+    } catch (Exception $e) {
+      $transaction->rollback();
+      watchdog_exception('database', $e);
+    }
   }
 
   return $ship ?? false;
@@ -1928,6 +2069,34 @@ function dash_manual_bdr_create($params)
     $manual_wr->field_m_category = $params['category_id'];
     $manual_wr->field_m_type = $params['type'];
     $manual_wr->field_m_amount = $params['amount'];
+    $manual_wr->save();
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('database', $e);
+  }
+
+  return $manual ?? false;
+}
+
+/**
+ * Создать запись в таблице ручного ввода Производства продукции по направлениям
+ */
+function dash_manual_production_by_directions_create($params)
+{
+  $transaction = db_transaction();
+  try {
+    $manual = entity_create('manual', [
+      'type' => 'production_by_directions',
+      'created' => $params['created'],
+    ]);
+    entity_save('manual', $manual);
+
+    $manual_wr = entity_metadata_wrapper('manual', $manual);
+    $manual_wr->field_m_company = $params['company_id'];
+    $manual_wr->field_m_date = $params['month_ts'];
+    $manual_wr->field_m_direction = $params['direction_id'];
+    $manual_wr->field_m_type = $params['type'];
+    $manual_wr->field_m_volume = $params['volume'];
     $manual_wr->save();
   } catch (Exception $e) {
     $transaction->rollback();
