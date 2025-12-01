@@ -378,7 +378,7 @@ function reports_jp_column_ship_plan_fact($period)
 
   // собрать все записи Страды за период
   $company = dash_term_get_by_1c_id('companies', DASH_INN_ST);
-  if ($data = dash_ship_get_by_conditions(['company_id' => $company->tid, 'period' => $period, 'manual' => 1])) {
+  if ($data = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'period' => $period, 'manual' => 1])) {
     // сгруппировать помесячно
     $plan_fact_by_month = [];
     foreach (dash_months_list_get($period) as $month) {
@@ -481,7 +481,7 @@ function reports_jp_line_cash_ship_fact($period)
   // собрать все записи Страды за период
   $company = dash_term_get_by_1c_id('companies', DASH_INN_ST);
   $cash_income  = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'period' => $period, 'type' => DASH_TYPE_FACT, 'manual' => 1]);
-  $ship         = dash_ship_get_by_conditions(['company_id' => $company->tid, 'period' => $period, 'type' => DASH_TYPE_FACT, 'manual' => 1]);
+  $ship         = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'period' => $period, 'type' => DASH_TYPE_FACT, 'manual' => 1]);
   if ($cash_income || $ship) {
     // сгруппировать помесячно
     // todo не оптимальный обход, надо бы переделать

@@ -95,7 +95,7 @@ function dep_2v_2g_td_column_ship_period_to_period($period, $field, $regions = [
     }
 
     $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-    $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $bounds, 'regions' => $regions]);
+    $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $bounds, 'regions' => $regions]);
 
 
     $sum = 0;
@@ -187,8 +187,8 @@ function dep_2v_2g_line_ship_plan_fact_by_month($period, $regions = [])
 
   // собрать все записи за период
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-  $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions]);
-  $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
+  $plan = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions]);
+  $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
 
 
   if ($plan || $fact) {
@@ -491,9 +491,9 @@ function dep_2v_2g_bar_ship_plan_fact_by_region_single($period, $options)
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-  $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions]);
-  $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
-  $deal = dash_is_current_season($period) ? dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'regions' => $regions]) : [];
+  $plan = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions]);
+  $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
+  $deal = dash_is_current_season($period) ? dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'regions' => $regions]) : [];
 
   $plan_amount = $plan_c1_amount = $plan_c2_amount = $fact_amount = $deal_amount = 0;
   // для определения текущего плана определить начало текущего и следующего месяцев
@@ -664,9 +664,9 @@ function dep_2v_2g_bar_ship_plan_fact_by_region($period, $options = [])
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-  $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions, 'exclude' => $exclude]);
-  $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions, 'exclude' => $exclude]);
-  $deal = dash_is_current_season($period) ? dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'regions' => $regions, 'exclude' => $exclude]) : [];
+  $plan = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'regions' => $regions, 'exclude' => $exclude]);
+  $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions, 'exclude' => $exclude]);
+  $deal = dash_is_current_season($period) ? dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'regions' => $regions, 'exclude' => $exclude]) : [];
 
 
   // собрать массив с регионами
@@ -830,9 +830,9 @@ function dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom)
     $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD, $shift);
     $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
-    $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'noms' => $noms]);
-    $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'noms' => $noms]);
-    $deal = $shift ? [] : dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'noms' => $noms]);
+    $plan = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'noms' => $noms]);
+    $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'noms' => $noms]);
+    $deal = $shift ? [] : dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'noms' => $noms]);
 
 
     $plan_qty = $fact_qty = $deal_qty = 0;
@@ -972,13 +972,13 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
   $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-  $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds]);
-  $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period]);
+  $plan = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds]);
+  $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period]);
 
   $deal = [];
   $remains = [];
   if (dash_is_current_season($period)) {
-    $deal = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL]);
+    $deal = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL]);
     $remains_last_ts = dep_2d_get_date_data_available();
     $remains = dash_remains_get_by_nom(['date' => $remains_last_ts]);
   }
@@ -1158,7 +1158,7 @@ function dep_2v_2g_column_ship_fact_gross_profit_by_week($period)
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
 
   // выбрать препараты с наибольшим планом
-  if ($fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period])) {
+  if ($fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period])) {
 
     // сгруппировать понедельно
     $result_by_week = [];
@@ -1299,7 +1299,7 @@ function dep_2v_2g_column_ship_plan_by_nom($period, $regions = [])
 
   // выбрать препараты с наибольшим планом
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-  $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
+  $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'regions' => $regions]);
 
   if ($fact) {
     // сгруппировать по номенклатуре

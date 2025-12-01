@@ -135,7 +135,7 @@ function reports_import_processors_alter(&$processors)
   $processors['last_queue'][] = ['mask' => '/^scrum_production_clients_\w_\d.*\.json/', 'include' => $path . 'import.reports.inc', 'func' => 'reports_production_clients_import', 'archive' => 'dash/rp'];
   // Отгрузка
   //   todo перевести scrum_td_shipplan_ => dep_2v_2g_import_ship_plan_td на этот импорт
-  //$processors['last_queue'][] = ['mask' => '/^scrum_ship_\w_.*\.json/',                 'include' => $path . 'import.reports.inc', 'func' => 'reports_ship_import', 'archive' => 'dash/rp'];
+  $processors['last_queue'][] = ['mask' => '/^scrum_ship_\w_.*\.json/',                 'include' => $path . 'import.reports.inc', 'func' => 'reports_ship_import', 'archive' => 'dash/rp'];
 }
 
 /**
@@ -820,7 +820,7 @@ function reports_ship_data_edit_form($form, &$form_state)
         'from' => gmmktime(0, 0, 0, (int)$form_state['values']['month'], 1, (int)$form_state['values']['year']),
         'to' => gmmktime(0, 0, 0, (int)$form_state['values']['month']+1, 1, (int)$form_state['values']['year']),
       ];
-      if ($data = dash_ship_get_by_conditions(['company_id' => $company_id, 'period' => $period, 'manual' => 1, 'type' => $form_state['values']['type']])) {
+      if ($data = dash_ship_ship_get_by_conditions(['company_id' => $company_id, 'period' => $period, 'manual' => 1, 'type' => $form_state['values']['type']])) {
         $record = reset($data);
         $qty_default = $record->qty;
         $amount_default = $record->amount;

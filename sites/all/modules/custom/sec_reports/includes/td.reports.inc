@@ -794,8 +794,8 @@ function reports_line_ship_plan_fact($period)
 
   // собрать все записи за период
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
-  $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'manual' => 1]);
-  $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period]);
+  $plan = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'manual' => 1]);
+  $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period]);
 
   if ($plan || $fact) {
     // сгруппировать помесячно
@@ -944,10 +944,10 @@ function reports_column_ship_plan_fact_compare_revenue($period)
     $period_shifted = dash_period_shifted_get($period, $shift);
 
     // план за весь год (вводится вручную)
-    $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => ['from' => $period_shifted['from'], 'to' => $period_shifted['end']], 'manual' => 1]);
+    $plan = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => ['from' => $period_shifted['from'], 'to' => $period_shifted['end']], 'manual' => 1]);
     // остальное по текущий месяц
-    $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
-    $deal = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'period' => $period_shifted]);
+    $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
+    $deal = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'period' => $period_shifted]);
 
     $plan_amount = 0;
     if ($plan) foreach ($plan as $record) $plan_amount += $record->amount;
@@ -1079,10 +1079,10 @@ function reports_column_ship_plan_fact_compare_qty($period)
     $period_shifted = dash_period_shifted_get($period, $shift);
 
     // план за весь год (вводится вручную)
-    $plan = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => ['from' => $period_shifted['from'], 'to' => $period_shifted['end']], 'manual' => 1]);
+    $plan = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => ['from' => $period_shifted['from'], 'to' => $period_shifted['end']], 'manual' => 1]);
     // остальное по текущий месяц
-    $fact = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
-    $deal = dash_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'period' => $period_shifted]);
+    $fact = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period_shifted]);
+    $deal = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_DEAL, 'period' => $period_shifted]);
 
 
     $plan_qty = 0;

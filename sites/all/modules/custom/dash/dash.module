@@ -432,7 +432,7 @@ function dash_column_revenue_by_types($company, $time_from, $time_to)
  *   - manual (bool) - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
  * @return array|mixed|null
  */
-function dash_ship_get_by_conditions($conditions)
+function dash_ship_ship_get_by_conditions($conditions)
 {
   $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
   $result = &drupal_static($fid);
@@ -575,6 +575,48 @@ function dash_ship_accounts_get_by_conditions($conditions)
   }
 
   return $result;
+}
+
+
+/**
+ *  Удалить данные по Отгрузке продукции (сущность ship)
+ *  с учётом заданных параметров.
+ *
+ * @param $conditions
+ *   - company_id*  - tid компании kccc        * - обязательно
+ *   - table*       - таблица сущности (ship, accounts))
+ *   - type*        - тип записи (план, факт, неотгруженные контракты)
+ *   - manual*      - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
+ *   - month_start  - массив ['from' =>, 'to' => не включительно]
+ *
+ *  Для DASH_TYPE_DEAL дата не имеет значения, поэтому их удаляем все, без периода.
+ * @return array|mixed|null
+ */
+function dash_ship_delete_by_month($conditions)
+{
+  if ($conditions['company_id'] && $conditions['type'] && isset($conditions['manual']) && in_array($conditions['table'], ['ship', 'accounts'])
+    && (isset($conditions['month_start']) || $conditions['type'] == DASH_TYPE_DEAL)) {
+    $next_month_start = gmmktime(0, 0, 0, date('n', $conditions['month_start'])+1, 1, date('Y', $conditions['month_start']));
+
+    $efquery = new EntityFieldQuery();
+    $efquery
+      ->entityCondition('entity_type', 'ship')
+      ->entityCondition('bundle', $conditions['table'])
+      ->fieldCondition('field_s_company', 'tid', $conditions['company_id'])
+      ->fieldCondition('field_s_type', 'value', $conditions['type'])
+      ->fieldCondition('field_s_is_manual', 'value', $conditions['manual']);
+
+    if ($conditions['type'] != DASH_TYPE_DEAL) {
+      $efquery
+        ->fieldCondition('field_s_date', 'value', $conditions['month_start'], '>=')
+        ->fieldCondition('field_s_date', 'value', $next_month_start, '<');
+    }
+
+    $result = $efquery->execute();
+    if ($result) {
+      entity_delete_multiple('ship', array_keys($result['ship']));
+    }
+  }
 }
 
 /**
@@ -1950,7 +1992,7 @@ function dash_ship_create($params)
         $ship_wr->field_s_client = $params['client_id'] ?? 0;
       }
       if ($params['table'] == 'accounts') {
-        $ship_wr->field_s_direcion = $params['direction_id'] ?? 0;
+        $ship_wr->field_s_direction = $params['direction_id'] ?? 0;
       }
       $ship_wr->save();
     } catch (Exception $e) {
@@ -2105,3 +2147,4 @@ function dash_manual_production_by_directions_create($params)
 
   return $manual ?? false;
 }
+

@@ -262,43 +262,4 @@ function dep_2v_2g_import_pay_plan_td($array)
   }
 }
 
-/**
- *  Удалить данные по Отгрузке продукции (сущность ship/ship)
- *  с учётом заданных параметров.
- *
- * @param $conditions
- *   - company_id* - tid компании kccc        * - обязательно
- *   - type* - тип записи (план, факт, неотгруженные контракты)
- *   - manual* - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
- *   - month_start - массив ['from' =>, 'to' => не включительно]
- *
- *  Для DASH_TYPE_DEAL дата не имеет значения, поэтому их удаляем все, без периода.
- * @return array|mixed|null
- */
-function dash_ship_delete_by_month($conditions)
-{
-  if ($conditions['company_id'] && $conditions['type'] && isset($conditions['manual'])
-    && (isset($conditions['month_start']) || $conditions['type'] == DASH_TYPE_DEAL)) {
-    $next_month_start = gmmktime(0, 0, 0, date('n', $conditions['month_start'])+1, 1, date('Y', $conditions['month_start']));
-
-    $efquery = new EntityFieldQuery();
-    $efquery
-      ->entityCondition('entity_type', 'ship')
-      ->entityCondition('bundle', 'ship')
-      ->fieldCondition('field_s_company', 'tid', $conditions['company_id'])
-      ->fieldCondition('field_s_type', 'value', $conditions['type'])
-      ->fieldCondition('field_s_is_manual', 'value', $conditions['manual']);
-
-    if ($conditions['type'] != DASH_TYPE_DEAL) {
-      $efquery
-        ->fieldCondition('field_s_date', 'value', $conditions['month_start'], '>=')
-        ->fieldCondition('field_s_date', 'value', $next_month_start, '<');
-    }
-
-    $result = $efquery->execute();
-    if ($result) {
-      entity_delete_multiple('ship', array_keys($result['ship']));
-    }
-  }
-}
 

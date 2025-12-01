@@ -304,17 +304,13 @@ function reports_ship_import($array)
     $table = '';
     if (empty($array['source']) || $array['source'] == 'ship') {
       $table = 'ship';
-    } elseif ($array['source'] == 'accounts') {
+    } elseif ($array['source'] == 'buh') {
       $table = 'accounts';
     }
 
     // подготовка Записей
     $ship = [];
     foreach ($array['load'] as $load_item) {
-      $ship[] = [
-        'amount' => $load_item['amount'] ?? 0,
-      ];
-
       if ($table == 'ship') {
         $client = dash_client_get_by_1c_id($company_inn, $load_item['clients_id']);
         $nom = dash_nomenclature_get_by_1c_id($company_inn, $load_item['nom_id']);
@@ -322,6 +318,7 @@ function reports_ship_import($array)
 
         $ship[] = [
           'date' => $date_start,
+          'amount' => $load_item['amount'] ?? 0,
           'client_id' => $client->tid,
           'nom_id' => $nom->tid,
           'quantity' => $load_item['quantity'] ?? 0,
@@ -332,6 +329,7 @@ function reports_ship_import($array)
         $direction = dash_direction_get_by_1c_id($load_item['direction_id']);
         $ship[] = [
           'date' => $month_start,
+          'amount' => $load_item['amount'] ?? 0,
           'direction_id' => $direction->tid,
         ];
       }
