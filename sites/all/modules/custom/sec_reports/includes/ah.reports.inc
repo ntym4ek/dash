@@ -161,8 +161,11 @@ function reports_ah_page_content($period_to)
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_100" data-delay="000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '<div class="col-xs-12 col-lg-8">';
+  $output .=     '<div class="ajax-load" data-func="ah_block_101" data-delay="000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .=   '<div class="col-xs-12 col-lg-4">';
+  $output .=     '<div class="ajax-load" data-func="ah_block_102" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -172,8 +175,11 @@ function reports_ah_page_content($period_to)
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_120" data-delay="000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '<div class="col-xs-12 col-lg-8">';
+  $output .=     '<div class="ajax-load" data-func="ah_block_121" data-delay="000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=   '</div>';
+  $output .=   '<div class="col-xs-12 col-lg-4">';
+  $output .=     '<div class="ajax-load" data-func="ah_block_122" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -362,7 +368,7 @@ function reports_ah_block_092()
   return drupal_render($data_arr);
 }
 
-function reports_ah_block_100()
+function reports_ah_block_101()
 {
   // период с начала года по начало текущего месяца
   $period = [
@@ -373,8 +379,22 @@ function reports_ah_block_100()
 
   return reports_ah_debt_debitors_table_output($period);
 }
+function reports_ah_block_102()
+{
+  // период с начала года по начало заданного месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+  ];
 
-function reports_ah_block_120()
+  // факт дебиторской задолженности
+  $data_arr = reports_ah_debt_debitors_loans_column($period);
+
+  return drupal_render($data_arr);
+}
+
+function reports_ah_block_121()
 {
   // период с начала года по начало текущего месяца
   $period = [
@@ -385,6 +405,21 @@ function reports_ah_block_120()
 
   return reports_ah_debt_creditors_table_output($period);
 }
+function reports_ah_block_122()
+{
+  // период с начала года по начало заданного месяца
+  $period = [
+    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+  ];
+
+  // факт кредиторской задолженности
+  $data_arr = reports_ah_debt_creditors_loans_column($period);
+
+  return drupal_render($data_arr);
+}
+
 
 function reports_ah_block_200()
 {
@@ -789,8 +824,8 @@ function reports_ah_manual_production_by_directions_table_html($period)
   // формируем таблицу
   $header = [
     ['data' => 'Направление', 'align' => 'center', 'class' => ['td-name']],
-    ['data' => 'План (год)', 'align' => 'center'],
-    ['data' => 'Факт (год)', 'align' => 'center'],
+    ['data' => 'План', 'align' => 'center'],
+    ['data' => 'Факт', 'align' => 'center'],
     ['data' => '% вып.', 'align' => 'center'],
   ];
 
@@ -1036,7 +1071,7 @@ function reports_ah_cash_income_fact_column($period)
     $chart = array(
       '#type' => 'chart',
       '#chart_type' => 'column',
-      '#colors' => [DASH_COLOR_GREEN, DASH_COLOR_BLUE],
+      '#colors' => [DASH_COLOR_LIGHT_BLUE, DASH_COLOR_BLUE],
       '#font' => 'Montserrat',
       '#height' => '350',
       '#legend_position' => 'top',
@@ -1060,22 +1095,24 @@ function reports_ah_cash_income_fact_column($period)
         '#type' => 'chart_yaxis',
         '#min' => 0,
       ],
+      'start' => [
+        '#type' => 'chart_data',
+        '#title' => 'за ' . helper_month_label_ru(date('n', $month_start)),
+        '#data' => [],
+      ],
+      'current' => [
+        '#type' => 'chart_data',
+        '#title' => 'за ' . (($period['from'] == $month_start) ? helper_month_label_ru(date('n', $period['from'])) : helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $month_start))),
+        '#data' => [],
+      ],
     );
 
-    foreach ($total as $year => $record) {
-      $chart[$year] = [
-        '#type' => 'chart_data',
-        '#title' => (string)$year,
-        '#data' => [],
-      ];
-    }
-
-    $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month_start));
-    $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $month_start));
 
     foreach ($total as $year => $record) {
-      $chart[$year]['#data'][] = $record['month'] / DASH_REV_DIVIDER;
-      $chart[$year]['#data'][] = $record['period'] / DASH_REV_DIVIDER;
+      $chart['xaxis']['#labels'][] = (string)$year;
+
+      $chart['start']['#data'][] = $record['month'] / DASH_REV_DIVIDER;
+      $chart['current']['#data'][] = $record['period'] / DASH_REV_DIVIDER;
     }
   }
 
@@ -1196,7 +1233,7 @@ function reports_ah_ship_accounts_fact_column($period)
     $chart = array(
       '#type' => 'chart',
       '#chart_type' => 'column',
-      '#colors' => [DASH_COLOR_GREEN, DASH_COLOR_BLUE],
+      '#colors' => [DASH_COLOR_LIGHT_BLUE, DASH_COLOR_BLUE],
       '#font' => 'Montserrat',
       '#height' => '350',
       '#legend_position' => 'top',
@@ -1220,22 +1257,24 @@ function reports_ah_ship_accounts_fact_column($period)
         '#type' => 'chart_yaxis',
         '#min' => 0,
       ],
+      'start' => [
+        '#type' => 'chart_data',
+        '#title' => 'за ' . helper_month_label_ru(date('n', $month_start)),
+        '#data' => [],
+      ],
+      'current' => [
+        '#type' => 'chart_data',
+        '#title' => 'за ' . (($period['from'] == $month_start) ? helper_month_label_ru(date('n', $period['from'])) : helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $month_start))),
+        '#data' => [],
+      ],
     );
 
-    foreach ($total as $year => $record) {
-      $chart[$year] = [
-        '#type' => 'chart_data',
-        '#title' => (string)$year,
-        '#data' => [],
-      ];
-    }
-
-    $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month_start));
-    $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $period['from'])) . '-' . helper_month_label_ru(date('n', $month_start));
 
     foreach ($total as $year => $record) {
-      $chart[$year]['#data'][] = $record['month'] / DASH_REV_DIVIDER;
-      $chart[$year]['#data'][] = $record['period'] / DASH_REV_DIVIDER;
+      $chart['xaxis']['#labels'][] = (string)$year;
+
+      $chart['start']['#data'][] = $record['month'] / DASH_REV_DIVIDER;
+      $chart['current']['#data'][] = $record['period'] / DASH_REV_DIVIDER;
     }
   }
 
@@ -1322,37 +1361,29 @@ function reports_ah_debt_credits_loans_column($period)
   $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
-  // то есть данные за июль выводятся под заголовком 1 августа.
+  // то есть данные за июль выводятся под заголовком "на 1 августа".
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
   $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
   $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
   $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
 
   $data = [];
 
-  // собрать все записи по всем кредитам и займам (kinds = 3,4)
-  if ($debts_prev  = dash_debt_get_by_conditions([
-        'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDIT],
-        'period' => ['from' => $prev_year_month_start, 'to' => $prev_year_next_month_start]
-      ]))
-  {
-    foreach ($debts_prev as $debt) {
-
-    }
-  }
+  // собрать все записи по всем кредитам (DASH_DEBT_KIND_CREDIT)
   $debts  = dash_debt_get_by_conditions([
     'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDIT],
-    'period' => ['from' => $month_start, 'to' => $next_month_start]
+    'period' => ['from' => $prev_year_start, 'to' => $period['to']]
   ]);
-
+  foreach($debts as $debt) {
+    $data[$debt->date] = $debt->amount / DASH_REV_DIVIDER;
+  }
 
   if ($data) {
     $chart = array(
       '#type' => 'chart',
       '#chart_type' => 'column',
-      '#colors' => ['#ccc', DASH_COLOR_BLUE],
+      '#colors' => [DASH_COLOR_LIGHT_BLUE, DASH_COLOR_BLUE],
       '#font' => 'Montserrat',
       '#height' => '350',
       '#legend_position' => 'top',
@@ -1376,51 +1407,25 @@ function reports_ah_debt_credits_loans_column($period)
         '#type' => 'chart_yaxis',
         '#min' => 0,
       ],
-      'plan' => [
+      'start' => [
         '#type' => 'chart_data',
-        '#title' => 'План',
+        '#title' => 'На 01.01',
         '#data' => [],
       ],
-      'fact' => [
+      'current' => [
         '#type' => 'chart_data',
-        '#title' => 'Факт',
+        '#title' => 'На 01.' . date('m', $next_month_start),
         '#data' => [],
       ],
     );
 
-    foreach ($plan_fact_by_month as $month) {
-      if ($month['plan_output'] || $month['fact_output']) {
-        $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
+    $chart['xaxis']['#labels'][] = date('Y', $prev_year_start);
+    $chart['start']['#data'][] = $data[$prev_year_start];
+    $chart['current']['#data'][] = $data[$prev_year_month_start];
 
-        $plan = $month['plan_output'] / DASH_PROD_DIVIDER;
-        $fact = $month['fact_output'] / DASH_PROD_DIVIDER;
-
-        $chart['plan']['#data'][] = $plan;
-        $chart['fact']['#data'][] = $fact;
-
-        $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-          '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
-          '</div>';
-
-        $chart['fact'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-          '#raw_options' => [
-            'annotation' => $fact ? number_format($fact, 0, null, ' ') : null,
-          ],
-        );
-        $chart['plan'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-          '#raw_options' => [
-            'annotation' => $plan ? number_format($plan, 0, null, ' ') : null,
-          ],
-        );
-      }
-    }
+    $chart['xaxis']['#labels'][] = date('Y', $year_start);
+    $chart['start']['#data'][] = $data[$year_start];
+    $chart['current']['#data'][] = $data[$month_start];
   }
 
   return $chart;
@@ -1448,7 +1453,7 @@ function reports_ah_debt_debitors_table_output($period)
     'row3' => [],
   ];
 
-  // собрать все записи Дебиторской задолженности (category = 1)
+  // собрать все записи Дебиторской задолженности (DASH_DEBT_KIND_DEBITOR)
   $debts = dash_debt_get_by_conditions([
     'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_DEBITOR],
     'period' => ['from' => $prev_year_start, 'to' => $period['to']]
@@ -1495,6 +1500,85 @@ function reports_ah_debt_debitors_table_output($period)
   ]);
 
   return '<div class="debt-debitors-table">' . $output . '</div>';
+}
+function reports_ah_debt_debitors_loans_column($period)
+{
+  $chart = dash_no_data_chart_get();
+
+  // собрать все записи за период
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
+
+  // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
+  // то есть данные за июль выводятся под заголовком "на 1 августа".
+  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
+  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
+  $year_start = $period['from'];
+  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
+  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $data = [];
+
+  // собрать все записи Дебиторской задолженности (DASH_DEBT_KIND_DEBITOR)
+  $debts  = dash_debt_get_by_conditions([
+    'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_DEBITOR],
+    'period' => ['from' => $prev_year_start, 'to' => $period['to']]
+  ]);
+  foreach($debts as $debt) {
+    if ($debt->category == 1 && strpos(drupal_strtolower($debt->name), 'вся') !== false) {
+      $data[$debt->date] = $debt->amount / DASH_REV_DIVIDER;
+    }
+  }
+
+  if ($data) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'column',
+      '#colors' => [DASH_COLOR_LIGHT_BLUE, DASH_COLOR_BLUE],
+      '#font' => 'Montserrat',
+      '#height' => '350',
+      '#legend_position' => 'top',
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontSize' => '16'],
+        'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
+        'annotations' => [
+          'datum' => ['stem' => ['color' => 'transparent']],
+          'textStyle' => ['fontSize' => 14, 'bold' => 'true'],
+        ],
+        'chartArea' => [
+          'width' => '90%',
+          'left' => 70,
+        ],
+        'tooltip' => ['isHtml' => true],
+      ],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+      ],
+      'start' => [
+        '#type' => 'chart_data',
+        '#title' => 'На 01.01',
+        '#data' => [],
+      ],
+      'current' => [
+        '#type' => 'chart_data',
+        '#title' => 'На 01.' . date('m', $next_month_start),
+        '#data' => [],
+      ],
+    );
+
+    $chart['xaxis']['#labels'][] = date('Y', $prev_year_start);
+    $chart['start']['#data'][] = $data[$prev_year_start];
+    $chart['current']['#data'][] = $data[$prev_year_month_start];
+
+    $chart['xaxis']['#labels'][] = date('Y', $year_start);
+    $chart['start']['#data'][] = $data[$year_start];
+    $chart['current']['#data'][] = $data[$month_start];
+  }
+
+  return $chart;
 }
 
 // слайд 12
@@ -1567,9 +1651,88 @@ function reports_ah_debt_creditors_table_output($period)
 
   return '<div class="debt-creditors-table">' . $output . '</div>';
 }
+function reports_ah_debt_creditors_loans_column($period)
+{
+  $chart = dash_no_data_chart_get();
+
+  // собрать все записи за период
+  $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
+
+  // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
+  // то есть данные за июль выводятся под заголовком "на 1 августа".
+  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
+  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
+  $year_start = $period['from'];
+  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
+  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $data = [];
+
+  // собрать все записи Кредиторской задолженности (category = 2)
+  $credits  = dash_debt_get_by_conditions([
+    'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDITOR],
+    'period' => ['from' => $prev_year_start, 'to' => $period['to']]
+  ]);
+  foreach($credits as $credit) {
+    if ($credit->category == 1 && strpos(drupal_strtolower($credit->name), 'вся') !== false) {
+      $data[$credit->date] = $credit->amount / DASH_REV_DIVIDER;
+    }
+  }
+
+  if ($data) {
+    $chart = array(
+      '#type' => 'chart',
+      '#chart_type' => 'column',
+      '#colors' => [DASH_COLOR_LIGHT_BLUE, DASH_COLOR_BLUE],
+      '#font' => 'Montserrat',
+      '#height' => '350',
+      '#legend_position' => 'top',
+      '#raw_options' => [
+        'titleTextStyle' => ['bold' => 'true', 'fontSize' => '16'],
+        'crosshair' => ['trigger' => 'both', 'orientation' => 'vertical'],
+        'annotations' => [
+          'datum' => ['stem' => ['color' => 'transparent']],
+          'textStyle' => ['fontSize' => 14, 'bold' => 'true'],
+        ],
+        'chartArea' => [
+          'width' => '90%',
+          'left' => 70,
+        ],
+        'tooltip' => ['isHtml' => true],
+      ],
+      'xaxis' => [
+        '#type' => 'chart_xaxis',
+      ],
+      'yaxis' => [
+        '#type' => 'chart_yaxis',
+        '#min' => 0,
+      ],
+      'start' => [
+        '#type' => 'chart_data',
+        '#title' => 'На 01.01',
+        '#data' => [],
+      ],
+      'current' => [
+        '#type' => 'chart_data',
+        '#title' => 'На 01.' . date('m', $next_month_start),
+        '#data' => [],
+      ],
+    );
+
+    $chart['xaxis']['#labels'][] = date('Y', $prev_year_start);
+    $chart['start']['#data'][] = $data[$prev_year_start];
+    $chart['current']['#data'][] = $data[$prev_year_month_start];
+
+    $chart['xaxis']['#labels'][] = date('Y', $year_start);
+    $chart['start']['#data'][] = $data[$year_start];
+    $chart['current']['#data'][] = $data[$month_start];
+  }
+
+  return $chart;
+}
 
 // слайд 20
-/** todo
+/**
  * Данные для этой таблицы должны заноситься накопительным итогом
  * (в отличие от таблицы для ТД, для которой Бобков заносит данные в итоговыми значениями на месяц).
  *

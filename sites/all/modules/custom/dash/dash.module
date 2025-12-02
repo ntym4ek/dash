@@ -10,7 +10,8 @@ define ('DASH_TYPE_FACT_DEPR', 1);               // тип Факт
 define ('DASH_TYPE_DEAL_DEPR', 2);               // тип Неоплаченный контракт
 
 define ('DASH_COLOR_BLUE', '#2B94C9');
-define ('DASH_COLOR_LIGHT_BLUE', '#89BDDF');
+//define ('DASH_COLOR_LIGHT_BLUE', '#89BDDF');
+define ('DASH_COLOR_LIGHT_BLUE', '#a2d6ff');
 define ('DASH_COLOR_AQUA', '#2DAD9E');
 define ('DASH_COLOR_GREEN', '#47AD9E');
 define ('DASH_COLOR_GLOW_GREEN', '#A6B727');
@@ -596,7 +597,6 @@ function dash_ship_delete_by_month($conditions)
 {
   if ($conditions['company_id'] && $conditions['type'] && isset($conditions['manual']) && in_array($conditions['table'], ['ship', 'accounts'])
     && (isset($conditions['month_start']) || $conditions['type'] == DASH_TYPE_DEAL)) {
-    $next_month_start = gmmktime(0, 0, 0, date('n', $conditions['month_start'])+1, 1, date('Y', $conditions['month_start']));
 
     $efquery = new EntityFieldQuery();
     $efquery
@@ -607,6 +607,7 @@ function dash_ship_delete_by_month($conditions)
       ->fieldCondition('field_s_is_manual', 'value', $conditions['manual']);
 
     if ($conditions['type'] != DASH_TYPE_DEAL) {
+      $next_month_start = gmmktime(0, 0, 0, date('n', $conditions['month_start'])+1, 1, date('Y', $conditions['month_start']));
       $efquery
         ->fieldCondition('field_s_date', 'value', $conditions['month_start'], '>=')
         ->fieldCondition('field_s_date', 'value', $next_month_start, '<');
@@ -2005,7 +2006,7 @@ function dash_ship_create($params)
 }
 
 /**
- * Создать Запись таблицы Отгрузка продукции
+ * Создать Запись таблицы Задолженностей
  */
 function dash_debt_create($params)
 {

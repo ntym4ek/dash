@@ -283,7 +283,7 @@ function import_nomenclature($array)
             $term = dash_nomenklatura_get_by_1c_artikul($array['inn'], $nom['art']);
             // если нет по артикулу, искать по ID или создать
             if (!$term) {
-              $term = dash_term_get_by_1c_id($array['inn'], $nom['id']);
+              $term = dash_nomenclature_get_by_1c_id($array['inn'], $nom['id']);
             }
 
             if ($term) {

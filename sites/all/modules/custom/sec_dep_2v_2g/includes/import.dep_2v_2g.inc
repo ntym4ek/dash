@@ -179,7 +179,7 @@ function dep_2v_2g_import_ship_plan_td($array)
     if ($ship && isset($type) && $company) {
       // удалить старый план на месяц
       // для Неоплаченных контрактов месяц не задан, тк это срез на момент импорта
-      $params = ['type' => $type, 'company_id' => $company->tid, 'manual' => 0];
+      $params = ['type' => $type, 'company_id' => $company->tid, 'manual' => 0, 'table' => 'ship'];
       if (isset($array['month'])) {
         $params['month_start'] = helper_datetime_to_timestamp($array['month']);
       }
