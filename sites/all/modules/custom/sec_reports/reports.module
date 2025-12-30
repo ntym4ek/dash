@@ -4,6 +4,7 @@
 include ('includes/td.reports.inc');
 include ('includes/jp.reports.inc');
 include ('includes/ah.reports.inc');
+include ('includes/lb.reports.inc');
 
 /**
  * Implementation of hook_menu().
@@ -37,6 +38,16 @@ function reports_menu()
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, AGROHIMIKAT_USER_RID]],
     'weight' => 19,
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['reports/lb'] = array(
+    'title' => 'Лубрикантс',
+    'menu_name' => 'main-menu',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['reports_lb_period_to_form'],
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, AGROHIMIKAT_USER_RID]],
+    'weight' => 20,
     'type' => MENU_NORMAL_ITEM,
   );
   $items['reports/jp'] = array(
@@ -92,6 +103,15 @@ function reports_menu()
     'page arguments' => ['reports_manual_bdr_data_edit_form'],
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+
+  $items['data/prod-prod/edit'] = [
+    'title' => 'Редактирование данных',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['reports_prod_prod_data_edit_form'],
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, AGROHIMIKAT_USER_RID]],
     'type' => MENU_NORMAL_ITEM,
   ];
 
@@ -323,6 +343,183 @@ function reports_manual_bdr_data_edit_form_submit($form, $form_state)
     'type' => $form_state['values']['type'],
     'category_id' => $form_state['values']['category'],
     'amount' => $form_state['values']['amount'],
+  ]);
+
+  // обновление блоков
+  if (!empty($form_state['blocks'])) {
+    foreach ($form_state['blocks'] as $block) {
+      $block = check_plain($block);
+      $output = '<div class="ajax-load" data-func="' . $block . '"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+      $commands[] = ajax_command_replace('[data-func="' . $block . '"]', $output);
+    }
+  }
+
+  $commands[] = ajax_command_invoke('.autodialog-content', 'dialog', array('close'));
+  ctools_include('ajax');
+  ctools_add_js('ajax-responder');
+  print ajax_render($commands);
+  drupal_exit();
+}
+
+function reports_prod_prod_data_edit_form($form, &$form_state)
+{
+  // сохраняем блоки, которые нужно обновить
+  if (!empty($_GET["blocks"])) {
+    $form_state['blocks'] = $_GET["blocks"];
+  }
+
+  // определяем ID компании, для которой заполняется форма
+  if (empty($form_state["values"]['company_id'])) {
+    $company_id = $_GET["inn"] ?? null;
+    if (isset($company_id)) {
+      $company = dash_term_get_by_1c_id('companies', $_GET["inn"]);
+      $company_id = $company->tid;
+    }
+  } else $company_id = $form_state["values"]['company_id'];
+
+  $form = [
+    '#prefix' => '<div id="data-prod-prod-edit-wrapper" class="data-prod-prod-edit-wrapper">',
+    '#suffix' => '</div>',
+  ];
+
+  if (empty($company_id)) {
+    $intro = '<p>Не задан идентификатор компании. Обратитесь к администратору сайта.</p>';
+    $form['intro'] = ['#markup' => '<div class="intro">' . $intro . '</div>'];
+
+    return $form;
+  }
+
+  $intro = '<p>Форма позволяет добавлять новые и&nbsp;редактировать ранее введённые данные. Данные вводятся помесячно. Только числовые значения. Объём производства в шт.</p>';
+  $form['intro'] = [
+    '#markup' => '<div class="intro">' . $intro . '</div>',
+    '#attached' => ['js' => [[
+      'data' => ['messages' => ['position' => 'inline']],
+      'type' => 'setting',
+    ]]],
+  ];
+
+  $options_m = [0 => ' - Месяц - '];
+  for($i = 1; $i <= 12; $i++) {
+    $options_m[$i] = helper_month_label_ru($i);
+  }
+  $form['month']['month'] = [
+    '#type' => 'select',
+    '#options' => $options_m,
+    '#default_value' => 0,
+    '#prefix' => '<div class="row"><div class="col-xs-7 col-md-5">',
+    '#suffix' => '</div>',
+    '#ajax' => [
+      'callback' => 'reports_prod_prod_data_edit_form_callback',
+      'wrapper' => 'data-prod-prod-edit-wrapper',
+    ],
+  ];
+
+  $options_y = [0 => ' - Год - '];
+  for($i = DASH_HISTORY_START_YEAR_AH; $i <= date('Y'); $i++) {
+    $options_y[$i] = $i;
+  }
+  $form['month']['year'] = [
+    '#type' => 'select',
+    '#options' => $options_y,
+    '#default_value' => 0,
+    '#prefix' => '<div class="col-xs-5 col-md-4">',
+    '#suffix' => '</div>',
+    '#ajax' => [
+      'callback' => 'reports_prod_prod_data_edit_form_callback',
+      'wrapper' => 'data-prod-prod-edit-wrapper',
+    ],
+  ];
+
+  $form['type'] = [
+    '#type' => 'select',
+    '#options' => [DASH_TYPE_PLAN => 'План', DASH_TYPE_FACT => 'Факт'],
+    '#prefix' => '<div class="col-xs-12 col-md-3">',
+    '#suffix' => '</div>',
+    '#ajax' => [
+      'callback' => 'reports_prod_prod_data_edit_form_callback',
+      'wrapper' => 'data-prod-prod-edit-wrapper',
+    ],
+  ];
+
+  // если изменены месяц/год, определить наличие данных
+  $is_month_selected = false;
+  $record_id = 0;
+  if (isset($form_state['triggering_element']['#name']) && in_array($form_state['triggering_element']['#name'], ['month', 'year', 'type'])) {
+    $volume_default = 0;
+    if ($form_state['values']['month'] && $form_state['values']['year']) $is_month_selected = true;
+
+    if ($is_month_selected) {
+      $period = [
+        'from' => gmmktime(0, 0, 0, (int)$form_state['values']['month'], 1, (int)$form_state['values']['year']),
+        'to' => gmmktime(0, 0, 0, (int)$form_state['values']['month']+1, 1, (int)$form_state['values']['year']),
+      ];
+      if ($data = dash_production_production_get_by_conditions(['company_id' => $company_id, 'period' => $period, 'type' => $form_state['values']['type']])) {
+        $record = reset($data);
+        $volume_default = $record->volume;
+        $record_id = $record->id;
+      }
+    }
+    $form_state['input']['volume'] = $volume_default;
+    $form_state['values']['volume'] = $volume_default;
+  }
+
+  // id записи, если найдена существующая
+  $form['record'] = [
+    '#type' => 'hidden',
+    '#value' => $record_id,
+  ];
+  // от какой компании создаётся запись
+  $form['company_id'] = [
+    '#type' => 'hidden',
+    '#value' => $company_id,
+  ];
+
+  $form['volume'] = [
+    '#type' => 'textfield',
+    '#size' => 20,
+    '#title' => 'Числовое значение',
+    '#required' => true,
+    '#default_value' => '',
+    '#disabled' => !$is_month_selected,
+    '#prefix' => '<div class="col-xs-6">',
+    '#suffix' => '</div></div>',
+  ];
+
+  $form['actions'] = ['#type' => 'actions'];
+  $form['actions']['submit'] = [
+    '#type' => 'submit',
+    '#value' => 'Отправить',
+    '#attributes' => ['class' => ['btn-primary', 'btn-wide']],
+    '#disabled' => !$is_month_selected,
+    '#ajax' => [
+      'callback' => 'reports_prod_prod_data_edit_form_callback',
+      'wrapper' => 'data-prod-prod-edit-wrapper',
+    ],
+  ];
+
+  return $form;
+}
+function reports_prod_prod_data_edit_form_callback($form, $form_state)
+{
+  return $form;
+}
+function reports_prod_prod_data_edit_form_submit($form, $form_state)
+{
+  $month_start = gmmktime(0, 0, 0, (int)$form_state['values']['month'], 1, (int)$form_state['values']['year']);
+
+  // удалить старые записи за месяц
+  if ($form_state['values']['record']) {
+    entity_delete('production', $form_state['values']['record']);
+  }
+
+  // добавить Запись плана
+  dash_production_production_create([
+    'created' => REQUEST_TIME,
+    'company_id' => $form_state['values']['company_id'],
+    'month_ts' => $month_start,
+    'type' => $form_state['values']['type'],
+    'volume' => $form_state['values']['volume'],
+    'manual' => 1,
   ]);
 
   // обновление блоков
@@ -744,6 +941,19 @@ function reports_ship_data_edit_form($form, &$form_state)
     }
   } else $company_id = $form_state["values"]['company_id'];
 
+  // В План-факт отгрузки продукции для Лубрикантс отгрузка делится на Собственную и Давальческую.
+  // В обоих случаях план заполняется вручную, то есть нужно определить значение поля field_s_is_toller
+  $form['toller'] = [
+    '#type' => 'hidden',
+    '#value' => $_GET["toller"] ?? 0,
+  ];
+
+  // таблица, в которую будем писать
+  $form['table'] = [
+    '#type' => 'hidden',
+    '#value' => $_GET["table"] ?? 'ship',
+  ];
+
   $form = [
     '#prefix' => '<div id="data-ship-edit-wrapper" class="data-ship-edit-wrapper">',
     '#suffix' => '</div>',
@@ -833,7 +1043,6 @@ function reports_ship_data_edit_form($form, &$form_state)
     $form_state['values']['amount'] = $amount_default;
   }
 
-
   // id записи, если найдена существующая
   $form['record'] = [
     '#type' => 'hidden',
@@ -894,11 +1103,13 @@ function reports_ship_data_edit_form_submit($form, $form_state)
 
   // добавить Запись плана
   dash_ship_create([
+    'table' => $form_state['values']['table'],
     'company_id' => $form_state['values']['company_id'],
     'date_ts' => $month_start,
     'type' => $form_state['values']['type'],
     'amount' => $form_state['values']['amount'],
     'quantity' => $form_state['values']['qty'],
+    'toller' => $form_state['values']['toller'],
     'net_cost' => 0,
     'nom_id' => 0,
     'client_id' => 0,

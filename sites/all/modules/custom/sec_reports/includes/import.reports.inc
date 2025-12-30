@@ -331,6 +331,7 @@ function reports_ship_import($array)
           'date' => $month_start,
           'amount' => $load_item['amount'] ?? 0,
           'direction_id' => $direction->tid,
+          'toller' => $load_item['toller'] ?? 0,
         ];
       }
     }
@@ -357,6 +358,7 @@ function reports_ship_import($array)
           'net_cost' => $ship_item['net_cost'] ?? 0,
           'nom_id' => $ship_item['nom_id'] ?? 0,
           'client_id' => $ship_item['client_id'] ?? 0,
+          'toller' => $ship_item['toller'] ?? 0,
           'direction_id' => $ship_item['direction_id'] ?? 0,
         ]);
       }

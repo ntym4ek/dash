@@ -207,7 +207,7 @@ function reports_ah_block_011()
   // период с начала года по начало заданного месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
@@ -222,7 +222,7 @@ function reports_ah_block_012()
   // период с начала года по начало заданного месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
@@ -237,7 +237,7 @@ function reports_ah_block_021()
   // период с начала года по начало заданного месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
@@ -252,7 +252,7 @@ function reports_ah_block_022()
   // период с начала года по начало заданного месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
@@ -266,8 +266,8 @@ function reports_ah_block_031()
 {
   // за предыдущий заданному месяц
   $period = [
-    'from' => gmmktime(0, 0, 0, date('n', $_GET['period_to'])-1, 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')-1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
+    'from' => !empty($_GET['period_to']) ? gmmktime(0, 0, 0, date('n', $_GET['period_to'])-1, 1, date('Y', $_GET['period_to'])) : gmmktime(0, 0, 0, date('n')-1, 1, date('Y')),
+    'to' =>   !empty($_GET['period_to']) ? gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) : gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
@@ -277,9 +277,9 @@ function reports_ah_block_032()
 {
   // за предыдущий заданному месяц
   $period = [
-    'from' => gmmktime(0, 0, 0, date('n', $_GET['period_to'])-1, 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')-1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
+    'from' => !empty($_GET['period_to']) ? gmmktime(0, 0, 0, date('n', $_GET['period_to'])-1, 1, date('Y', $_GET['period_to'])) : gmmktime(0, 0, 0, date('n')-1, 1, date('Y')),
+    'to' =>   !empty($_GET['period_to']) ? gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) : gmmktime(0, 0, 0, date('n'), 1, date('Y')),
+    'end' =>  gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
   // факт производства продукции по группам
@@ -293,7 +293,7 @@ function reports_ah_block_061()
   // период с начала года по начало заданного месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
@@ -305,7 +305,7 @@ function reports_ah_block_062()
   // период с начала года по начало заданного месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
@@ -320,7 +320,7 @@ function reports_ah_block_081()
   // период с начала года по начало заданного месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
@@ -332,7 +332,7 @@ function reports_ah_block_082()
   // период с начала года по начало заданного месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 
@@ -347,7 +347,7 @@ function reports_ah_block_091()
   // период с начала года по начало текущего месяца
   $period = [
     'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
+    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
     'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
   ];
 

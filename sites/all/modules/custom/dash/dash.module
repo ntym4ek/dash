@@ -32,6 +32,7 @@ define ('DASH_PERIOD_START_MONTH_TD', 10);    // начало сезона, ме
 define ('DASH_INN_AH', '4312128282');
 define ('DASH_INN_TD', '4312138026');
 define ('DASH_INN_ST', '4312136043');
+define ('DASH_INN_LB', '4312158375');
 const DASH_TD_NOM_ID_LIST_TO_EXCLUDE = [      // ТД, часть номенклатуры не нужно отражать в отчётах
   11743,                                          // 2 Этилгексиловый эфир 2,4-Д кислоты(ТД КЧХК)
   193930,                                         // 2,4-Д 2-этилгексиловый эфир техн. Китай (ТД КЧХК)
@@ -521,6 +522,7 @@ function dash_ship_ship_get_by_conditions($conditions)
  *   - company_id* - по какой компании KCCC собирать данные
  *   - type - тип записи (план, факт, неотгруженные контракты)
  *   - period - массив ['from' => unix_ts, 'to' => не включительно]
+ *   - toller (bool) - собственная отгрузка или давальческая
  *   - manual (bool) - данные из 1с или ручной ввод (если не задано, то только данные из 1с)
  * @return array|mixed|null
  */
@@ -558,6 +560,18 @@ function dash_ship_accounts_get_by_conditions($conditions)
     $dbr->addField('fd', 'field_s_direction_tid', 'direction_id');
     $dbr->leftJoin('taxonomy_term_data', 'tc', 'tc.tid = fd.field_s_direction_tid');
     $dbr->addField('tc', 'name', 'direction_name');
+
+    // для полей, добавленных позже нужно учитывать, что данные могут быть не заданы
+    $dbr->leftJoin('field_data_field_s_is_toller', 'fit', 'fit.entity_id = s.id');
+    if (empty($conditions['toller'])) {
+      $dbr->condition(db_or()
+        ->isNull('fit.field_s_is_toller_value')
+        ->condition('fit.field_s_is_toller_value', 0)
+      );
+    } else {
+      $dbr->condition('fit.field_s_is_toller_value', 1);
+    }
+    $dbr->addField('fit', 'field_s_is_toller_value', 'toller');
 
     // для полей, добавленных позже нужно учитывать, что данные могут быть не заданы
     $dbr->leftJoin('field_data_field_s_is_manual', 'fm', 'fm.entity_id = s.id');
@@ -1124,6 +1138,62 @@ function dash_production_clients_get_by_conditions($conditions)
 
     $dbr->innerJoin('field_data_field_prod_client', 'fc', 'fc.entity_id = p.id');
     $dbr->addField('fc', 'field_prod_client_tid', 'client');
+
+    $dbr->orderBy('date');
+    $result = $dbr->execute()->fetchAll();
+  }
+
+  return $result;
+}
+
+/**
+ *  Вернуть данные по Остаткам готовой продукции и сырья (production/production)
+ *  с учётом заданных параметров.
+ *
+ * @param $conditions
+ *   - company_id* - tid компании
+ *   - period* - массив ['from' =>, 'to' => не включительно]
+ *   - type - тип записи (план/факт)
+ * @return array|mixed|null
+ */
+function dash_production_production_get_by_conditions($conditions)
+{
+  $fid = drupal_hash_base64(__FUNCTION__ . serialize($conditions));
+  $result = &drupal_static($fid);
+
+  if (!isset($result)) {
+    $dbr = db_select('eck_production', 'p');
+    $dbr->condition('p.type', 'production');
+    $dbr->addField('p', 'id');
+
+    $dbr->innerJoin('field_data_field_prod_company', 'fc', 'fc.entity_id = p.id');
+    $dbr->condition('fc.field_prod_company_tid', $conditions['company_id']);
+    $dbr->addField('fc', 'field_prod_company_tid', 'company');
+
+    $dbr->innerJoin('field_data_field_prod_date', 'frd', 'frd.entity_id = p.id');
+    $dbr->condition('frd.field_prod_date_value', $conditions['period']['from'], '>=');
+    $dbr->condition('frd.field_prod_date_value', $conditions['period']['to'], '<');
+    $dbr->addField('frd', 'field_prod_date_value', 'date');
+
+    $dbr->innerJoin('field_data_field_prod_type', 'ft', 'ft.entity_id = p.id');
+    if (!empty($conditions['type'])) {
+      $dbr->condition('ft.field_prod_type_value', $conditions['type']);
+    }
+    $dbr->addField('ft', 'field_prod_type_value', 'type');
+
+    $dbr->innerJoin('field_data_field_prod_is_manual', 'fm', 'fm.entity_id = p.id');
+    if (empty($conditions['manual'])) {
+      $dbr->condition('fm.field_prod_is_manual_value', 0);
+    } else {
+      $dbr->condition('fm.field_prod_is_manual_value', 1);
+    }
+    $dbr->addField('fm', 'field_prod_is_manual_value', 'manual');
+
+    $dbr->innerJoin('field_data_field_prod_volume', 'fv', 'fv.entity_id = p.id');
+    $dbr->addField('fv', 'field_prod_volume_value', 'volume');
+
+    $dbr->innerJoin('field_data_field_prod_client', 'fcl', 'fcl.entity_id = p.id');
+    $dbr->addField('fcl', 'field_prod_client_tid', 'client');
 
     $dbr->orderBy('date');
     $result = $dbr->execute()->fetchAll();
@@ -1994,6 +2064,7 @@ function dash_ship_create($params)
       }
       if ($params['table'] == 'accounts') {
         $ship_wr->field_s_direction = $params['direction_id'] ?? 0;
+        $ship_wr->field_s_is_toller = $params['toller'] ?? 0;
       }
       $ship_wr->save();
     } catch (Exception $e) {
