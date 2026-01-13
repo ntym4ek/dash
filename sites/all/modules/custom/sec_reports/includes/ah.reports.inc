@@ -11,12 +11,21 @@ function reports_ah_period_to_form($form, &$form_state)
 
   $month_start = gmmktime(0, 0, 0, $month, 1, $year);
 
+  // сформировать текстовое представление периода
+  $season = dash_season_bounds_get_by_date(1, $month_start);
+  $period_text = helper_month_label_ru(date('n', $season['from']));
+  if (date('n', $season['from']) != date('n', $season['to']-1)) {
+    $period_text .= '-' . helper_month_label_ru(date('n', $season['to']-1));
+  }
+  $period_text .= ' ' . date('Y', $season['from']) . ' года';
+  $period_text = drupal_strtolower($period_text);
+
   $form = [
     '#prefix' => '<div id="period-to-form-wrapper">',
     '#suffix' => '</div>',
     'filters' => [
       '#type' => 'container',
-      '#suffix' => '<div class="text-notes">Отчёт составлен на начало месяца.</div>',
+      '#suffix' => '<div class="text-notes">Отчёт составлен за период: ' . $period_text . ' (если не указано иное)</div>',
       '#attributes' => ['class' => ['filters']],
     ],
   ];
@@ -26,7 +35,7 @@ function reports_ah_period_to_form($form, &$form_state)
     $month_opts[$i] = helper_month_label_ru($i);
   }
   $form['filters']['month'] = [
-    '#title' => 'Месяц',
+    '#title' => 'Отчётный месяц',
     '#type' => 'select',
     '#options' => $month_opts,
     '#default_value' => [$month],
@@ -70,7 +79,7 @@ function reports_ah_page_content($period_to)
 
   // слайд 1
   $output  =  '<div class="section-title">' .
-                '<h3>Динамика производства продукции по направлениям за период ' . date('Y') . ' (в ' . DASH_PROD_SUFFIX . ')</h3>' .
+                '<h3>Динамика производства продукции по направлениям (в ' . DASH_PROD_SUFFIX . ')</h3>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="row">';
@@ -84,7 +93,7 @@ function reports_ah_page_content($period_to)
 
   // слайд 2
   $output .=  '<div class="section-title">' .
-                '<h3>План/факт производства продукции и оказания услуг за ' . date('Y') . ' (в ' . DASH_PROD_SUFFIX . ')</h3>' .
+                '<h3>План/факт производства продукции и оказания услуг (в ' . DASH_PROD_SUFFIX . ')</h3>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="row">';
@@ -115,7 +124,7 @@ function reports_ah_page_content($period_to)
 
   // слайд 6
   $output .=  '<div class="section-title">' .
-                '<h3>Динамика поступления денежных средств ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ' с НДС)</h3>' .
+                '<h3>Динамика поступления денежных средств (в ' . DASH_REV_SUFFIX . ' с НДС)</h3>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="row">';
@@ -129,7 +138,7 @@ function reports_ah_page_content($period_to)
 
   // слайд 8
   $output .=  '<div class="section-title">' .
-                '<h3>Динамика отгрузки продукции и оказания услуг ' . date('Y') . ' (в ' . DASH_REV_SUFFIX . ' с НДС)</h3>' .
+                '<h3>Динамика отгрузки продукции и оказания услуг (в ' . DASH_REV_SUFFIX . ' с НДС)</h3>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="row">';
@@ -204,12 +213,8 @@ function reports_ah_page_content($period_to)
 
 function reports_ah_block_011()
 {
-  // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  // период с начала отчётного года по начало заданного месяца
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $html = reports_ah_production_fact_table($period);
@@ -220,11 +225,7 @@ function reports_ah_block_011()
 function reports_ah_block_012()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $data_arr = reports_ah_production_fact_line($period);
@@ -235,11 +236,7 @@ function reports_ah_block_012()
 function reports_ah_block_021()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $html = reports_ah_production_plan_fact_table($period);
@@ -250,11 +247,7 @@ function reports_ah_block_021()
 function reports_ah_block_022()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $data_arr = reports_ah_production_plan_fact_column($period);
@@ -291,11 +284,7 @@ function reports_ah_block_032()
 function reports_ah_block_061()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   return reports_ah_cash_income_fact_table_html($period);
@@ -303,11 +292,7 @@ function reports_ah_block_061()
 function reports_ah_block_062()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $data_arr = reports_ah_cash_income_fact_column($period);
@@ -318,11 +303,7 @@ function reports_ah_block_062()
 function reports_ah_block_081()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   return reports_ah_ship_accounts_fact_table_html($period);
@@ -330,11 +311,7 @@ function reports_ah_block_081()
 function reports_ah_block_082()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $data_arr = reports_ah_ship_accounts_fact_column($period);
@@ -345,22 +322,14 @@ function reports_ah_block_082()
 function reports_ah_block_091()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_ah_debt_credits_loans_table_html($period);
 }
 function reports_ah_block_092()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // план-факт отгрузки продукции
   $data_arr = reports_ah_debt_credits_loans_column($period);
@@ -371,22 +340,14 @@ function reports_ah_block_092()
 function reports_ah_block_101()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_ah_debt_debitors_table_output($period);
 }
 function reports_ah_block_102()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт дебиторской задолженности
   $data_arr = reports_ah_debt_debitors_loans_column($period);
@@ -397,22 +358,14 @@ function reports_ah_block_102()
 function reports_ah_block_121()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_ah_debt_creditors_table_output($period);
 }
 function reports_ah_block_122()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт кредиторской задолженности
   $data_arr = reports_ah_debt_creditors_loans_column($period);
@@ -424,11 +377,7 @@ function reports_ah_block_122()
 function reports_ah_block_200()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_ah_manual_bdr_table_output($period);
 }
@@ -1288,12 +1237,19 @@ function reports_ah_debt_credits_loans_table_html($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком 1 августа.
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [
     'row1' => [],
@@ -1362,11 +1318,18 @@ function reports_ah_debt_credits_loans_column($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком "на 1 августа".
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [];
 
@@ -1439,12 +1402,19 @@ function reports_ah_debt_debitors_table_output($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком 1 августа.
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [
     'row1' => [],
@@ -1510,11 +1480,18 @@ function reports_ah_debt_debitors_loans_column($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком "на 1 августа".
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [];
 
@@ -1588,12 +1565,19 @@ function reports_ah_debt_creditors_table_output($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком 1 августа.
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [
     'row1' => [],
@@ -1660,11 +1644,18 @@ function reports_ah_debt_creditors_loans_column($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком "на 1 августа".
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [];
 

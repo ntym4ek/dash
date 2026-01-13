@@ -11,12 +11,21 @@ function reports_td_period_to_form($form, &$form_state)
 
   $month_start = gmmktime(0, 0, 0, $month, 1, $year);
 
+  // сформировать текстовое представление периода
+  $season = dash_season_bounds_get_by_date(1, $month_start);
+  $period_text = helper_month_label_ru(date('n', $season['from']));
+  if (date('n', $season['from']) != date('n', $season['to']-1)) {
+    $period_text .= '-' . helper_month_label_ru(date('n', $season['to']-1));
+  }
+  $period_text .= ' ' . date('Y', $season['from']) . ' года';
+  $period_text = drupal_strtolower($period_text);
+
   $form = [
     '#prefix' => '<div id="period-to-form-wrapper">',
     '#suffix' => '</div>',
     'filters' => [
       '#type' => 'container',
-      '#suffix' => '<div class="text-notes">Отчёт составлен на начало месяца.</div>',
+      '#suffix' => '<div class="text-notes">Отчёт составлен за период: ' . $period_text . ' (если не указано иное)</div>',
       '#attributes' => ['class' => ['filters']],
     ],
   ];
@@ -26,7 +35,7 @@ function reports_td_period_to_form($form, &$form_state)
     $month_opts[$i] = helper_month_label_ru($i);
   }
   $form['filters']['month'] = [
-    '#title' => 'Месяц',
+    '#title' => 'Отчётный месяц',
     '#type' => 'select',
     '#options' => $month_opts,
     '#default_value' => [$month],
@@ -72,7 +81,7 @@ function reports_td_page_content($period_to)
   // слайд 1
   $url = url('/data/plan-prod/edit', ['query' => ['blocks' => ['td_block_1'], 'inn' => DASH_INN_TD]]);
   $output  =  '<div class="section-title">' .
-                '<h3>План-факт производства продукции за ' . date('Y') . ' (в ' . DASH_PROD_SUFFIX . ')</h3>' .
+                '<h3>План-факт производства продукции (в ' . DASH_PROD_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="450" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
               '</div>';
@@ -128,7 +137,7 @@ function reports_td_page_content($period_to)
   $output .=     '<div class="ajax-load" data-func="td_block_52" data-delay="550"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-md-8">';
-  $output .=     '<h5 class="chart-title">За сезон: ' . helper_month_label_ru(DASH_PERIOD_START_MONTH_TD) . ' ' . date('Y', $season_10['from']) . ' - ' . helper_month_label_ru(date('n', $season_10['to'])-1) . ' ' . date('Y', $season_10['to']) . '</h5>';
+  $output .=     '<h5 class="chart-title">За сезон: ' . helper_month_label_ru(DASH_PERIOD_START_MONTH_TD) . ' ' . date('Y', $season_10['from']) . ' - ' . helper_month_label_ru(date('n', $season_10['to'])-1) . ' ' . date('Y', $season_10['to']-1) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_6" data-delay="600"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
@@ -140,7 +149,7 @@ function reports_td_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
-  $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $season_10['to'])) . '</h5>';
+  $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season_10['to']-1)) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_7" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
@@ -233,11 +242,7 @@ function reports_td_page_content($period_to)
 function reports_td_block_1()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to'])+1, 1, date('Y', $_GET['period_to'])) ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // план-факт отгрузки продукции
   $data_arr = reports_column_production_plan_fact($period);
@@ -247,11 +252,7 @@ function reports_td_block_1()
 function reports_td_block_2()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // план-факт отгрузки продукции
   $data_arr = reports_line_ship_plan_fact($period);
@@ -260,11 +261,8 @@ function reports_td_block_2()
 }
 function reports_td_block_31()
 {
-  // определяем заданный месяц
-  $period_to_set = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
   // период с начала сезона по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to_set);
-
+  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $_GET['period_to']);
 
   // сравнение отгрузки (план и факт+контракты) по годам в рублях
   $data_arr = reports_column_ship_plan_fact_compare_revenue($period);
@@ -273,10 +271,8 @@ function reports_td_block_31()
 }
 function reports_td_block_32()
 {
-  // определяем заданный месяц
-  $period_to_set = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
   // период с начала сезона по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to_set);
+  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $_GET['period_to']);
 
   // сравнение отгрузки (план и факт+контракты) по годам в литрах
   $data_arr = reports_column_ship_plan_fact_compare_qty($period);
@@ -286,11 +282,7 @@ function reports_td_block_32()
 function reports_td_block_4()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // план-факт выручки помесячно линейный
   $output = '<div class="row">';
@@ -303,10 +295,12 @@ function reports_td_block_4()
 function reports_td_block_51()
 {
   // период с начала предыдущего заданному месяца по начало заданного месяца
+  $prev_month = date('n', $_GET['period_to'])-1 > 0 ? date('n', $_GET['period_to'])-1 : 12;
+  $prev_month_year = $prev_month == 12 ? date('Y', $_GET['period_to'])-1 : date('Y', $_GET['period_to']);
   $period = [
-    'from' => gmmktime(0, 0, 0, date('n', $_GET['period_to'])-1, 1, date('Y')),
-    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y')),
+    'from' => gmmktime(0, 0, 0, $prev_month, 1, $prev_month_year),
+    'to' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])),
+    'end' => gmmktime(0, 0, 0, date('n', $_GET['period_to']), 1, date('Y', $_GET['period_to'])),
   ];
 
   // факт поступления выручки за последний полный месяц
@@ -317,11 +311,7 @@ function reports_td_block_51()
 function reports_td_block_52()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // факт поступления выручки
   $data_arr = reports_column_revenue_fact_compare($period);
@@ -330,10 +320,8 @@ function reports_td_block_52()
 }
 function reports_td_block_6()
 {
-  // определяем заданный месяц
-  $period_to_set = $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y'));
   // период с начала сезона по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $period_to_set);
+  $period = dash_season_bounds_get_by_date(DASH_PERIOD_START_MONTH_TD, $_GET['period_to']);
 
   // факт поступления выручки
   $data_arr = reports_column_revenue_fact_compare($period);
@@ -343,55 +331,35 @@ function reports_td_block_6()
 function reports_td_block_7()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_bdds_table_output($period);
 }
 function reports_td_block_8()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_debt_debitors_table_output($period);
 }
 function reports_td_block_9()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_debt_creditors_table_output($period);
 }
 function reports_td_block_10()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_debt_credits_loans_table_output($period);
 }
 function reports_td_block_11()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   $data_arr = reports_line_debt_credits_plan_fact($period);
 
@@ -400,33 +368,21 @@ function reports_td_block_11()
 function reports_td_block_12()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n')+1, 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_remains_progress_table_output($period);
 }
 function reports_td_block_13()
 {
   // период с начала года по начало текущего месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   return reports_manual_bdr_table_output($period);
 }
 function reports_td_block_14()
 {
   // период с начала года по начало заданного месяца
-  $period = [
-    'from' => gmmktime(0, 0, 0, 1, 1, date('Y')),
-    'to' => $_GET['period_to'] ?? gmmktime(0, 0, 0, date('n'), 1, date('Y')),
-    'end' => gmmktime(0, 0, 0, 1, 1, date('Y')+1),
-  ];
+  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
 
   // план-факт отгрузки продукции
   $data_arr = reports_column_registration_plan_fact($period);
@@ -632,7 +588,7 @@ function reports_line_revenue_plan_fact($period)
       $total_fact += $fact;
       // если это текущий период,
       // то считаем и выводим накопительный факт только до месяца предстоящего текущему месяцу
-      $total_fact = ($month['start'] < gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y'))) ? $total_fact : null;
+      $total_fact = ($month['start'] < gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['to']))) ? $total_fact : null;
 
       $chart['plan']['#data'][] = $total_plan;
       $chart['fact']['#data'][] = $total_fact;
@@ -878,7 +834,7 @@ function reports_line_ship_plan_fact($period)
       $total_fact += $fact;
       // если это текущий период,
       // то считаем и выводим накопительный факт только до месяца предстоящего текущему месяцу
-      $total_fact = ($month['start'] < gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y'))) ? $total_fact : null;
+      $total_fact = ($month['start'] < gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['to']))) ? $total_fact : null;
 
       $chart['plan']['#data'][] = $total_plan;
       $chart['fact']['#data'][] = $total_fact;
@@ -1232,15 +1188,17 @@ function reports_bdds_table_output($period)
 
   // собрать за предыдущий полный месяц и за год
   if ($plan) foreach ($plan as $record) {
-    $data['income']['total']['plan_period'] += $record->amount;
+    $amount = $record->amount / DASH_REV_DIVIDER;
+    $data['income']['total']['plan_period'] += $amount;
     if ($prev_month_start <= $record->date && $record->date < $period['to']) {
-      $data['income']['total']['plan_month'] += $record->amount;
+      $data['income']['total']['plan_month'] += $amount;
     }
   }
   if ($fact) foreach ($fact as $record) {
-    $data['income']['total']['fact_period'] += $record->amount;
+    $amount = $record->amount / DASH_REV_DIVIDER;
+    $data['income']['total']['fact_period'] += $amount;
     if ($prev_month_start <= $record->date && $record->date < $period['to']) {
-      $data['income']['total']['fact_month'] += $record->amount;
+      $data['income']['total']['fact_month'] += $amount;
     }
   }
 
@@ -1250,23 +1208,25 @@ function reports_bdds_table_output($period)
 
   // собрать за предыдущий полный месяц и за год
   if ($plan) foreach ($plan as $record) {
-    $data['outcome']['total']['plan_period'] += $record->amount;
-    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['total']['plan_month'] += $record->amount;
+    $amount = $record->amount / DASH_REV_DIVIDER;
+    $data['outcome']['total']['plan_period'] += $amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['total']['plan_month'] += $amount;
 
     if (in_array($record->category, [198576, 198575, 198574, 198573])) {
       if (!isset($data['outcome']['categories'][$record->category])) $data['outcome']['categories'][$record->category] = ['plan_month' => 0, 'fact_month' => 0, 'plan_period' => 0, 'fact_period' => 0];
-      $data['outcome']['categories'][$record->category]['plan_period'] += $record->amount;
-      if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['categories'][$record->category]['plan_month'] += $record->amount;
+      $data['outcome']['categories'][$record->category]['plan_period'] += $amount;
+      if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['categories'][$record->category]['plan_month'] += $amount;
     }
   }
   if ($fact) foreach ($fact as $record) {
-    $data['outcome']['total']['fact_period'] += $record->amount;
-    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['total']['fact_month'] += $record->amount;
+    $amount = $record->amount / DASH_REV_DIVIDER;
+    $data['outcome']['total']['fact_period'] += $amount;
+    if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['total']['fact_month'] += $amount;
 
     if (in_array($record->category, [198576, 198575, 198574, 198573])) {
       if (!isset($data['outcome']['categories'][$record->category])) $data['outcome']['categories'][$record->category] = ['plan_month' => 0, 'fact_month' => 0, 'plan_period' => 0, 'fact_period' => 0];
-      $data['outcome']['categories'][$record->category]['fact_period'] += $record->amount;
-      if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['categories'][$record->category]['fact_month'] += $record->amount;
+      $data['outcome']['categories'][$record->category]['fact_period'] += $amount;
+      if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['categories'][$record->category]['fact_month'] += $amount;
     }
   }
 
@@ -1284,11 +1244,11 @@ function reports_bdds_table_output($period)
   $rows[] = [
     'data' => [
       '1. Приход (итого)',
-      ['data' => helper_number_format($data['income']['total']['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
-      ['data' => helper_number_format($data['income']['total']['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['plan_month'] ?? 0, 2, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['fact_month'] ?? 0, 2, ' ', false), 'align' => 'right'],
       ['data' => ($data['income']['total']['plan_month'] ? helper_number_format($data['income']['total']['fact_month']/$data['income']['total']['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
-      ['data' => helper_number_format($data['income']['total']['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
-      ['data' => helper_number_format($data['income']['total']['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['plan_period'] ?? 0, 2, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['income']['total']['fact_period'] ?? 0, 2, ' ', false), 'align' => 'right'],
       ['data' => ($data['income']['total']['plan_period'] ? helper_number_format($data['income']['total']['fact_period']/$data['income']['total']['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
     ],
   ];
@@ -1296,11 +1256,11 @@ function reports_bdds_table_output($period)
   $rows[] = [
     'data' => [
       '2. Расход (итого), в т.ч.:',
-      ['data' => helper_number_format($data['outcome']['total']['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
-      ['data' => helper_number_format($data['outcome']['total']['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['plan_month'] ?? 0, 2, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['fact_month'] ?? 0, 2, ' ', false), 'align' => 'right'],
       ['data' => ($data['outcome']['total']['plan_month'] ? helper_number_format($data['outcome']['total']['fact_month']/$data['outcome']['total']['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
-      ['data' => helper_number_format($data['outcome']['total']['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
-      ['data' => helper_number_format($data['outcome']['total']['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['plan_period'] ?? 0, 2, ' ', false), 'align' => 'right'],
+      ['data' => helper_number_format($data['outcome']['total']['fact_period'] ?? 0, 2, ' ', false), 'align' => 'right'],
       ['data' => ($data['outcome']['total']['plan_period'] ? helper_number_format($data['outcome']['total']['fact_period']/$data['outcome']['total']['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
     ],
   ];
@@ -1310,11 +1270,11 @@ function reports_bdds_table_output($period)
     $rows[] = [
       'data' => [
         '&nbsp;&nbsp;- ' . drupal_strtolower($term->name),
-        ['data' => helper_number_format($cat['plan_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
-        ['data' => helper_number_format($cat['fact_month'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['plan_month'] ?? 0, 2, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['fact_month'] ?? 0, 2, ' ', false), 'align' => 'right'],
         ['data' => ($cat['plan_month'] ? helper_number_format($cat['fact_month']/$cat['plan_month']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
-        ['data' => helper_number_format($cat['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
-        ['data' => helper_number_format($cat['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['plan_period'] ?? 0, 2, ' ', false), 'align' => 'right'],
+        ['data' => helper_number_format($cat['fact_period'] ?? 0, 2, ' ', false), 'align' => 'right'],
         ['data' => ($cat['plan_period'] ? helper_number_format($cat['fact_period']/$cat['plan_period']*100, 0, ' ', false) . '%' : '-'), 'align' => 'right'],
       ],
     ];
@@ -1337,12 +1297,19 @@ function reports_debt_debitors_table_output($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком 1 августа.
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [
     'row1' => [],
@@ -1406,12 +1373,19 @@ function reports_debt_creditors_table_output($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком 1 августа.
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [
     'row1' => [],
@@ -1476,12 +1450,19 @@ function reports_debt_credits_loans_table_output($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком 1 августа.
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [
     'row1' => [],
@@ -1643,7 +1624,7 @@ function reports_line_debt_credits_plan_fact($period)
       $fact_amount = -1 * $month['fact_amount'] / DASH_REV_DIVIDER;
       // если это текущий период,
       // то считаем и выводим факт только до месяца предстоящего текущему месяцу
-      $fact_amount = ($month['start'] < gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y'))) ? $fact_amount : null;
+      $fact_amount = ($month['start'] < gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['to']))) ? $fact_amount : null;
 
       $chart['plan']['#data'][] = $plan_amount;
       $chart['fact']['#data'][] = $fact_amount;
@@ -1693,12 +1674,19 @@ function reports_remains_progress_table_output($period)
 
   // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
   // то есть данные за июль выводятся под заголовком 1 августа.
+  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
+  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
+  $next_month_num = date('n', $period['to']);
+  $next_month_year_num = date('Y', $period['to']);
+
   $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
-  $prev_year_month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from'])-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['from']));
-  $next_month_start = gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['from']));
+
+  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
+  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
+
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
+  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
 
   $data = [
     'row1' => [],
