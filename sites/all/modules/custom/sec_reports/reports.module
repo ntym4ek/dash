@@ -1,6 +1,6 @@
 <?php
 
-// постоянное подключение, т.к в файле есть функции для ajax вызовов
+// постоянное подключение, так как в файле есть функции для ajax вызовов
 include ('includes/td.reports.inc');
 include ('includes/jp.reports.inc');
 include ('includes/ah.reports.inc');
@@ -18,7 +18,7 @@ function reports_menu()
     'weight' => 15,
     'page callback' => 'reports_goto_front',
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, FINANCE_USER_RID, AGROHIMIKAT_USER_RID]],
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, FINANCE_USER_RID, AGROHIMIKAT_USER_RID, LUBRICANTS_RID]],
   );
   $items['reports/td'] = array(
     'title' => 'Торговый Дом',
@@ -36,7 +36,7 @@ function reports_menu()
     'page callback' => 'drupal_get_form',
     'page arguments' => ['reports_ah_period_to_form'],
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, AGROHIMIKAT_USER_RID]],
+    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID]],
     'weight' => 19,
     'type' => MENU_NORMAL_ITEM,
   );
@@ -46,7 +46,7 @@ function reports_menu()
     'page callback' => 'drupal_get_form',
     'page arguments' => ['reports_lb_period_to_form'],
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, AGROHIMIKAT_USER_RID]],
+    'access arguments' => [[ADMIN_RID, LUBRICANTS_RID]],
     'weight' => 20,
     'type' => MENU_NORMAL_ITEM,
   );
@@ -66,7 +66,7 @@ function reports_menu()
     'page callback' => 'drupal_get_form',
     'page arguments' => ['reports_plan_prod_data_edit_form'],
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID]],
     'type' => MENU_NORMAL_ITEM,
   ];
 
@@ -75,7 +75,7 @@ function reports_menu()
     'page callback' => 'drupal_get_form',
     'page arguments' => ['reports_cash_income_data_edit_form'],
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID]],
     'type' => MENU_NORMAL_ITEM,
   ];
 
@@ -84,7 +84,7 @@ function reports_menu()
     'page callback' => 'drupal_get_form',
     'page arguments' => ['reports_ship_data_edit_form'],
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID]],
     'type' => MENU_NORMAL_ITEM,
   ];
 
@@ -93,7 +93,7 @@ function reports_menu()
     'page callback' => 'drupal_get_form',
     'page arguments' => ['reports_debt_data_edit_form'],
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID]],
     'type' => MENU_NORMAL_ITEM,
   ];
 
@@ -102,7 +102,7 @@ function reports_menu()
     'page callback' => 'drupal_get_form',
     'page arguments' => ['reports_manual_bdr_data_edit_form'],
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID]],
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID]],
     'type' => MENU_NORMAL_ITEM,
   ];
 
@@ -111,7 +111,7 @@ function reports_menu()
     'page callback' => 'drupal_get_form',
     'page arguments' => ['reports_prod_prod_data_edit_form'],
     'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, AGROHIMIKAT_USER_RID]],
+    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, AGROHIMIKAT_USER_RID, LUBRICANTS_RID]],
     'type' => MENU_NORMAL_ITEM,
   ];
 
