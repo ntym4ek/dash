@@ -78,17 +78,17 @@ function reports_lb_page_content($period_to)
   $season = dash_season_bounds_get_by_date(1, $period_to);
 
   // слайд 1
-  $url = url('/data/plan-prod/edit', ['query' => ['blocks' => ['lb_block_1'], 'inn' => DASH_INN_LB]]);
+  $url = url('/data/prod-prod/edit', ['query' => ['blocks' => ['lb_block_1'], 'inn' => DASH_INN_LB]]);
   $output  =  '<div class="section-title">' .
                 '<h3>План-факт производства продукции (в ' . DASH_PROD_SUFFIX . ')</h3>' .
-                '<a class="edit-link autodialog" data-dialog-width="450" href="' . $url . '">Редактировать данные</a>' .
+                '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '';
   $output .= '<div class="ajax-load" data-func="lb_block_1" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 21
-  $url = url('/data/ship/edit', ['query' => ['blocks' => ['lb_block_21'], 'inn' => DASH_INN_LB, 'table' => 'accounts', 'toller' => 0]]);
+  $url = url('/data/ship/accounts/edit', ['query' => ['blocks' => ['lb_block_21'], 'inn' => DASH_INN_LB, 'toller' => 0, 'type' => DASH_TYPE_PLAN]]);
   $output .=  '<div class="section-title">' .
                 '<h3>План-факт отгрузки собственной продукции (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
@@ -97,7 +97,7 @@ function reports_lb_page_content($period_to)
   $output .= '<div class="ajax-load" data-func="lb_block_21" data-delay="200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 22
-  $url = url('/data/ship/edit', ['query' => ['blocks' => ['lb_block_22'], 'inn' => DASH_INN_LB, 'table' => 'accounts', 'toller' => 1]]);
+  $url = url('/data/ship/accounts/edit', ['query' => ['blocks' => ['lb_block_22'], 'inn' => DASH_INN_LB, 'toller' => 1, 'type' => DASH_TYPE_PLAN]]);
   $output .=  '<div class="section-title">' .
                 '<h3>План-факт отгрузки давальческой продукции (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
@@ -371,16 +371,16 @@ function reports_lb_column_production_plan_fact($period)
     $plan_fact_by_month = [];
     foreach (dash_months_list_get($period) as $month) {
       $plan_fact_by_month[$month['start']] = [
-        'plan_output' => 0,
-        'fact_output' => 0,
+        'plan_volume' => 0,
+        'fact_volume' => 0,
         'start' => $month['start'],
         'end' => $month['end'],
       ];
 
       foreach ($data as $record) {
         if ($record->date >= $month['start'] && $record->date < $month['end']) {
-          if ($record->fact) $plan_fact_by_month[$month['start']]['fact_output'] += $record->output;
-          else               $plan_fact_by_month[$month['start']]['plan_output'] += $record->output;
+          if ($record->type == DASH_TYPE_FACT)      $plan_fact_by_month[$month['start']]['fact_volume'] += $record->volume;
+          elseif ($record->type == DASH_TYPE_PLAN)  $plan_fact_by_month[$month['start']]['plan_volume'] += $record->volume;
         }
       }
     }
@@ -426,11 +426,11 @@ function reports_lb_column_production_plan_fact($period)
     );
 
     foreach ($plan_fact_by_month as $month) {
-      if ($month['plan_output'] || $month['fact_output']) {
+      if ($month['plan_volume'] || $month['fact_volume']) {
         $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
-        $plan = $month['plan_output'] / DASH_PROD_DIVIDER;
-        $fact = $month['fact_output'] / DASH_PROD_DIVIDER;
+        $plan = $month['plan_volume'] / DASH_PROD_DIVIDER;
+        $fact = $month['fact_volume'] / DASH_PROD_DIVIDER;
 
         $chart['plan']['#data'][] = $plan;
         $chart['fact']['#data'][] = $fact;
@@ -1726,7 +1726,10 @@ function reports_lb_column_registration_plan_fact($period)
  */
 function reports_lb_manual_bdr_table_output($period)
 {
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-2, 1, date('Y', $period['from']));
+  $month_num = date('n', $period['to']);
+  if ($month_num < 3) $month_num += 12;
+  $month_num -= 2;
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, date('Y', $period['from']));
 
   $company = dash_term_get_by_1c_id('companies', DASH_INN_LB);
 

@@ -187,7 +187,7 @@ function dep_2v_2g_import_ship_plan_td($array)
 
       // создание Плана на месяц
       foreach ($ship as $plan_item) {
-        dash_ship_create([
+        dash_ship_ship_create([
           'company_id' => $company->tid,
           'date_ts' => $plan_item['date'],
           'type' => $type,

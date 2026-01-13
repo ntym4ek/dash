@@ -72,7 +72,7 @@ function dash_menu()
   $items['ajax-load'] = array(
     'page callback' => 'dash_ajax_load',
     'access callback' => 'ext_user_has_roles',  // todo доступ нужно проверять на уровне функции, иначе роли из списка могут получить данные друг друга
-    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID, FINANCE_USER_RID, TRADE_HOUSE_USER_RID, DEP_2A_USER_RID, DEP_2V2G_USER_RID, DEP_4_USER_RID, DEP_7_USER_RID]],
+    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID, FINANCE_USER_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID, DEP_2A_USER_RID, DEP_2V2G_USER_RID, DEP_4_USER_RID, DEP_7_USER_RID]],
     'type' => MENU_CALLBACK,
   );
 
@@ -1192,9 +1192,6 @@ function dash_production_production_get_by_conditions($conditions)
     $dbr->innerJoin('field_data_field_prod_volume', 'fv', 'fv.entity_id = p.id');
     $dbr->addField('fv', 'field_prod_volume_value', 'volume');
 
-    $dbr->innerJoin('field_data_field_prod_client', 'fcl', 'fcl.entity_id = p.id');
-    $dbr->addField('fcl', 'field_prod_client_tid', 'client');
-
     $dbr->orderBy('date');
     $result = $dbr->execute()->fetchAll();
   }
@@ -2035,42 +2032,61 @@ function dash_plan_prod_create($params)
 }
 
 /**
- * Создать Запись таблицы Отгрузка продукции
+ * Создать Запись таблицы Отгрузка продукции / ship
  */
-function dash_ship_create($params)
+function dash_ship_ship_create($params)
 {
-  if (empty($params['table'])) $params['table'] = 'ship';
+  $transaction = db_transaction();
+  try {
+    $ship = entity_create('ship', [
+      'type' => 'ship',
+      'created' => $params['created'] ?? REQUEST_TIME,
+    ]);
+    entity_save('ship', $ship);
+    $ship_wr = entity_metadata_wrapper('ship', $ship);
+    $ship_wr->field_s_company = $params['company_id'];
+    $ship_wr->field_s_date = $params['date_ts'];
+    $ship_wr->field_s_type = $params['type'];
+    $ship_wr->field_s_amount = $params['amount'] ?? 0;
+    $ship_wr->field_s_is_manual = $params['manual'] ?? 0;
 
-  if (in_array($params['table'], ['ship', 'accounts'])) {
-    $transaction = db_transaction();
-    try {
-      $ship = entity_create('ship', [
-        'type' => $params['table'],
-        'created' => $params['created'] ?? REQUEST_TIME,
-      ]);
-      entity_save('ship', $ship);
-      $ship_wr = entity_metadata_wrapper('ship', $ship);
-      $ship_wr->field_s_company = $params['company_id'];
-      $ship_wr->field_s_date = $params['date_ts'];
-      $ship_wr->field_s_type = $params['type'];
-      $ship_wr->field_s_amount = $params['amount'] ?? 0;
-      $ship_wr->field_s_is_manual = $params['manual'] ?? 0;
+    $ship_wr->field_s_quantity = $params['quantity'] ?? 0;
+    $ship_wr->field_s_net_cost = $params['net_cost'] ?? 0;
+    $ship_wr->field_s_nomenklatura = $params['nom_id'] ?? 0;
+    $ship_wr->field_s_client = $params['client_id'] ?? 0;
+    $ship_wr->save();
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('database', $e);
+  }
 
-      if ($params['table'] == 'ship') {
-        $ship_wr->field_s_quantity = $params['quantity'] ?? 0;
-        $ship_wr->field_s_net_cost = $params['net_cost'] ?? 0;
-        $ship_wr->field_s_nomenklatura = $params['nom_id'] ?? 0;
-        $ship_wr->field_s_client = $params['client_id'] ?? 0;
-      }
-      if ($params['table'] == 'accounts') {
-        $ship_wr->field_s_direction = $params['direction_id'] ?? 0;
-        $ship_wr->field_s_is_toller = $params['toller'] ?? 0;
-      }
-      $ship_wr->save();
-    } catch (Exception $e) {
-      $transaction->rollback();
-      watchdog_exception('database', $e);
-    }
+  return $ship ?? false;
+}
+/**
+ * Создать Запись таблицы Отгрузка продукции / по бухгалтерии
+ */
+function dash_ship_accounts_create($params)
+{
+  $transaction = db_transaction();
+  try {
+    $ship = entity_create('ship', [
+      'type' => 'accounts',
+      'created' => $params['created'] ?? REQUEST_TIME,
+    ]);
+    entity_save('ship', $ship);
+
+    $ship_wr = entity_metadata_wrapper('ship', $ship);
+    $ship_wr->field_s_company = $params['company_id'];
+    $ship_wr->field_s_date = $params['date_ts'];
+    $ship_wr->field_s_type = $params['type'];
+    $ship_wr->field_s_amount = $params['amount'] ?? 0;
+    $ship_wr->field_s_direction = $params['direction_id'] ?? 0;
+    $ship_wr->field_s_is_manual = $params['manual'] ?? 0;
+    $ship_wr->field_s_is_toller = $params['toller'] ?? 0;
+    $ship_wr->save();
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('database', $e);
   }
 
   return $ship ?? false;
@@ -2128,6 +2144,34 @@ function dash_production_clients_create($params)
     $prod_wr->field_prod_client = $params['client_id'];
     $prod_wr->field_prod_volume = $params['volume'];
     $prod_wr->field_prod_is_manual = $params['manual'] ?? 0;
+    $prod_wr->save();
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('database', $e);
+  }
+
+  return $prod ?? false;
+}
+
+/**
+ * Создать Запись таблицы Производство / Производство
+ */
+function dash_production_production_create($params)
+{
+  $transaction = db_transaction();
+  try {
+    $prod = entity_create('production', [
+      'type' => 'production',
+      'created' => $params['created'],
+    ]);
+    entity_save('production', $prod);
+
+    $prod_wr = entity_metadata_wrapper('production', $prod);
+    $prod_wr->field_prod_company    = $params['company_id'];
+    $prod_wr->field_prod_date       = $params['month_ts'];
+    $prod_wr->field_prod_type       = $params['type'];
+    $prod_wr->field_prod_volume     = $params['volume'];
+    $prod_wr->field_prod_is_manual  = $params['manual'] ?? 0;
     $prod_wr->save();
   } catch (Exception $e) {
     $transaction->rollback();

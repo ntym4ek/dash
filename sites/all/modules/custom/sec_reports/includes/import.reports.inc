@@ -348,19 +348,28 @@ function reports_ship_import($array)
 
       // создание Плана на месяц
       foreach ($ship as $ship_item) {
-        dash_ship_create([
-          'table' => $table,
-          'type' => $array['type'],
-          'company_id' => $company->tid,
-          'date_ts' => $ship_item['date'],
-          'amount' => $ship_item['amount'],
-          'quantity' => $ship_item['quantity'] ?? 0,
-          'net_cost' => $ship_item['net_cost'] ?? 0,
-          'nom_id' => $ship_item['nom_id'] ?? 0,
-          'client_id' => $ship_item['client_id'] ?? 0,
-          'toller' => $ship_item['toller'] ?? 0,
-          'direction_id' => $ship_item['direction_id'] ?? 0,
-        ]);
+        if ($table == 'ship') {
+          dash_ship_ship_create([
+            'type' => $array['type'],
+            'company_id' => $company->tid,
+            'date_ts' => $ship_item['date'],
+            'amount' => $ship_item['amount'],
+            'quantity' => $ship_item['quantity'] ?? 0,
+            'net_cost' => $ship_item['net_cost'] ?? 0,
+            'nom_id' => $ship_item['nom_id'] ?? 0,
+            'client_id' => $ship_item['client_id'] ?? 0,
+          ]);
+        }
+        if ($table == 'accounts') {
+          dash_ship_accounts_create([
+            'type' => $array['type'],
+            'company_id' => $company->tid,
+            'date_ts' => $ship_item['date'],
+            'amount' => $ship_item['amount'],
+            'toller' => $ship_item['toller'] ?? 0,
+            'direction_id' => $ship_item['direction_id'] ?? 0,
+          ]);
+        }
       }
 
       watchdog('import', 'План отгрузки ТД импортирован.', [], WATCHDOG_INFO);

@@ -26,20 +26,6 @@ define('DEP_7_USER_RID', 6);
 //  }
 //}
 
-//function ext_user_permission()
-//{
-//  return [
-//    'access trade_house stats' => [
-//      'title' => t('Access Trade House Stats'),
-//      'description' => t('Access Trade House Stats'),
-//    ],
-//    'access agrohimikat stats' => [
-//      'title' => t('Access Agrohimikat Stats'),
-//      'description' => t('Access Agrohimikat Stats'),
-//    ]
-//  ];
-//}
-
 /**
  * hook_module_implements_alter
  * change hook execution order

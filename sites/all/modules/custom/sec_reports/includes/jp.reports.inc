@@ -74,7 +74,7 @@ function reports_jp_page_content($year)
 
   // слайд 2
   // Отгрузка в деньгах, год, помесячно, план-факт
-  $url = url('/data/ship/edit', ['query' => ['blocks' => ['jp_block_2', 'jp_block_3'], 'inn' => DASH_INN_ST]]);
+  $url = url('/data/ship/ship/edit', ['query' => ['blocks' => ['jp_block_2', 'jp_block_3'], 'inn' => DASH_INN_ST]]);
   $output .= '<div class="section-title">' .
                 '<h3>План-факт отгрузки продукции за ' . date('Y') . ' (в тыс. руб.)</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .

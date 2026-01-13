@@ -574,6 +574,7 @@ body {
   }
 
   .intro p { margin: 0 0 1.5rem; }
+  .text-danger { color: #ff8d8d; }
 
   @media #{$pad} {
     max-width: initial;

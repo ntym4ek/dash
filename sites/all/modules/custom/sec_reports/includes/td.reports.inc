@@ -82,14 +82,14 @@ function reports_td_page_content($period_to)
   $url = url('/data/plan-prod/edit', ['query' => ['blocks' => ['td_block_1'], 'inn' => DASH_INN_TD]]);
   $output  =  '<div class="section-title">' .
                 '<h3>План-факт производства продукции (в ' . DASH_PROD_SUFFIX . ')</h3>' .
-                '<a class="edit-link autodialog" data-dialog-width="450" href="' . $url . '">Редактировать данные</a>' .
+                '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '';
   $output .= '<div class="ajax-load" data-func="td_block_1" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 2
-  $url = url('/data/ship/edit', ['query' => ['blocks' => ['td_block_2'], 'inn' => DASH_INN_TD]]);
+  $url = url('/data/ship/ship/edit', ['query' => ['blocks' => ['td_block_2'], 'inn' => DASH_INN_TD]]);
   $output .=  '<div class="section-title">' .
                 '<h3>План-факт отгрузки продукции (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
@@ -98,7 +98,7 @@ function reports_td_page_content($period_to)
   $output .= '<div class="ajax-load" data-func="td_block_2" data-delay="200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 3
-//  $url = url('/data/ship/edit', ['query' => ['blocks' => ['td_block_31', 'td_block_32'], 'inn' => DASH_INN_TD]]);
+//  $url = url('/data/ship/ship/edit', ['query' => ['blocks' => ['td_block_31', 'td_block_32'], 'inn' => DASH_INN_TD]]);
 //  $output .=  '<div class="section-title">' .
 //               '<h3>Отгрузки + контракты на 1 ' . helper_month_label_ru(date('n', $season_10['to'])) . ' в сравнении по сезонам ' . (date('y', $season_10['from'])-1) . '-' . (date('y', $season_10['end'])-1) . ' / ' . date('y', $season_10['from']) . '-' . date('y', $season_10['end']) . '</h3>' .
 //               '<a class="edit-link autodialog" data-dialog-width="500" href="' . $url . '">Редактировать данные</a>' .
@@ -1861,7 +1861,10 @@ function reports_column_registration_plan_fact($period)
  */
 function reports_manual_bdr_table_output($period)
 {
-  $month_start = gmmktime(0, 0, 0, date('n', $period['to'])-2, 1, date('Y', $period['from']));
+  $month_num = date('n', $period['to']);
+  if ($month_num < 3) $month_num += 12;
+  $month_num -= 2;
+  $month_start = gmmktime(0, 0, 0, $month_num, 1, date('Y', $period['from']));
 
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
 
