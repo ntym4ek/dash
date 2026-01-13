@@ -302,7 +302,7 @@ function reports_ship_import($array)
     $company_inn = trim($array['company_inn']);
 
     $table = '';
-    if (empty($array['source']) || $array['source'] == 'ship') {
+    if (empty($array['source']) || $array['source'] == 'erp') {
       $table = 'ship';
     } elseif ($array['source'] == 'buh') {
       $table = 'accounts';

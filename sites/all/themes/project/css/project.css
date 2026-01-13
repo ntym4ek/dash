@@ -3338,7 +3338,7 @@ body {
 }
 .month-select-wrapper .form-item-month,
 .period-select-wrapper .form-item-month {
-  flex: 0 0 auto;
+  flex: 0 0 165px;
   margin-right: 0.5rem;
 }
 .month-select-wrapper .form-item-year,
