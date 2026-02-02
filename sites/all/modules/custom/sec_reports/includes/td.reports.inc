@@ -840,10 +840,8 @@ function reports_line_ship_plan_fact($period)
       $chart['fact']['#data'][] = $total_fact;
 
       // запоминаем последнее значение для определения цвета графика
-      if (isset($total_fact)) {
-        $last_fact = $total_fact;
-        $last_plan = $total_plan;
-      }
+      $last_fact = $total_fact;
+      $last_plan = $total_plan;
 
       $tooltip =  '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
                     '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
@@ -1857,14 +1855,19 @@ function reports_column_registration_plan_fact($period)
  *
  * Нужно учитывать, что данные за месяц вносятся в конце следующего месяца.
  * Например, в таблице "План-факт. Бюджет доходов и расходов" (block_13)
- * при выводе данных на начало октября нужно выводить по август.
+ * при выводе данных на начало октября нужно выводить за август.
  */
 function reports_manual_bdr_table_output($period)
 {
+  // Данные выводятся за месяц, предшествующий отчётному на -2,
+  // например, если отчётный месяц Февраль, то данные выводятся за Декабрь.
   $month_num = date('n', $period['to']);
-  if ($month_num < 3) $month_num += 12;
-  $month_num -= 2;
-  $month_start = gmmktime(0, 0, 0, $month_num, 1, date('Y', $period['from']));
+  $month_start = gmmktime(0, 0, 0, $month_num-2, 1, date('Y', $period['to']));
+
+  // переопределить Отчётный период,
+  // так как, например, для Февраля период, за который нужно выбирать данные - прошлый год
+  $period_to_month_start = gmmktime(0, 0, 0, $month_num-1, 1, date('Y', $period['to']));
+  $period = dash_season_bounds_get_by_date(1, $period_to_month_start);
 
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
 

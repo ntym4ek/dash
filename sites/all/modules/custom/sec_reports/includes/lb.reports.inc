@@ -591,14 +591,14 @@ function reports_lb_line_revenue_own_plan_fact($period)
         '#type' => 'chart_data_item',
         '#title' => $tooltip,
         '#raw_options' => [
-          'annotation' => $total_fact ? number_format($total_fact, 0, null, ' ') : null,
+          'annotation' => $total_fact ? number_format($total_fact, 2, null, ' ') : null,
         ],
       );
       $chart['plan'][] = array(
         '#type' => 'chart_data_item',
         '#title' => $tooltip,
         '#raw_options' => [
-          'annotation' => $total_plan ? number_format($total_plan, 0, null, ' ') : null,
+          'annotation' => $total_plan ? number_format($total_plan, 2, null, ' ') : null,
         ],
       );
     }
@@ -745,14 +745,14 @@ function reports_lb_line_revenue_toller_plan_fact($period)
         '#type' => 'chart_data_item',
         '#title' => $tooltip,
         '#raw_options' => [
-          'annotation' => $total_fact ? number_format($total_fact, 0, null, ' ') : null,
+          'annotation' => $total_fact ? number_format($total_fact, 2, null, ' ') : null,
         ],
       );
       $chart['plan'][] = array(
         '#type' => 'chart_data_item',
         '#title' => $tooltip,
         '#raw_options' => [
-          'annotation' => $total_plan ? number_format($total_plan, 0, null, ' ') : null,
+          'annotation' => $total_plan ? number_format($total_plan, 2, null, ' ') : null,
         ],
       );
     }
@@ -1217,7 +1217,7 @@ function reports_lb_bdds_table_output($period)
     $data['outcome']['total']['plan_period'] += $amount;
     if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['total']['plan_month'] += $amount;
 
-    if (in_array($record->category, [198576, 198575, 198574, 198573])) {
+    if (true || in_array($record->category, [198576, 198575, 198574, 198573])) {
       if (!isset($data['outcome']['categories'][$record->category])) $data['outcome']['categories'][$record->category] = ['plan_month' => 0, 'fact_month' => 0, 'plan_period' => 0, 'fact_period' => 0];
       $data['outcome']['categories'][$record->category]['plan_period'] += $amount;
       if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['categories'][$record->category]['plan_month'] += $amount;
@@ -1228,7 +1228,7 @@ function reports_lb_bdds_table_output($period)
     $data['outcome']['total']['fact_period'] += $amount;
     if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['total']['fact_month'] += $amount;
 
-    if (in_array($record->category, [198576, 198575, 198574, 198573])) {
+    if (true || in_array($record->category, [198576, 198575, 198574, 198573])) {
       if (!isset($data['outcome']['categories'][$record->category])) $data['outcome']['categories'][$record->category] = ['plan_month' => 0, 'fact_month' => 0, 'plan_period' => 0, 'fact_period' => 0];
       $data['outcome']['categories'][$record->category]['fact_period'] += $amount;
       if ($prev_month_start <= $record->date && $record->date < $period['to']) $data['outcome']['categories'][$record->category]['fact_month'] += $amount;
@@ -1726,10 +1726,15 @@ function reports_lb_column_registration_plan_fact($period)
  */
 function reports_lb_manual_bdr_table_output($period)
 {
+  // Данные выводятся за месяц, предшествующий отчётному на -2,
+  // например, если отчётный месяц Февраль, то данные выводятся за Декабрь.
   $month_num = date('n', $period['to']);
-  if ($month_num < 3) $month_num += 12;
-  $month_num -= 2;
-  $month_start = gmmktime(0, 0, 0, $month_num, 1, date('Y', $period['from']));
+  $month_start = gmmktime(0, 0, 0, $month_num-2, 1, date('Y', $period['to']));
+
+  // переопределить Отчётный период,
+  // так как, например, для Февраля период, за который нужно выбирать данные - прошлый год
+  $period_to_month_start = gmmktime(0, 0, 0, $month_num-1, 1, date('Y', $period['to']));
+  $period = dash_season_bounds_get_by_date(1, $period_to_month_start);
 
   $company = dash_term_get_by_1c_id('companies', DASH_INN_LB);
 
@@ -1788,5 +1793,5 @@ function reports_lb_manual_bdr_table_output($period)
     'empty' => 'нет данных',
   ]);
 
-  return '<div class="bdds-table">' . $output . '</div>';
+  return '<div class="bdr-table">' . $output . '</div>';
 }

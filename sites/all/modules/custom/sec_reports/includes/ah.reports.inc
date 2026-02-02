@@ -1734,11 +1734,8 @@ function reports_ah_debt_creditors_loans_column($period)
  */
 function reports_ah_manual_bdr_table_output($period)
 {
-
   $month_num = date('n', $period['to']);
-  if ($month_num < 3) $month_num += 12;
-  $month_num -= 1;
-  $prev_month_start = gmmktime(0, 0, 0, $month_num, 1, date('Y', $period['from']));
+  $prev_month_start = gmmktime(0, 0, 0, $month_num-1, 1, date('Y', $period['from']));
 
   $company = dash_term_get_by_1c_id('companies', DASH_INN_AH);
 
