@@ -9,7 +9,7 @@ function dep_2v_2g_head_period_page()
   // так как формирование всей страницы целиком занимает продолжительное время.
   // Функция, отвечающая за содержимое, определяется атрибутом data-func
 
-  $period = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+  $period = dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD);
 
   $output = '<div class="section-title">';
   $output .=    '<h3>Отгрузка</h3>';

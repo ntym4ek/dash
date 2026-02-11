@@ -1260,28 +1260,34 @@ function dash_period_filter_form_ajax_callback($form, $form_state)
  * ----- Вспомогательные функции ---------------------------------------------------------------------------------------
  */
 
-/** Вернуть начальное и конечное (не включительно) время Unix
- * 12-и месячного периода начиная с месяца $month_num
- * и смещением $year_shift лет от текущего периода.
- * from - начало 12и месячного периода
- * to   - == end для прошлых периодов и == now для текущего
- * end  - конец 12и месячного периода
- * $year_shift = 0 - текущий период
+/**
+ * Вернуть начальный и конечный (не включительно) timestamp для Сезона.
+ * Для текущего по начало текущей даты, для предыдущих - 12-и месячный период.
+ *
+ * @param int $month_num_start - месяц начала сезона
+ * @param int $year_shift - смещение лет от текущего периода.
+ *
+ * @return
+ *   from - начало 12и месячного периода
+ *   to   - текущая дата now для текущего сезона и end для прошлых лет
+ *   end  - конец 12и месячного периода
+ *
  */
-function dash_year_time_bounds_get($month_num_start, $year_shift = 0)
+function dash_season_bounds_upto_current_date_get($month_num_start, $year_shift = 0)
 {
   // получить начало текущего периода
   $time_month_start = gmmktime(0, 0, 0, $month_num_start, 1, date('Y'));
-  $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
+  $year_start = REQUEST_TIME < $time_month_start ? date('Y') - 1 : date('Y');
 
   // применить смещение
   $year_start = $year_start + $year_shift;
 
   $from = gmmktime(0, 0, 0, $month_num_start, 1, $year_start);
-  $end = gmmktime(0, 0, 0, $month_num_start+12, 1, $year_start);
-  // для предыдущих берем весь сезон
+  $end = gmmktime(0, 0, 0, $month_num_start + 12, 1, $year_start);
+
+  // для предыдущих сезонов берем весь сезон
   if ($year_shift) {
-    $to = gmmktime(0, 0, 0, $month_num_start+12, 1, $year_start);
+    $to = gmmktime(0, 0, 0, $month_num_start + 12, 1, $year_start);
   }
   // для текущего по сегодняшнюю дату
   else {
@@ -1296,20 +1302,23 @@ function dash_year_time_bounds_get($month_num_start, $year_shift = 0)
 }
 
 /**
- * Вернуть начальное и конечное (не включительно) время Unix
- * 12-и месячного Сезона начиная с месяца $month_num_start.
+ * Вернуть начальный и конечный (не включительно) timestamp для Сезона,
+ * включающего заданную дату (обычно начало месяца).
  *
  * Сезон определяется НА ЗАДАННЫЙ МЕСЯЦ.
  * То есть, для сезона, начинающегося в Октябре ($month_num_start = 10),
- * если дата $datetime_set задана в октябре, то данные выводим по сентябрь включительно, то есть предыдущий сезон.
- * Если дата в ноябре, то это данные за октябрь, а октябрь - начало нового сезона.
+ *  если дата $datetime_set задана в октябре, то данные выводим по сентябрь включительно, то есть предыдущий сезон.
+ * Если дата в ноябре, то выводятся данные за октябрь, а октябрь - начало нового сезона.
  *
+ * @param int $month_num_start - месяц начала сезона
+ * @param int $datetime_set - дата для которой определяется Сезон
+
  * @return
  *   from - начало 12и месячного периода
- *   to   - == end для прошлых периодов и == now для текущего
+ *   to   - текущая дата now для текущего сезона и end для прошлых лет
  *   end  - конец 12и месячного периода
  */
-function dash_season_bounds_get_by_date($month_num_start, $datetime_set)
+function dash_season_bounds_by_date_get($month_num_start, $datetime_set)
 {
   // получить начало заданного месяца
   $month_start_set = gmmktime(0, 0, 0, date('n', $datetime_set), 1, date('Y', $datetime_set));
@@ -1332,32 +1341,7 @@ function dash_season_bounds_get_by_date($month_num_start, $datetime_set)
   ];
 }
 
-/**
- * Вернуть начальное и конечное (не включительно) время Unix
- * для периода:
- *   с месяца $month_num и смещением $year_shift (0 - текущий) лет от текущего периода
- *   до текущей даты в заданном сезоне
- *
- * from - начало 12и месячного периода
- * to   - == end для прошлых периодов и == now для текущего
- */
-function dash_period_time_bounds_get($month_num_start, $year_shift = 0)
-{
-  // получить начало текущего периода
-  $time_month_start = gmmktime(0, 0, 0, $month_num_start, 1, date('Y'));
-  $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
 
-  // применить смещение
-  $year_start = $year_start + $year_shift;
-
-  $from = gmmktime(0, 0, 0, $month_num_start, 1, $year_start);
-  $to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y') + $year_shift);
-
-  return [
-    'from' => $from,
-    'to' => $to,
-  ];
-}
 
 /**
  * Вернуть смещение заданного периода на заданное количество лет
@@ -1382,12 +1366,12 @@ function dash_period_shifted_get($period, $year_shift = 0)
  * @param $month_start
  * @return array
  */
-function dash_page_time_bounds_get($month_start)
+function dash_period_bounds_by_page_get($month_start)
 {
   if (strpos($_GET['q'], 'period/closed') !== false) {
-    $bounds = dash_year_time_bounds_get($month_start, -1);
+    $bounds = dash_season_bounds_upto_current_date_get($month_start, -1);
   } else {
-    $bounds = dash_year_time_bounds_get($month_start);
+    $bounds = dash_season_bounds_upto_current_date_get($month_start);
   }
 
   return $bounds;
@@ -1823,7 +1807,7 @@ function dash_preprocess_page(&$vars)
  */
 function dash_years_shift_get($period = null)
 {
-  if (!$period) $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+  if (!$period) $period = dash_season_bounds_upto_current_date_get(DASH_PERIOD_START_MONTH_TD);
 
   $years_shift = date('Y', $period['from']) - (DASH_HISTORY_START_YEAR_TD+1);
   return abs($years_shift)+1 > DASH_HISTORY_LENGTH ? DASH_HISTORY_LENGTH : $years_shift;
@@ -1835,9 +1819,9 @@ function dash_years_shift_get($period = null)
  */
 function dash_years_shift_list_get($period, $month_num_start = DASH_PERIOD_START_MONTH_TD)
 {
-  if (!$period) $period = dash_year_time_bounds_get($month_num_start);
+  if (!$period) $period = dash_season_bounds_upto_current_date_get($month_num_start);
 
-  $period_current = dash_year_time_bounds_get($month_num_start);
+  $period_current = dash_season_bounds_upto_current_date_get($month_num_start);
 
   $shift = (date('Y', $period_current['from']) - date('Y', $period['from'])) * (-1);
   $count = date('Y', $period['from']) - $month_num_start;

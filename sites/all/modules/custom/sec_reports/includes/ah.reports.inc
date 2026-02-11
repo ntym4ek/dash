@@ -12,7 +12,7 @@ function reports_ah_period_to_form($form, &$form_state)
   $month_start = gmmktime(0, 0, 0, $month, 1, $year);
 
   // сформировать текстовое представление периода
-  $season = dash_season_bounds_get_by_date(1, $month_start);
+  $season = dash_season_bounds_by_date_get(1, $month_start);
   $period_text = helper_month_label_ru(date('n', $season['from']));
   if (date('n', $season['from']) != date('n', $season['to']-1)) {
     $period_text .= '-' . helper_month_label_ru(date('n', $season['to']-1));
@@ -75,7 +75,7 @@ function reports_ah_period_to_form_callback($form, &$form_state)
 
 function reports_ah_page_content($period_to)
 {
-  $season_01 = dash_season_bounds_get_by_date(1, $period_to);
+  $season_01 = dash_season_bounds_by_date_get(1, $period_to);
 
   // слайд 1
   $output  =  '<div class="section-title">' .
@@ -214,7 +214,7 @@ function reports_ah_page_content($period_to)
 function reports_ah_block_011()
 {
   // период с начала отчётного года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $html = reports_ah_production_fact_table($period);
@@ -225,7 +225,7 @@ function reports_ah_block_011()
 function reports_ah_block_012()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $data_arr = reports_ah_production_fact_line($period);
@@ -236,7 +236,7 @@ function reports_ah_block_012()
 function reports_ah_block_021()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $html = reports_ah_production_plan_fact_table($period);
@@ -247,7 +247,7 @@ function reports_ah_block_021()
 function reports_ah_block_022()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $data_arr = reports_ah_production_plan_fact_column($period);
@@ -284,7 +284,7 @@ function reports_ah_block_032()
 function reports_ah_block_061()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   return reports_ah_cash_income_fact_table_html($period);
@@ -292,7 +292,7 @@ function reports_ah_block_061()
 function reports_ah_block_062()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $data_arr = reports_ah_cash_income_fact_column($period);
@@ -303,7 +303,7 @@ function reports_ah_block_062()
 function reports_ah_block_081()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   return reports_ah_ship_accounts_fact_table_html($period);
@@ -311,7 +311,7 @@ function reports_ah_block_081()
 function reports_ah_block_082()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт производства продукции по группам
   $data_arr = reports_ah_ship_accounts_fact_column($period);
@@ -322,14 +322,14 @@ function reports_ah_block_082()
 function reports_ah_block_091()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_ah_debt_credits_loans_table_html($period);
 }
 function reports_ah_block_092()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // план-факт отгрузки продукции
   $data_arr = reports_ah_debt_credits_loans_column($period);
@@ -340,14 +340,14 @@ function reports_ah_block_092()
 function reports_ah_block_101()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_ah_debt_debitors_table_output($period);
 }
 function reports_ah_block_102()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт дебиторской задолженности
   $data_arr = reports_ah_debt_debitors_loans_column($period);
@@ -358,14 +358,14 @@ function reports_ah_block_102()
 function reports_ah_block_121()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_ah_debt_creditors_table_output($period);
 }
 function reports_ah_block_122()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт кредиторской задолженности
   $data_arr = reports_ah_debt_creditors_loans_column($period);
@@ -377,7 +377,7 @@ function reports_ah_block_122()
 function reports_ah_block_200()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_ah_manual_bdr_table_output($period);
 }

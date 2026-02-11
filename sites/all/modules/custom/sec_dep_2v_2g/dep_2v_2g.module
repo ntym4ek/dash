@@ -75,6 +75,33 @@ function dep_2v_2g_menu_alter(&$items)
  */
 
 /**
+ * Вернуть начальное и конечное (не включительно) время Unix
+ * для периода:
+ *   с месяца $month_num и смещением $year_shift (0 - текущий) лет от текущего периода
+ *   до текущей даты в заданном сезоне
+ *
+ * from - начало 12и месячного периода
+ * to   - == end для прошлых периодов и == now для текущего
+ */
+function dep_2v_2g_period_time_bounds_get($month_num_start, $year_shift = 0)
+{
+  // получить начало текущего периода
+  $time_month_start = gmmktime(0, 0, 0, $month_num_start, 1, date('Y'));
+  $year_start = REQUEST_TIME < $time_month_start ? date('Y')-1 : date('Y');
+
+  // применить смещение
+  $year_start = $year_start + $year_shift;
+
+  $from = gmmktime(0, 0, 0, $month_num_start, 1, $year_start);
+  $to = gmmktime(0, 0, 0, date('n'), date('j'), date('Y') + $year_shift);
+
+  return [
+    'from' => $from,
+    'to' => $to,
+  ];
+}
+
+/**
  * Сравнение выручки период к периоду
  * Внутри года суммируются данные за заданный период включительно
  * @param $period - текущий период
@@ -89,9 +116,9 @@ function dep_2v_2g_td_column_ship_period_to_period($period, $field, $regions = [
 
   foreach (dash_years_shift_list_get($period) as $shift) {
     if (dash_is_current_season($period)) {
-      $bounds = dash_period_time_bounds_get(DASH_PERIOD_START_MONTH_TD, $shift);
+      $bounds = dep_2v_2g_period_time_bounds_get(DASH_PERIOD_START_MONTH_TD, $shift);
     } else {
-      $bounds = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD, $shift);
+      $bounds = dash_season_bounds_upto_current_date_get(DASH_PERIOD_START_MONTH_TD, $shift);
     }
 
     $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
@@ -827,7 +854,7 @@ function dep_2v_2g_column_ship_plan_fact_by_nom_single($period, $nom)
   // собрать данные периодов с DASH_YEAR_HISTORY_START года
   $plan_fact_all = [];
   foreach (dash_years_shift_list_get($period) as $shift) {
-    $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD, $shift);
+    $period = dash_season_bounds_upto_current_date_get(DASH_PERIOD_START_MONTH_TD, $shift);
     $plan_bounds = ['from' => $period['from'], 'to' => $period['end']];
 
     $plan = dash_ship_ship_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'noms' => $noms]);
@@ -1378,13 +1405,13 @@ function dep_2v_2g_column_ship_plan_by_nom($period, $regions = [])
 function dep_2v_2g_ship_plan_nom_filter_form($form, &$form_state)
 {
   if (!isset($form_state['period'])) {
-    $form_state['period'] = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+    $form_state['period'] = dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD);
   }
 
   // период, за который выбирается номенклатура должен совпадать с выводимым периодом
   $years_shift = dash_years_shift_get();
-  $bounds_start = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD, -$years_shift);
-  $bounds_end = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+  $bounds_start = dash_season_bounds_upto_current_date_get(DASH_PERIOD_START_MONTH_TD, -$years_shift);
+  $bounds_end = dash_season_bounds_upto_current_date_get(DASH_PERIOD_START_MONTH_TD);
 
   $dbr = db_select('eck_ship', 'p');
   $dbr->condition('p.type', 'ship');
@@ -1429,7 +1456,7 @@ function dep_2v_2g_ship_plan_nom_filter_form_ajax_callback($form, $form_state)
 function dep_2v_2g_ship_plan_amount_region_filter_form($form, &$form_state)
 {
   if (!isset($form_state['period'])) {
-    $form_state['period'] = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+    $form_state['period'] = dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD);
   }
 
   $dbr = db_select('eck_ship', 'p');
@@ -1477,7 +1504,7 @@ function dep_2v_2g_ship_plan_amount_region_filter_form_ajax_callback($form, $for
 function dep_2v_2g_ship_plan_qty_region_filter_form($form, &$form_state)
 {
   if (!isset($form_state['period'])) {
-    $form_state['period'] = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+    $form_state['period'] = dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD);
   }
 
   $dbr = db_select('eck_ship', 'p');
@@ -1524,7 +1551,7 @@ function dep_2v_2g_ship_plan_qty_region_filter_form_ajax_callback($form, $form_s
 function dep_2v_2g_column_ship_plan_by_nom_filter_form($form, &$form_state)
 {
   if (!isset($form_state['period'])) {
-    $form_state['period'] = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+    $form_state['period'] = dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD);
   }
 
   $dbr = db_select('eck_ship', 'p');
@@ -1574,7 +1601,7 @@ function dep_2v_2g_column_ship_plan_by_nom_filter_form_ajax_callback($form, $for
 function dep_2v_2g_td_column_ship_period_to_period_filter_form($form, &$form_state)
 {
   if (!isset($form_state['period'])) {
-    $form_state['period'] = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+    $form_state['period'] = dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD);
   }
 
   $dbr = db_select('eck_ship', 'p');
@@ -1624,7 +1651,7 @@ function dep_2v_2g_td_column_ship_period_to_period_filter_form_ajax_callback($fo
 function dep_2v_2g_line_ship_plan_fact_by_month_filter_form($form, &$form_state)
 {
   if (!isset($form_state['period'])) {
-    $form_state['period'] = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+    $form_state['period'] = dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD);
   }
 
   $dbr = db_select('eck_ship', 'p');

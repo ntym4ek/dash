@@ -44,8 +44,8 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
 {
   $example['chart'] = ['#markup' => ''];
 
-  $period_prev = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD, -1);
-  $period_curr = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+  $period_prev = dash_season_bounds_upto_current_date_get(DASH_PERIOD_START_MONTH_TD, -1);
+  $period_curr = dash_season_bounds_upto_current_date_get(DASH_PERIOD_START_MONTH_TD);
 
   // собрать все записи за период
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
@@ -236,7 +236,7 @@ function dep_3_line_revenue_fact_year_to_year_by_month()
  */
 function dep_3_line_revenue_fact_by_week()
 {
-  $period = dash_year_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+  $period = dash_season_bounds_upto_current_date_get(DASH_PERIOD_START_MONTH_TD);
 
   // собрать все записи ТД за период
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);

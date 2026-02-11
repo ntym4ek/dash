@@ -12,7 +12,7 @@ function reports_lb_period_to_form($form, &$form_state)
   $month_start = gmmktime(0, 0, 0, $month, 1, $year);
 
   // сформировать текстовое представление периода
-  $season = dash_season_bounds_get_by_date(1, $month_start);
+  $season = dash_season_bounds_by_date_get(1, $month_start);
   $period_text = helper_month_label_ru(date('n', $season['from']));
   if (date('n', $season['from']) != date('n', $season['to']-1)) {
     $period_text .= '-' . helper_month_label_ru(date('n', $season['to']-1));
@@ -75,7 +75,7 @@ function reports_lb_period_to_form_callback($form, &$form_state)
 
 function reports_lb_page_content($period_to)
 {
-  $season = dash_season_bounds_get_by_date(1, $period_to);
+  $season = dash_season_bounds_by_date_get(1, $period_to);
 
   // слайд 1
   $url = url('/data/prod-prod/edit', ['query' => ['blocks' => ['lb_block_1'], 'inn' => DASH_INN_LB]]);
@@ -221,7 +221,7 @@ function reports_lb_page_content($period_to)
 function reports_lb_block_1()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // план-факт отгрузки продукции
   $data_arr = reports_lb_column_production_plan_fact($period);
@@ -232,7 +232,7 @@ function reports_lb_block_1()
 function reports_lb_block_21()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // план-факт отгрузки продукции
   $data_arr = reports_lb_line_ship_own_plan_fact($period);
@@ -242,7 +242,7 @@ function reports_lb_block_21()
 function reports_lb_block_22()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // план-факт отгрузки продукции
   $data_arr = reports_lb_line_ship_toller_plan_fact($period);
@@ -253,7 +253,7 @@ function reports_lb_block_22()
 function reports_lb_block_31()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // план-факт выручки помесячно линейный
   $output = '<div class="row">';
@@ -266,7 +266,7 @@ function reports_lb_block_31()
 function reports_lb_block_32()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // план-факт выручки помесячно линейный
   $output = '<div class="row">';
@@ -296,7 +296,7 @@ function reports_lb_block_51()
 function reports_lb_block_52()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // факт поступления выручки
   $data_arr = reports_lb_column_revenue_fact_compare($period);
@@ -306,49 +306,49 @@ function reports_lb_block_52()
 function reports_lb_block_7()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_lb_bdds_table_output($period);
 }
 function reports_lb_block_8()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_lb_debt_debitors_table_output($period);
 }
 function reports_lb_block_9()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_lb_debt_creditors_table_output($period);
 }
 function reports_lb_block_10()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_lb_debt_credits_loans_table_output($period);
 }
 function reports_lb_block_12()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_lb_remains_progress_table_output($period);
 }
 function reports_lb_block_13()
 {
   // период с начала года по начало текущего месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   return reports_lb_manual_bdr_table_output($period);
 }
 function reports_lb_block_14()
 {
   // период с начала года по начало заданного месяца
-  $period = dash_season_bounds_get_by_date(1, $_GET['period_to']);
+  $period = dash_season_bounds_by_date_get(1, $_GET['period_to']);
 
   // план-факт отгрузки продукции
   $data_arr = reports_lb_column_registration_plan_fact($period);
@@ -1734,7 +1734,7 @@ function reports_lb_manual_bdr_table_output($period)
   // переопределить Отчётный период,
   // так как, например, для Февраля период, за который нужно выбирать данные - прошлый год
   $period_to_month_start = gmmktime(0, 0, 0, $month_num-1, 1, date('Y', $period['to']));
-  $period = dash_season_bounds_get_by_date(1, $period_to_month_start);
+  $period = dash_season_bounds_by_date_get(1, $period_to_month_start);
 
   $company = dash_term_get_by_1c_id('companies', DASH_INN_LB);
 

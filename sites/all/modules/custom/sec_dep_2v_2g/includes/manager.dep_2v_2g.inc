@@ -10,7 +10,7 @@ function dep_2v_2g_manager_period_page()
   // страница разбита на сектора, загружаемые через ajax,
   // так как формирование всей страницы целиком занимает продолжительное время
 
-  $period = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+  $period = dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD);
 
   $time_yesterday = gmmktime(0, 0, 0, date('n', $period['to']), date('j', $period['to'])-1, date('Y', $period['to']));
   $output = '<div class="section-title">';

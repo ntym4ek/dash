@@ -49,7 +49,7 @@ function dep_4_preprocess_page(&$vars)
 
 function dep_4_page()
 {
-  $period = dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD);
+  $period = dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD);
   $form   = drupal_get_form('dep_4_analog_prices_filters_form');
 
   $output =   '<div class="section-title">' .
@@ -343,7 +343,7 @@ function dep_4_get_analog_prices_filters_set()
     $filters = [
       'nom' => ['current_id' => NULL, 'options' => []],
       'currency' => ['current_id' => NULL, 'options' => []],
-      'period' => dash_page_time_bounds_get(DASH_PERIOD_START_MONTH_TD),
+      'period' => dash_period_bounds_by_page_get(DASH_PERIOD_START_MONTH_TD),
     ];
 
     // -- Номенклатура
