@@ -1,6 +1,7 @@
 <?php
 
 // постоянное подключение, так как в файле есть функции для ajax вызовов
+include ('includes/common.reports.inc');
 include ('includes/td.reports.inc');
 include ('includes/jp.reports.inc');
 include ('includes/ah.reports.inc');
