@@ -293,13 +293,60 @@ function reports_production_clients_import($array)
   return false;
 }
 
+/**
+ * Импорт данных в таблицу Производство.Производство
+ * @param $array
+ */
+function reports_production_production_import($array)
+{
+  if (is_array($array) && !empty($array['load'])) {
+    $month_start = helper_datetime_to_timestamp($array['month']);
+    $company = dash_term_get_by_1c_id('companies', $array['inn']);
+
+    if ($month_start && in_array($array['type'], [DASH_TYPE_PLAN, DASH_TYPE_FACT])) {
+
+      // подготовка Записей на месяц
+      $data = [];
+      foreach ($array['load'] as $arr_item) {
+        $data[] = [
+          'date_ts' => helper_datetime_to_timestamp($arr_item['date']),
+          'volume' => $arr_item['volume'],
+        ];
+      }
+
+      if ($data) {
+        // удалить старые записи на месяц
+        reports_production_production_delete_records($month_start, $company->tid, $array['type']);
+
+        // создание записей за месяц
+        foreach ($data as $item) {
+          dash_production_production_create([
+            'created' => REQUEST_TIME,
+            'company_id' => $company->tid,
+            'type' => $array['type'],
+            'date_ts' => $item['date_ts'],
+            'volume' => $item['volume'],
+            'manual' => 0,
+          ]);
+        }
+
+        watchdog('import', 'Записи Объёмов производства импортированы.', [], WATCHDOG_INFO);
+        return true;
+      }
+    }
+  }
+
+  watchdog('import', 'Импорт записей Объёмов производства не выполнен.', [], WATCHDOG_ERROR);
+  return false;
+}
+
 function reports_ship_import($array)
 {
   if (is_array($array) && !empty($array['load'])) {
     $month_start = helper_datetime_to_timestamp($array['month']);
     // для компаний инн является 1c_id
-    $company = dash_term_get_by_1c_id('companies', $array['company_inn']);
     $company_inn = trim($array['company_inn']);
+    $company = dash_term_get_by_1c_id('companies', $company_inn);
 
     $table = '';
     if (empty($array['source']) || $array['source'] == 'erp') {
@@ -409,6 +456,37 @@ function reports_cash_outcome_delete_records($month_start, $company_id, $record_
     $result = $efquery->execute();
     if ($result) {
       entity_delete_multiple('cash_outcome', array_keys($result['cash_outcome']));
+    }
+  }
+}
+
+/**
+ * Удалить записи определённого типа за месяц.
+ * Удаляем только данные из 1с, введённые вручную не трогаем
+ *
+ * @param $month_start - unix timestamp
+ * @param $company_id - tid компании
+ * @param $record_type - 1 - план, 2 - факт
+ * @return void
+ */
+function reports_production_production_delete_records($month_start, $company_id, $record_type)
+{
+  if ($month_start) {
+    $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
+
+    $efquery = new EntityFieldQuery();
+    $efquery
+      ->entityCondition('entity_type', 'production')
+      ->entityCondition('bundle', 'production')
+      ->fieldCondition('field_prod_date', 'value', $month_start, '>=')
+      ->fieldCondition('field_prod_date', 'value', $next_month_start, '<')
+      ->fieldCondition('field_prod_company', 'tid', $company_id)
+      ->fieldCondition('field_prod_type', 'value', $record_type)
+      ->fieldCondition('field_prod_is_manual', 'value', 0);
+
+    $result = $efquery->execute();
+    if ($result) {
+      entity_delete_multiple('production', array_keys($result['production']));
     }
   }
 }

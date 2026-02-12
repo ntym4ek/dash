@@ -153,7 +153,7 @@ function reports_import_processors_alter(&$processors)
   $processors['first_queue'][] = ['mask' => '/^scrum_hb_outcome_categories_.*\.json/',  'include' => $path . 'import.reports.inc', 'func' => 'reports_outcome_categories_import', 'archive' => 'dash/rp'];
 
   // План и факт прихода ДС
-  $processors['last_queue'][] = ['mask' => '/^scrum_cash_income_.*\.json/',             'include' => $path . 'import.reports.inc', 'func' => 'reports_cash_income_import', 'archive' => 'dash/rp']; // -- План факт поступления денежных средств
+  $processors['last_queue'][] = ['mask' => '/^scrum_cash_income_.*\.json/',             'include' => $path . 'import.reports.inc', 'func' => 'reports_cash_income_import', 'archive' => 'dash/rp'];
   // План и факт расхода ДС
   $processors['last_queue'][] = ['mask' => '/^scrum_cash_outcome_.*\.json/',            'include' => $path . 'import.reports.inc', 'func' => 'reports_cash_outcome_import', 'archive' => 'dash/rp'];
   // Кредиты и задолженности (из бухгалтерии)
@@ -162,6 +162,8 @@ function reports_import_processors_alter(&$processors)
   $processors['last_queue'][] = ['mask' => '/^scrum_remains_brief_\d.*\.json/',         'include' => $path . 'import.reports.inc', 'func' => 'reports_remains_brief_import', 'archive' => 'dash/rp'];
   // Производство/Клиенты
   $processors['last_queue'][] = ['mask' => '/^scrum_production_clients_\w_\d.*\.json/', 'include' => $path . 'import.reports.inc', 'func' => 'reports_production_clients_import', 'archive' => 'dash/rp'];
+  // Производство/Производство
+  $processors['last_queue'][] = ['mask' => '/^scrum_production_volume_\w_\d.*\.json/',         'include' => $path . 'import.reports.inc', 'func' => 'reports_production_production_import', 'archive' => 'dash/rp'];
   // Отгрузка
   //   todo перевести scrum_td_shipplan_ => dep_2v_2g_import_ship_plan_td на этот импорт
   $processors['last_queue'][] = ['mask' => '/^scrum_ship_\w_.*\.json/',                 'include' => $path . 'import.reports.inc', 'func' => 'reports_ship_import', 'archive' => 'dash/rp'];
@@ -392,6 +394,13 @@ function reports_prod_prod_data_edit_form($form, &$form_state)
     '#suffix' => '</div>',
   ];
 
+  // тип записей, которые доступны пользователю
+  $type_available = $form_state["values"]["type_available"] ?? $_GET["type"] ?? 0;
+  $form['type_available'] = [
+    '#type' => 'hidden',
+    '#value' => $type_available,
+  ];
+
   if (empty($company_id)) {
     $intro = '<p>Не задан идентификатор компании. Обратитесь к администратору сайта.</p>';
     $form['intro'] = ['#markup' => '<div class="intro">' . $intro . '</div>'];
@@ -440,9 +449,13 @@ function reports_prod_prod_data_edit_form($form, &$form_state)
     ],
   ];
 
+  // где-то может быть доступно занесение только одного типа данных
+  $options = [DASH_TYPE_PLAN => 'План', DASH_TYPE_FACT => 'Факт'];
+  if ($type_available == DASH_TYPE_PLAN) $options = [DASH_TYPE_PLAN => 'План'];
+  if ($type_available == DASH_TYPE_FACT) $options = [DASH_TYPE_FACT => 'Факт'];
   $form['type'] = [
     '#type' => 'select',
-    '#options' => [DASH_TYPE_PLAN => 'План', DASH_TYPE_FACT => 'Факт'],
+    '#options' => $options,
     '#prefix' => '<div class="col-xs-12 col-md-3">',
     '#suffix' => '</div>',
     '#ajax' => [

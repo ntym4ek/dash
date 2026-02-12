@@ -2,7 +2,7 @@
 
 function reports_td_period_to_form($form, &$form_state)
 {
-  // дефолтное значение предыдущий месяц
+  // дефолтное значение: предыдущий месяц
   $month_default    = date('n') - 1;
   $year_default     = date('Y');
 
@@ -116,11 +116,11 @@ function reports_td_page_content($period_to)
   $output .=     '<div class="ajax-load" data-func="td_block_51" data-delay="500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-md-6">';
-  $output .=     '<h5 class="chart-title">С начала года: ' . helper_month_label_ru(1) . ' - ' . helper_month_label_ru(date('n', $season_10['to'])-1) . '</h5>';
+  $output .=     '<h5 class="chart-title">С начала года: ' . (date('n', $season_01['to']) != 2 ? helper_month_label_ru(1) . ' - ' . helper_month_label_ru(date('n', $season_01['to'])-1) : helper_month_label_ru(1)) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_52" data-delay="550"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-md-8">';
-  $output .=     '<h5 class="chart-title">За сезон: ' . helper_month_label_ru(DASH_PERIOD_START_MONTH_TD) . ' ' . date('Y', $season_10['from']) . ' - ' . helper_month_label_ru(date('n', $season_10['to'])-1) . ' ' . date('Y', $season_10['to']-1) . '</h5>';
+  $output .=     '<h5 class="chart-title">За сезон: ' . (date('n', $season_10['to']) != 11 ? helper_month_label_ru(DASH_PERIOD_START_MONTH_TD) . ' ' . date('Y', $season_10['from']) . ' - ' . helper_month_label_ru(date('n', $season_10['to'])-1) . ' ' . date('Y', $season_10['to']-1) : helper_month_label_ru(DASH_PERIOD_START_MONTH_TD)) . '</h5>';
   $output .=     '<div class="ajax-load" data-func="td_block_6" data-delay="600"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
@@ -382,7 +382,10 @@ function reports_column_production_plan_fact($period)
   $chart = dash_no_data_chart_get();
 
   // собрать все записи за весь сезон
-  if ($data = dash_plan_prod_get_by_conditions(['period' => $period, 'manual' => 1])) {
+  if ($data = dash_plan_prod_get_by_conditions([
+    'period' => ['from' => $period['from'], 'to' => $period['end']],
+    'manual' => 1
+  ])) {
     // сгруппировать помесячно
     $plan_fact_by_month = [];
     foreach (dash_months_list_get($period) as $month) {
@@ -394,9 +397,11 @@ function reports_column_production_plan_fact($period)
       ];
 
       foreach ($data as $record) {
-        if ($record->date >= $month['start'] && $record->date < $month['end']) {
-          if ($record->fact) $plan_fact_by_month[$month['start']]['fact_output'] += $record->output;
-          else               $plan_fact_by_month[$month['start']]['plan_output'] += $record->output;
+        if ($month['start'] <= $record->date && $record->date < $month['end']) {
+          // факт выводим по отчётный месяц
+          if ($record->fact && $record->date < $period['to']) $plan_fact_by_month[$month['start']]['fact_output'] += $record->output;
+          // план за весь год
+          if (!$record->fact)                                 $plan_fact_by_month[$month['start']]['plan_output'] += $record->output;
         }
       }
     }
@@ -451,11 +456,11 @@ function reports_column_production_plan_fact($period)
         $chart['fact']['#data'][] = $fact;
 
         $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-          '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
-          '</div>';
+                    '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
+                    '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
+                    '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
+                    '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
+                    '</div>';
 
         $chart['fact'][] = array(
           '#type' => 'chart_data_item',
@@ -554,7 +559,7 @@ function reports_line_revenue_plan_fact($period)
         '#title' => 'Факт',
         '#raw_options' => [
           'pointSize' => 5,
-          'annotations' => ['stem' => ['color' => 'transparent', 'length' => 30]],
+          'annotations' => ['stem' => ['color' => 'transparent', 'length' => -30]],
         ],
         '#data' => [],
       ],
@@ -1287,21 +1292,15 @@ function reports_debt_debitors_table_output($period)
 {
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
 
-  // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
-  // то есть данные за июль выводятся под заголовком 1 августа.
-  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
-  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
-  $next_month_num = date('n', $period['to']);
-  $next_month_year_num = date('Y', $period['to']);
+  $next_month_start = $period['to'];
+  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $next_month_start), 1, date('Y', $next_month_start) - 1);
 
-  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
+  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
 
-  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
-
-  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
-  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
+  // В отчёте за месяц мы показываем данные на 1 число следующего месяца,
+  // то есть период выборки данных нужно увеличить на один месяц вперед.
+  $period_to = strtotime('next month', $next_month_start);
 
   $data = [
     'row1' => [],
@@ -1313,7 +1312,7 @@ function reports_debt_debitors_table_output($period)
   // собрать все записи Дебиторской задолженности (category = 1)
   $debts = dash_debt_get_by_conditions([
     'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_DEBITOR],
-    'period' => ['from' => $prev_year_start, 'to' => $period['to']]
+    'period' => ['from' => $prev_year_start, 'to' => $period_to]
   ]);
   foreach($debts as $debt) {
     if ($debt->category == 1 && strpos(drupal_strtolower($debt->name), 'покупателей') !== false) { $row_key = 'row1'; }
@@ -1335,16 +1334,18 @@ function reports_debt_debitors_table_output($period)
 
   foreach ($data as $key => $row) {
     foreach ($row as $name => $item) {
-      $rows[] = [
-        'data' => [
-          ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
-          ['data' => helper_number_format($item[$prev_year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$prev_year_month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-        ],
-        'class' => [$key == 'row3' ? 'tfoot': ''],
-      ];
+      if ($item[$prev_year_start] || $item[$prev_year_next_month_start] || $item[$year_start] || $item[$next_month_start]) {
+        $rows[] = [
+          'data' => [
+            ($key == 'kccc' ? '&nbsp;&nbsp;- ' : '') . $name,
+            ['data' => helper_number_format($item[$prev_year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item[$prev_year_next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item[$year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item[$next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+          ],
+          'class' => [$key == 'row3' ? 'tfoot' : ''],
+        ];
+      }
     }
   }
 
@@ -1363,21 +1364,15 @@ function reports_debt_creditors_table_output($period)
 {
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
 
-  // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
-  // то есть данные за июль выводятся под заголовком 1 августа.
-  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
-  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
-  $next_month_num = date('n', $period['to']);
-  $next_month_year_num = date('Y', $period['to']);
+  $next_month_start = $period['to'];
+  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $next_month_start), 1, date('Y', $next_month_start) - 1);
 
-  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
+  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
 
-  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
-
-  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
-  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
+  // В отчёте за месяц мы показываем данные на 1 число следующего месяца,
+  // то есть период выборки данных нужно увеличить на один месяц вперед.
+  $period_to = strtotime('next month', $next_month_start);
 
   $data = [
     'row1' => [],
@@ -1389,7 +1384,7 @@ function reports_debt_creditors_table_output($period)
   // собрать все записи Кредиторской задолженности (category = 2)
   $credits = dash_debt_get_by_conditions([
     'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDITOR],
-    'period' => ['from' => $prev_year_start, 'to' => $period['to']]
+    'period' => ['from' => $prev_year_start, 'to' => $period_to]
   ]);
   foreach($credits as $credit) {
     if ($credit->category == 1 && strpos(drupal_strtolower($credit->name), 'поставщик') !== false) { $row_key = 'row1'; }
@@ -1412,16 +1407,18 @@ function reports_debt_creditors_table_output($period)
   $rows = [];
   foreach ($data as $key => $row) {
     foreach ($row as $name => $item) {
-      $rows[] = [
-        'data' => [
-          ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
-          ['data' => helper_number_format($item[$prev_year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$prev_year_month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-        ],
-        'class' => [$key == 'row3' ? 'tfoot': ''],
-      ];
+      if ($item[$prev_year_start] || $item[$prev_year_next_month_start] || $item[$year_start] || $item[$next_month_start]) {
+        $rows[] = [
+          'data' => [
+            ($key == 'kccc' ? '&nbsp;&nbsp;- ' : '') . $name,
+            ['data' => helper_number_format($item[$prev_year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item[$prev_year_next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item[$year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item[$next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+          ],
+          'class' => [$key == 'row3' ? 'tfoot' : ''],
+        ];
+      }
     }
   }
 
@@ -1440,21 +1437,15 @@ function reports_debt_credits_loans_table_output($period)
 {
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
 
-  // Данные за месяц передаются в этом же месяце, но отображать их нужно как данные на 1 число следующего месяца,
-  // то есть данные за июль выводятся под заголовком 1 августа.
-  $month_num = date('n', $period['to'])-1 > 0 ? date('n', $period['to'])-1 : 12;
-  $month_year_num = $month_num == 12 ? date('Y', $period['to'])-1 : date('Y', $period['to']);
-  $next_month_num = date('n', $period['to']);
-  $next_month_year_num = date('Y', $period['to']);
+  $next_month_start = $period['to'];
+  $prev_year_next_month_start = gmmktime(0, 0, 0, date('n', $next_month_start), 1, date('Y', $next_month_start) - 1);
 
-  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
   $year_start = $period['from'];
+  $prev_year_start = gmmktime(0, 0, 0, 1, 1, date('Y', $period['from'])-1);
 
-  $prev_year_month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num-1);
-  $prev_year_next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num-1);
-
-  $month_start = gmmktime(0, 0, 0, $month_num, 1, $month_year_num);
-  $next_month_start = gmmktime(0, 0, 0, $next_month_num, 1, $next_month_year_num);
+  // В отчёте за месяц мы показываем данные на 1 число следующего месяца,
+  // то есть период выборки данных нужно увеличить на один месяц вперед.
+  $period_to = strtotime('next month', $next_month_start);
 
   $data = [
     'row1' => [],
@@ -1465,7 +1456,7 @@ function reports_debt_credits_loans_table_output($period)
   // собрать все записи по всем кредитам и займам (category = 3,4)
   $debts  = dash_debt_get_by_conditions([
     'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDIT, DASH_DEBT_KIND_LOAN],
-    'period' => ['from' => $prev_year_start, 'to' => $period['to']]
+    'period' => ['from' => $prev_year_start, 'to' => $period_to]
   ]);
   $loan = 'Внутренние займы всего с %, в т.ч.:';
   foreach($debts as $debt) {
@@ -1495,17 +1486,19 @@ function reports_debt_credits_loans_table_output($period)
   $rows = [];
   foreach ($data as $key => $row) {
     foreach ($row as $name => $item) {
-      $rows[] = [
-        'data' => [
-          ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
-          ['data' => helper_number_format($item[$prev_year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$prev_year_month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$year_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item[$month_start] ?? 0, 1, ' ', false), 'align' => 'right'],
-          ['data' => isset($item['percent'][$month_start]) ? helper_number_format($item['percent'][$month_start], 1, ' ', false) : '', 'align' => 'right'],
-        ],
-        'class' => [$key == 'row2' ? 'tfoot': ''],
-      ];
+      if ($item[$prev_year_start] || $item[$prev_year_next_month_start] || $item[$year_start] || $item[$next_month_start]) {
+        $rows[] = [
+          'data' => [
+            ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
+            ['data' => helper_number_format($item[$prev_year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item[$prev_year_next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item[$year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item[$next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => isset($item['percent'][$next_month_start]) ? helper_number_format($item['percent'][$next_month_start], 1, ' ', false) : '', 'align' => 'right'],
+          ],
+          'class' => [$key == 'row2' ? 'tfoot': ''],
+        ];
+      }
     }
   }
 
@@ -1563,7 +1556,6 @@ function reports_line_debt_credits_plan_fact($period)
     $chart = array(
       '#type' => 'chart',
       '#chart_type' => 'line',
-      '#colors' => [DASH_COLOR_RED, DASH_COLOR_BLUE],
       '#font' => 'Montserrat',
       '#height' => '350',
       '#legend_position' => 'top',
@@ -1607,8 +1599,8 @@ function reports_line_debt_credits_plan_fact($period)
       ],
     );
 
-    $max = 0;
-    $min = 9999999;
+    $last_fact = $last_plan = 0;
+    $min = 0;
     foreach ($plan_fact_by_month as $month) {
       $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
@@ -1621,13 +1613,13 @@ function reports_line_debt_credits_plan_fact($period)
       $chart['plan']['#data'][] = $plan_amount;
       $chart['fact']['#data'][] = $fact_amount;
 
-      if ($fact_amount) {
-        $max = max($fact_amount, $max);
-        $min = min($fact_amount, $min);
-      }
-      if ($plan_amount) {
-        $max = max($plan_amount, $max);
-        $min = min($plan_amount, $min);
+      if ($fact_amount) $min = min($fact_amount, $plan_amount, $min);
+      else $min = min($plan_amount, $min);
+
+      // запоминаем последнее значение для определения цвета графика
+      if (isset($fact_amount)) {
+        $last_fact = $fact_amount;
+        $last_plan = $plan_amount;
       }
 
       $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
@@ -1652,10 +1644,21 @@ function reports_line_debt_credits_plan_fact($period)
         ],
       );
     }
-  }
 
-  $chart['yaxis']['#max'] = $max * 1.2; // нужен чтобы tooltip для высоких графиков помещался вверху и не моргал
-  $chart['yaxis']['#min'] = $min * 1.25; // нужен чтобы tooltip для высоких графиков помещался вверху и не моргал
+    // определить цвет графика
+    if ($last_fact > $last_plan) {
+      $chart['#colors'] = ['#ccc', DASH_COLOR_GREEN];
+      $chart['fact']['#raw_options']['annotations']['stem']['length'] = 40;
+      $chart['plan']['#raw_options']['annotations']['stem']['length'] = -40;
+    } else {
+      $chart['#colors'] = ['#ccc', DASH_COLOR_DARK_RED];
+      $chart['fact']['#raw_options']['annotations']['stem']['length'] = -40;
+      $chart['plan']['#raw_options']['annotations']['stem']['length'] = 40;
+    }
+
+    $chart['yaxis']['#max'] = 1500; // нужен чтобы tooltip для высоких графиков помещался вверху и не моргал
+    $chart['yaxis']['#min'] = $min * 1.5; // нужен чтобы tooltip для высоких графиков помещался вверху и не моргал
+  }
 
   return $chart;
 }
@@ -1746,7 +1749,11 @@ function reports_column_registration_plan_fact($period)
   $company = dash_term_get_by_1c_id('companies', DASH_INN_TD);
 
   // собрать все записи за период для категории 198574 - расходы на регистрацию
-  if ($data = dash_cash_outcome_get_by_conditions(['company_id' => $company->tid, 'period' => $period, 'category_ids' => [198574]])) {
+  if ($data = dash_cash_outcome_get_by_conditions([
+    'company_id' => $company->tid,
+    'period' => ['from' => $period['from'], 'to' => $period['end']],
+    'category_ids' => [198574]
+  ])) {
     // сгруппировать помесячно
     $plan_fact_by_month = [];
     foreach (dash_months_list_get($period) as $month) {
@@ -1759,8 +1766,10 @@ function reports_column_registration_plan_fact($period)
 
       foreach ($data as $record) {
         if ($month['start'] <= $record->date && $record->date < $month['end']) {
-          if ($record->type == DASH_TYPE_FACT)  $plan_fact_by_month[$month['start']]['fact_amount'] += $record->amount;
-          if ($record->type == DASH_TYPE_PLAN)  $plan_fact_by_month[$month['start']]['plan_amount'] += $record->amount;
+          // факт выводим по отчётный месяц
+          if ($record->type == DASH_TYPE_FACT && $record->date < $period['to']) $plan_fact_by_month[$month['start']]['fact_amount'] += $record->amount;
+          // план за весь год
+          if ($record->type == DASH_TYPE_PLAN)                                  $plan_fact_by_month[$month['start']]['plan_amount'] += $record->amount;
         }
       }
     }
@@ -1806,37 +1815,35 @@ function reports_column_registration_plan_fact($period)
     );
 
     foreach ($plan_fact_by_month as $month) {
-      if ($month['plan_amount'] || $month['fact_amount']) {
-        $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
+      $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
-        $plan_amount = $month['plan_amount'] / DASH_REV_DIVIDER;
-        $fact_amount = $month['fact_amount'] / DASH_REV_DIVIDER;
+      $plan_amount = $month['plan_amount'] / DASH_REV_DIVIDER;
+      $fact_amount = $month['fact_amount'] / DASH_REV_DIVIDER;
 
-        $chart['plan']['#data'][] = $plan_amount;
-        $chart['fact']['#data'][] = $fact_amount;
+      $chart['plan']['#data'][] = $plan_amount;
+      $chart['fact']['#data'][] = $fact_amount;
 
-        $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-          '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
-          '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan_amount ? number_format($fact_amount/$plan_amount*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
-          '</div>';
+      $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+        '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
+        '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+        '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact_amount, 2, ',', ' ') . '</b>&nbsp;' . DASH_REV_SUFFIX . '</div></div>' .
+        '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan_amount ? number_format($fact_amount/$plan_amount*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
+        '</div>';
 
-        $chart['fact'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-          '#raw_options' => [
-            'annotation' => $fact_amount ? number_format($fact_amount, 0, null, ' ') : null,
-          ],
-        );
-        $chart['plan'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-          '#raw_options' => [
-            'annotation' => $plan_amount ? number_format($plan_amount, 0, null, ' ') : null,
-          ],
-        );
-      }
+      $chart['fact'][] = array(
+        '#type' => 'chart_data_item',
+        '#title' => $tooltip,
+        '#raw_options' => [
+          'annotation' => $fact_amount ? number_format($fact_amount, 0, null, ' ') : null,
+        ],
+      );
+      $chart['plan'][] = array(
+        '#type' => 'chart_data_item',
+        '#title' => $tooltip,
+        '#raw_options' => [
+          'annotation' => $plan_amount ? number_format($plan_amount, 0, null, ' ') : null,
+        ],
+      );
     }
   }
 

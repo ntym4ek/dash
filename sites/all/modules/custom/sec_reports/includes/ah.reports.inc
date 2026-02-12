@@ -2,17 +2,18 @@
 
 function reports_ah_period_to_form($form, &$form_state)
 {
-  // дефолтные значения
-  $month_default    = date('n');
+  // дефолтное значение: предыдущий месяц
+  $month_default    = date('n') - 1;
   $year_default     = date('Y');
 
   $month          = empty($form_state["values"]["month"])   ? $month_default : $form_state["values"]['month'];
   $year           = empty($form_state["values"]['year'])    ? $year_default : $form_state["values"]['year'];
 
-  $month_start = gmmktime(0, 0, 0, $month, 1, $year);
+  // окончание отчётного периода (не включительно)
+  $period_to = gmmktime(0, 0, 0, $month + 1, 1, $year);
 
   // сформировать текстовое представление периода
-  $season = dash_season_bounds_by_date_get(1, $month_start);
+  $season = dash_season_bounds_by_date_get(1, $period_to);
   $period_text = helper_month_label_ru(date('n', $season['from']));
   if (date('n', $season['from']) != date('n', $season['to']-1)) {
     $period_text .= '-' . helper_month_label_ru(date('n', $season['to']-1));
@@ -35,7 +36,7 @@ function reports_ah_period_to_form($form, &$form_state)
     $month_opts[$i] = helper_month_label_ru($i);
   }
   $form['filters']['month'] = [
-    '#title' => 'Отчётный месяц',
+    '#title' => 'Месяц',
     '#type' => 'select',
     '#options' => $month_opts,
     '#default_value' => [$month],
@@ -63,7 +64,7 @@ function reports_ah_period_to_form($form, &$form_state)
   ];
 
   $form['content'] = [
-    '#markup' => reports_ah_page_content($month_start)
+    '#markup' => reports_ah_page_content($period_to)
   ];
 
   return $form;
@@ -521,7 +522,7 @@ function reports_ah_production_fact_line($period)
       ],
       'yaxis' => [
         '#type' => 'chart_yaxis',
-//        '#min' => 0,
+        '#min' => 0,
       ],
       'month' => [
         '#type' => 'chart_data',
