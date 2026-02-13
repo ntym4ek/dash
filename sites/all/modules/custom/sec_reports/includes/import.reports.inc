@@ -151,7 +151,12 @@ function reports_cash_income_import($array)
 }
 
 /**
- * Импорт данных в таблицу Кредитов и задолженностей
+ * Импорт данных в таблицу Кредитов и задолженностей.
+ * Импортируется только факт, поэтому в файле он явно не указан.
+ *
+ *  Поле "source" не используется при выборке данных, только для различения файлов,
+ *  чтобы они не затирали друг друга при выгрузке из разных источников.
+ *
  * @param $array
  */
 function reports_debt_import($array)
@@ -167,7 +172,6 @@ function reports_debt_import($array)
       $data[] = [
         'category' => $item['category'],
         'title' => $item['title'],
-        'type' => DASH_TYPE_FACT,
         'kind' => $item['type'],
         'amount' => $item['amount'],
         'amount2' => $item['amount2'],
@@ -176,7 +180,7 @@ function reports_debt_import($array)
 
     if ($data) {
       // удалить старые записи на месяц
-      reports_debt_delete_records($month_start, $company->tid, $array['source']);
+      reports_debt_delete_records($month_start, $company->tid, DASH_TYPE_FACT, $array['source']);
 
       // создание записей за месяц
       foreach ($data as $item) {
@@ -184,7 +188,7 @@ function reports_debt_import($array)
           'created' => REQUEST_TIME,
           'company_id' => $company->tid,
           'month_ts' => $month_start,
-          'type' => $item['type'],
+          'type' => DASH_TYPE_FACT,
           'kind' => $item['kind'],
           'category' => $item['category'],
           'name' => $item['title'],
@@ -247,7 +251,7 @@ function reports_remains_brief_import($array)
 }
 
 /**
- * Импорт данных в таблицу Производство.Клиенты
+ * Импорт данных в таблицу Производство/Клиенты
  * @param $array
  */
 function reports_production_clients_import($array)
@@ -283,7 +287,7 @@ function reports_production_clients_import($array)
           ]);
         }
 
-        watchdog('import', 'Записи Объёмов производства импортированы.', [], WATCHDOG_INFO);
+        watchdog('import', 'Записи Объёмов производства по клиентам импортированы.', [], WATCHDOG_INFO);
         return true;
       }
     }
@@ -294,7 +298,7 @@ function reports_production_clients_import($array)
 }
 
 /**
- * Импорт данных в таблицу Производство.Производство
+ * Импорт данных в таблицу Производство/Производство
  * @param $array
  */
 function reports_production_production_import($array)
@@ -303,7 +307,7 @@ function reports_production_production_import($array)
     $month_start = helper_datetime_to_timestamp($array['month']);
     $company = dash_term_get_by_1c_id('companies', $array['inn']);
 
-    if ($month_start && in_array($array['type'], [DASH_TYPE_PLAN, DASH_TYPE_FACT])) {
+    if ($company && $month_start && in_array($array['type'], [DASH_TYPE_PLAN, DASH_TYPE_FACT])) {
 
       // подготовка Записей на месяц
       $data = [];
@@ -492,14 +496,15 @@ function reports_production_production_delete_records($month_start, $company_id,
 }
 
 /**
- * Удалить записи за месяц из таблицы Кредитов и задолженностей
+ * Удалить импортированные записи за месяц из таблицы Кредитов и задолженностей
  *
  * @param $month_start - unix timestamp
  * @param $company_id - tid компании
+ * @param $type - тип (план, факт)
  * @param $source - источник данных
  * @return void
  */
-function reports_debt_delete_records($month_start, $company_id, $source)
+function reports_debt_delete_records($month_start, $company_id, $type, $source)
 {
   if ($month_start) {
     $next_month_start = gmmktime(0, 0, 0, date('n', $month_start)+1, 1, date('Y', $month_start));
@@ -511,7 +516,9 @@ function reports_debt_delete_records($month_start, $company_id, $source)
       ->fieldCondition('field_d_company', 'tid', $company_id)
       ->fieldCondition('field_d_date', 'value', $month_start, '>=')
       ->fieldCondition('field_d_date', 'value', $next_month_start, '<')
-      ->fieldCondition('field_d_source', 'value', $source);
+      ->fieldCondition('field_d_type', 'value', $type)
+      ->fieldCondition('field_d_source', 'value', $source)
+      ->fieldCondition('field_d_is_manual', 'value', 0);
 
     $result = $efquery->execute();
     if ($result) {

@@ -315,6 +315,12 @@ body {
   .form-item-year { flex: 0 0 auto; }
 }
 
+.scrollable {
+  overflow: auto;
+  margin-bottom: 1rem;
+  > table { margin-bottom: 0.5rem; }
+}
+
 // --- Таблицы --------------------------------------------------------------
 .table.table--xs {
   font-size: $font-size-small;
@@ -553,6 +559,11 @@ body {
   .form-item-qty,
   .form-item-amount {
     input { text-align: right; }
+  }
+  input.form-item-volume,
+  input.form-item-qty,
+  input.form-item-amount {
+    text-align: right;
   }
 
   .ui-dialog-titlebar {

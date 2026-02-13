@@ -156,7 +156,7 @@ function reports_lb_page_content($period_to)
 
   // слайд 10
   $output .=  '<div class="section-title">' .
-                '<h3>Кредиты и внутренние займы (в ' . DASH_REV_SUFFIX . ')</h3>' .
+                '<h3>Кредиты и займы (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="row">';
@@ -185,8 +185,7 @@ function reports_lb_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
-  $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season['from'])) . '-' . helper_month_label_ru(date('n', $season['to'])-2) . '</h5>';
-  $output .=     '<div class="ajax-load" data-func="lb_block_13" data-delay="1300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season['from'])) . (date('n', $season['to']) != 3 ?  '-' . helper_month_label_ru(date('n', $season['to'])-2) : '') . '</h5>';  $output .=     '<div class="ajax-load" data-func="lb_block_13" data-delay="1300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -554,7 +553,10 @@ function reports_lb_line_ship_own_plan_fact($period)
       $chart['fact']['#raw_options']['annotations']['stem']['length'] = -30;
       $chart['plan']['#raw_options']['annotations']['stem']['length'] = 20;
     }
-    $chart['yaxis']['#max'] = max($last_fact, $last_plan) * 1.3;
+
+    $max = max($total_plan, $total_fact, $last_plan, $last_fact);
+    $chart['yaxis']['#max'] = $max * 1.3;
+    $chart['yaxis']['#min'] = -1 * $max/2.8;
   }
 
   return $chart;
@@ -711,7 +713,9 @@ function reports_lb_line_revenue_own_plan_fact($period)
       $chart['fact']['#raw_options']['annotations']['stem']['length'] = -30;
       $chart['plan']['#raw_options']['annotations']['stem']['length'] = 20;
     }
-    $chart['yaxis']['#max'] = max($last_fact, $last_plan) * 1.3;
+    $max = max($total_plan, $total_fact, $last_plan, $last_fact);
+    $chart['yaxis']['#max'] = $max * 1.3;
+    $chart['yaxis']['#min'] = -1 * $max/2.8;
   }
 
   return $chart;
@@ -946,5 +950,5 @@ function reports_lb_bdds_table_output($period)
     'empty' => 'нет данных',
   ]);
 
-  return '<div class="bdds-table">' . $output . '</div>';
+  return '<div class="bdds-table scrollable">' . $output . '</div>';
 }

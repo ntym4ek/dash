@@ -912,6 +912,10 @@ function dash_cash_outcome_get_by_conditions($conditions)
 /**
  *  Вернуть данные по Кредитам и задолженностям (сущность debt/debt)
  *  с учётом заданных параметров
+ *
+ *  Поле "source" не используется при выборке данных, только для различения файлов,
+ *  чтобы они не затирали друг друга при выгрузке из разных источников.
+ *
  * @param $conditions
  *   - company_id* - tid компании
  *   - period - массив ['from' =>, 'to' => не включительно] * - обязателен
@@ -2078,6 +2082,8 @@ function dash_ship_accounts_create($params)
 
 /**
  * Создать Запись таблицы Задолженностей
+ * Поле "source" не используется при выборке данных, только для различения файлов,
+ * чтобы они не затирали друг друга при выгрузке из разных источников.
  */
 function dash_debt_create($params)
 {
@@ -2098,7 +2104,7 @@ function dash_debt_create($params)
     $debt_wr->field_d_name = $params['name'] ?? '';
     $debt_wr->field_d_amount = $params['amount'];
     $debt_wr->field_d_amount2 = $params['amount2'] ?? 0;
-    $debt_wr->field_d_is_manual = $params['manual'];
+    $debt_wr->field_d_is_manual = $params['manual'] ?? 0;
     $debt_wr->field_d_source = $params['source'];
     $debt_wr->save();
   } catch (Exception $e) {
@@ -2152,7 +2158,7 @@ function dash_production_production_create($params)
 
     $prod_wr = entity_metadata_wrapper('production', $prod);
     $prod_wr->field_prod_company    = $params['company_id'];
-    $prod_wr->field_prod_date       = $params['month_ts'];
+    $prod_wr->field_prod_date       = $params['date_ts'];
     $prod_wr->field_prod_type       = $params['type'];
     $prod_wr->field_prod_volume     = $params['volume'];
     $prod_wr->field_prod_is_manual  = $params['manual'] ?? 0;

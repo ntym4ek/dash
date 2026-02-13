@@ -46,7 +46,7 @@ function reports_debt_debitors_table_output($period, $inn)
 
   foreach ($data as $key => $row) {
     foreach ($row as $name => $item) {
-      if ($item[$prev_year_start] || $item[$prev_year_next_month_start] || $item[$year_start] || $item[$next_month_start]) {
+      if (!empty($item[$prev_year_start]) || !empty($item[$prev_year_next_month_start]) || !empty($item[$year_start]) || !empty($item[$next_month_start])) {
         $rows[] = [
           'data' => [
             ($key == 'kccc' ? '&nbsp;&nbsp;- ' : '') . $name,
@@ -69,7 +69,7 @@ function reports_debt_debitors_table_output($period, $inn)
     'empty' => 'нет данных',
   ]);
 
-  return '<div class="debt-debitors-table">' . $output . '</div>';
+  return '<div class="debt-debitors-table scrollable">' . $output . '</div>';
 }
 
 function reports_debt_creditors_table_output($period, $inn)
@@ -119,7 +119,7 @@ function reports_debt_creditors_table_output($period, $inn)
   $rows = [];
   foreach ($data as $key => $row) {
     foreach ($row as $name => $item) {
-      if ($item[$prev_year_start] || $item[$prev_year_next_month_start] || $item[$year_start] || $item[$next_month_start]) {
+      if (!empty($item[$prev_year_start]) || !empty($item[$prev_year_next_month_start]) || !empty($item[$year_start]) || !empty($item[$next_month_start])) {
         $rows[] = [
           'data' => [
             ($key == 'kccc' ? '&nbsp;&nbsp;- ' : '') . $name,
@@ -142,7 +142,7 @@ function reports_debt_creditors_table_output($period, $inn)
     'empty' => 'нет данных',
   ]);
 
-  return '<div class="debt-creditors-table">' . $output . '</div>';
+  return '<div class="debt-creditors-table scrollable">' . $output . '</div>';
 }
 
 function reports_debt_credits_loans_table_output($period, $inn)
@@ -165,17 +165,17 @@ function reports_debt_credits_loans_table_output($period, $inn)
     'kccc' => [],
   ];
 
-  // собрать все записи по всем кредитам и займам (category = 3,4)
+  // собрать все записи по всем кредитам и займам (kind = DASH_DEBT_KIND_CREDIT, DASH_DEBT_KIND_LOAN)
   $debts  = dash_debt_get_by_conditions([
     'company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'kinds' => [DASH_DEBT_KIND_CREDIT, DASH_DEBT_KIND_LOAN],
     'period' => ['from' => $prev_year_start, 'to' => $period_to]
   ]);
   $loan = 'Внутренние займы всего с %, в т.ч.:';
   foreach($debts as $debt) {
-    if ($debt->kind == 3) {
+    if ($debt->kind == DASH_DEBT_KIND_CREDIT) {
       $data['row1'][$debt->name][$debt->date] = $debt->amount / DASH_REV_DIVIDER;
     }
-    elseif ($debt->kind == 4 && $debt->category == 2) {
+    elseif ($debt->kind == DASH_DEBT_KIND_LOAN && $debt->category == 2) {
       if (!isset($data['row2'][$loan][$debt->date])) $data['row2'][$loan][$debt->date] = 0;
       if (!isset($data['row2'][$loan]['percent'][$debt->date])) $data['row2'][$loan]['percent'][$debt->date] = 0;
       $data['row2'][$loan][$debt->date]                   += $debt->amount / DASH_REV_DIVIDER;
@@ -198,7 +198,7 @@ function reports_debt_credits_loans_table_output($period, $inn)
   $rows = [];
   foreach ($data as $key => $row) {
     foreach ($row as $name => $item) {
-      if ($item[$prev_year_start] || $item[$prev_year_next_month_start] || $item[$year_start] || $item[$next_month_start]) {
+      if (!empty($item[$prev_year_start]) || !empty($item[$prev_year_next_month_start]) || !empty($item[$year_start]) || !empty($item[$next_month_start])) {
         $rows[] = [
           'data' => [
             ($key == 'kccc' ? '&nbsp;&nbsp;- ': '') . $name,
@@ -222,7 +222,7 @@ function reports_debt_credits_loans_table_output($period, $inn)
     'empty' => 'нет данных',
   ]);
 
-  return '<div class="credits-loans-table">' . $output . '</div>';
+  return '<div class="credits-loans-table scrollable">' . $output . '</div>';
 }
 
 function reports_remains_progress_table_output($period, $inn)
@@ -273,19 +273,21 @@ function reports_remains_progress_table_output($period, $inn)
   $rows = [];
   if ($data['row3']) {
     foreach ($data as $key => $row) {
-      if ($key == 'row1') $name = 'Остатки готовой продукции и товаров (всего)';
-      if ($key == 'row2') $name = 'Остатки сырья (всего)';
-      if ($key == 'row3') $name = 'Итого ГП и сырьё';
-      $rows[] = [
-        'data' => [
-          $name,
-          ['data' => helper_number_format($row[$prev_year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($row[$prev_year_next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($row[$year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($row[$next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
-        ],
-        'class' => [$key == 'row3' ? 'tfoot' : ''],
-      ];
+      if (!empty($row[$prev_year_start]) || !empty($row[$prev_year_next_month_start]) || !empty($row[$year_start]) || !empty($row[$next_month_start])) {
+        if ($key == 'row1') $name = 'Остатки готовой продукции и товаров (всего)';
+        if ($key == 'row2') $name = 'Остатки сырья (всего)';
+        if ($key == 'row3') $name = 'Итого ГП и сырьё';
+        $rows[] = [
+          'data' => [
+            $name,
+            ['data' => helper_number_format($row[$prev_year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($row[$prev_year_next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($row[$year_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($row[$next_month_start] ?? 0, 2, ' ', false), 'align' => 'right'],
+          ],
+          'class' => [$key == 'row3' ? 'tfoot' : ''],
+        ];
+      }
     }
   }
   $output = theme('table', [
@@ -296,7 +298,7 @@ function reports_remains_progress_table_output($period, $inn)
     'empty' => 'нет данных',
   ]);
 
-  return '<div class="remains-table">' . $output . '</div>';
+  return '<div class="remains-table scrollable">' . $output . '</div>';
 }
 
 
@@ -349,23 +351,26 @@ function reports_manual_bdr_table_output($period, $inn)
   $rows = [];
   $terms = taxonomy_get_tree(taxonomy_vocabulary_machine_name_load('bdr')->vid);
   foreach ($terms as $term) {
-    $item = $data[$term->tid];
-    if ($item['plan_period'] || $item['fact_period']) {
-      // сформировать имя с учётом иерархии
-      $label = $term->name;
-      if ($term->depth) {
-        $label = '&nbsp;&nbsp;' . $label;
-        for($i=1; $i <= $term->depth; $i++) { $label = '-' . $label; }
-      }
+    if (isset($data[$term->tid])) {
+      $item = $data[$term->tid];
 
-      $rows[] = [
-        'data' => [
-          $label,
-          ['data' => helper_number_format($item['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($item['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
-          ['data' => ($item['plan_period'] ? helper_number_format($item['fact_period'] / $item['plan_period'] * 100, 0, ' ', false) . ' %' : '-'), 'align' => 'right'],
-        ],
-      ];
+      if ($item['plan_period'] || $item['fact_period']) {
+        // сформировать имя с учётом иерархии
+        $label = $term->name;
+        if ($term->depth) {
+          $label = '&nbsp;&nbsp;' . $label;
+          for($i=1; $i <= $term->depth; $i++) { $label = '-' . $label; }
+        }
+
+        $rows[] = [
+          'data' => [
+            $label,
+            ['data' => helper_number_format($item['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+            ['data' => helper_number_format($item['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
+            ['data' => ($item['plan_period'] ? helper_number_format($item['fact_period'] / $item['plan_period'] * 100, 0, ' ', false) . ' %' : '-'), 'align' => 'right'],
+          ],
+        ];
+      }
     }
   }
 
@@ -377,5 +382,5 @@ function reports_manual_bdr_table_output($period, $inn)
     'empty' => 'нет данных',
   ]);
 
-  return '<div class="bdds-table">' . $output . '</div>';
+  return '<div class="bdds-table scrollable">' . $output . '</div>';
 }

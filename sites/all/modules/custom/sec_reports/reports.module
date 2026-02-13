@@ -101,7 +101,7 @@ function reports_menu()
   $items['data/debt/edit'] = [
     'title' => 'Редактирование данных',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['reports_debt_data_edit_form'],
+    'page arguments' => ['reports_debt_credits_data_edit_form'],
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID]],
     'type' => MENU_NORMAL_ITEM,
@@ -159,12 +159,13 @@ function reports_import_processors_alter(&$processors)
   $processors['last_queue'][] = ['mask' => '/^scrum_cash_outcome_.*\.json/',            'include' => $path . 'import.reports.inc', 'func' => 'reports_cash_outcome_import', 'archive' => 'dash/rp'];
   // Кредиты и задолженности (из бухгалтерии)
   $processors['last_queue'][] = ['mask' => '/^scrum_debt_.*\.json/',                    'include' => $path . 'import.reports.inc', 'func' => 'reports_debt_import', 'archive' => 'dash/rp'];
+//  $processors['last_queue'][] = ['mask' => '/^scrum_debt_\d+_\w\w\w_.*\.json/',         'include' => $path . 'import.reports.inc', 'func' => 'reports_debt_import', 'archive' => 'dash/rp'];
   // Остатки готовой продукции и сырья
   $processors['last_queue'][] = ['mask' => '/^scrum_remains_brief_\d.*\.json/',         'include' => $path . 'import.reports.inc', 'func' => 'reports_remains_brief_import', 'archive' => 'dash/rp'];
   // Производство/Клиенты
   $processors['last_queue'][] = ['mask' => '/^scrum_production_clients_\w_\d.*\.json/', 'include' => $path . 'import.reports.inc', 'func' => 'reports_production_clients_import', 'archive' => 'dash/rp'];
-  // Производство/Производство
-  $processors['last_queue'][] = ['mask' => '/^scrum_production_volume_\w_\d.*\.json/',         'include' => $path . 'import.reports.inc', 'func' => 'reports_production_production_import', 'archive' => 'dash/rp'];
+  // Производство/Производство (только объёмы)
+  $processors['last_queue'][] = ['mask' => '/^scrum_production_volume_\w_\d.*\.json/',  'include' => $path . 'import.reports.inc', 'func' => 'reports_production_production_import', 'archive' => 'dash/rp'];
   // Отгрузка
   //   todo перевести scrum_td_shipplan_ => dep_2v_2g_import_ship_plan_td на этот импорт
   $processors['last_queue'][] = ['mask' => '/^scrum_ship_\w_.*\.json/',                 'include' => $path . 'import.reports.inc', 'func' => 'reports_ship_import', 'archive' => 'dash/rp'];
@@ -756,7 +757,7 @@ function reports_manual_production_by_directions_data_edit_form_submit($form, $f
   drupal_exit();
 }
 
-function reports_debt_data_edit_form($form, &$form_state)
+function reports_debt_credits_data_edit_form($form, &$form_state)
 {
   // сохраняем блоки, которые нужно обновить
   if (!empty($_GET["blocks"])) {
@@ -793,31 +794,15 @@ function reports_debt_data_edit_form($form, &$form_state)
     ]]],
   ];
 
-  $options_m = [0 => ' - Месяц - '];
-  for($i = 1; $i <= 12; $i++) {
-    $options_m[$i] = helper_month_label_ru($i);
-  }
-  $form['month']['month'] = [
-    '#type' => 'select',
-    '#options' => $options_m,
-    '#default_value' => 0,
-    '#prefix' => '<div class="row"><div class="col-xs-7 col-md-5">',
-    '#suffix' => '</div>',
-    '#ajax' => [
-      'callback' => 'reports_debt_data_edit_form_callback',
-      'wrapper' => 'data-debt-edit-wrapper',
-    ],
-  ];
-
   $options_y = [0 => ' - Год - '];
   for($i = DASH_HISTORY_START_YEAR_TD; $i <= date('Y'); $i++) {
     $options_y[$i] = $i;
   }
-  $form['month']['year'] = [
+  $form['year'] = [
     '#type' => 'select',
     '#options' => $options_y,
     '#default_value' => 0,
-    '#prefix' => '<div class="col-xs-5 col-md-4">',
+    '#prefix' => '<div class="row"><div class="col-xs-6">',
     '#suffix' => '</div>',
     '#ajax' => [
       'callback' => 'reports_debt_data_edit_form_callback',
@@ -828,18 +813,6 @@ function reports_debt_data_edit_form($form, &$form_state)
   $form['type'] = [
     '#type' => 'select',
     '#options' => [DASH_TYPE_PLAN => 'План'],
-    '#prefix' => '<div class="col-xs-12 col-md-3">',
-    '#suffix' => '</div>',
-    '#ajax' => [
-      'callback' => 'reports_debt_data_edit_form_callback',
-      'wrapper' => 'data-debt-edit-wrapper',
-    ],
-  ];
-
-  $form['kind'] = [
-    '#type' => 'select',
-    '#title' => 'Вид задолженности',
-    '#options' => [DASH_DEBT_KIND_CREDIT => 'Внешние кредиты'],
     '#prefix' => '<div class="col-xs-6">',
     '#suffix' => '</div>',
     '#ajax' => [
@@ -848,59 +821,61 @@ function reports_debt_data_edit_form($form, &$form_state)
     ],
   ];
 
-  // если изменены месяц/год, определить наличие данных
-  $is_month_selected = false;
-  $record_id = 0;
-  if (isset($form_state['triggering_element']['#name']) && in_array($form_state['triggering_element']['#name'], ['month', 'year', 'type', 'kind'])) {
-    $amount_default = 0;
-    if ($form_state['values']['month'] && $form_state['values']['year']) $is_month_selected = true;
-
-    if ($is_month_selected) {
-      $period = [
-        'from' => gmmktime(0, 0, 0, (int)$form_state['values']['month'], 1, (int)$form_state['values']['year']),
-        'to' => gmmktime(0, 0, 0, (int)$form_state['values']['month']+1, 1, (int)$form_state['values']['year']),
-      ];
-      if ($data = dash_debt_get_by_conditions([
-        'company_id' => $company_id, 'period' => $period, 'manual' => 1,
-        'type' => $form_state['values']['type'], 'kinds' => [$form_state['values']['kind']]
-      ])) {
-        $record = reset($data);
-        $amount_default = $record->amount;
-        $record_id = $record->id;
-      }
-    }
-    $form_state['input']['amount'] = $amount_default;
-    $form_state['values']['amount'] = $amount_default;
-  }
-
-  // id записи, если найдена существующая
-  $form['record'] = [
+  // вид долга Внешние кредиты
+  $form['kind'] = [
     '#type' => 'hidden',
-    '#value' => $record_id,
+    '#value' => DASH_DEBT_KIND_CREDIT,
   ];
+
   // от какой компании создаётся запись
   $form['company_id'] = [
     '#type' => 'hidden',
     '#value' => $company_id,
   ];
 
-  $form['amount'] = [
-    '#type' => 'textfield',
-    '#size' => 20,
-    '#title' => 'Сумма (руб.)',
-    '#required' => true,
-    '#default_value' => 0,
-    '#disabled' => !$is_month_selected,
-    '#prefix' => '<div class="col-xs-6">',
-    '#suffix' => '</div></div>',
-  ];
+  // если изменены месяц/год, определить наличие данных
+  $amounts = [];
+  $is_year_selected = false;
+  if (isset($form_state['triggering_element']['#name']) && in_array($form_state['triggering_element']['#name'], ['year'])) {
+    if ($form_state['values']['year']) $is_year_selected = true;
+
+    if ($is_year_selected) {
+      $period = [
+        'from' => gmmktime(0, 0, 0, 1, 1, $form_state['values']['year']),
+        'to' => gmmktime(0, 0, 0, 1, 1, $form_state['values']['year']+1),
+      ];
+      if ($data = dash_debt_get_by_conditions([
+        'company_id' => $company_id, 'period' => $period, 'manual' => 1,
+        'type' => $form_state['values']['type'], 'kinds' => [$form_state['values']['kind']]
+      ])) {
+        foreach ($data as $item) {
+          $amounts[$item->date] = $item->amount;
+        }
+      }
+    }
+  }
+
+  for($i = 1; $i <= 13; $i++) {
+    $date_ts = $i < 13 ? gmmktime(0, 0, 0, $i, 1, $form_state['values']['year']) : gmmktime(0, 0, 0, 12, 31, $form_state['values']['year']);
+    $form['amounts'][$i] = [
+      '#type' => 'textfield',
+      '#title' => $i < 13 ? helper_month_label_ru($i) : '31.12',
+      '#default_value' => '',
+      '#disabled' => !$is_year_selected,
+      '#attributes' => ['class' => ['form-item-amount']],
+      '#prefix' => '<div class="col-xs-6 col-md-4">',
+      '#suffix' => '</div>' . ($i < 13 ? '' : '</div>'),
+    ];
+    $form_state['input'][$i] = (int)$amounts[$date_ts];
+    $form_state['values'][$i] = (int)$amounts[$date_ts];
+  }
 
   $form['actions'] = ['#type' => 'actions'];
   $form['actions']['submit'] = [
     '#type' => 'submit',
     '#value' => 'Отправить',
     '#attributes' => ['class' => ['btn-primary', 'btn-wide']],
-    '#disabled' => !$is_month_selected,
+    '#disabled' => !$is_year_selected,
     '#ajax' => [
       'callback' => 'reports_debt_data_edit_form_callback',
       'wrapper' => 'data-debt-edit-wrapper',
@@ -915,23 +890,39 @@ function reports_debt_data_edit_form_callback($form, $form_state)
 }
 function reports_debt_data_edit_form_submit($form, $form_state)
 {
-  $month_start = gmmktime(0, 0, 0, (int)$form_state['values']['month'], 1, (int)$form_state['values']['year']);
+  // удалить старые записи за год типа ПЛАН введённые вручную
+  $year_start = gmmktime(0, 0, 0, 1, 1, $form_state['values']['year']);
+  $next_year_start = gmmktime(0, 0, 0, 1, 1, $form_state['values']['year']+1);
 
-  // удалить старые записи за месяц
-  if ($form_state['values']['record']) {
-    entity_delete('debt', $form_state['values']['record']);
+  $efquery = new EntityFieldQuery();
+  $efquery
+    ->entityCondition('entity_type', 'debt')
+    ->entityCondition('bundle', 'debt')
+    ->fieldCondition('field_d_company', 'tid', $form_state['values']['company_id'])
+    ->fieldCondition('field_d_kind', 'value', $form_state['values']['kind'])
+    ->fieldCondition('field_d_date', 'value', $year_start, '>=')
+    ->fieldCondition('field_d_date', 'value', $next_year_start, '<')
+    ->fieldCondition('field_d_is_manual', 'value', 1);
+
+  $result = $efquery->execute();
+  if ($result) {
+    entity_delete_multiple('debt', array_keys($result['debt']));
   }
 
-  // добавить Запись плана
-  $record = dash_debt_create([
-    'created' => REQUEST_TIME,
-    'company_id' => $form_state['values']['company_id'],
-    'month_ts' => $month_start,
-    'type' => $form_state['values']['type'],
-    'kind' => $form_state['values']['kind'],
-    'manual' => 1,
-    'amount' => $form_state['values']['amount'],
-  ]);
+  // добавить новые Записи плана
+  for($i = 1; $i <= 13; $i++) {
+    $date_ts = $i < 13 ? gmmktime(0, 0, 0, $i, 1, $form_state['values']['year']) : gmmktime(0, 0, 0, 12, 31, $form_state['values']['year']);
+
+    dash_debt_create([
+      'created' => REQUEST_TIME,
+      'company_id' => $form_state['values']['company_id'],
+      'month_ts' => $date_ts,
+      'type' => $form_state['values']['type'],
+      'kind' => $form_state['values']['kind'],
+      'manual' => 1,
+      'amount' => $form_state['values'][$i],
+    ]);
+  }
 
   // обновление блоков
   if (!empty($form_state['blocks'])) {
