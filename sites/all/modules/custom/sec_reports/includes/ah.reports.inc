@@ -99,10 +99,10 @@ function reports_ah_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_021" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_021" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_022" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_022" data-delay="120"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -116,10 +116,10 @@ function reports_ah_page_content($period_to)
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12 col-lg-8">';
   $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season['to'])-1) . '</h5>';
-  $output .=     '<div class="ajax-load" data-func="ah_block_031" data-delay="1300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_031" data-delay="300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-lg-4">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_032" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_032" data-delay="310"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -130,10 +130,10 @@ function reports_ah_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12 col-lg-8">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_061" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_061" data-delay="500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-lg-4">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_062" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_062" data-delay="550"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -144,10 +144,10 @@ function reports_ah_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12 col-lg-8">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_081" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_081" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-lg-4">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_082" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_082" data-delay="750"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -158,10 +158,10 @@ function reports_ah_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12 col-lg-8">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_101" data-delay="000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_101" data-delay="800"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-lg-4">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_102" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_102" data-delay="850"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -172,10 +172,10 @@ function reports_ah_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12 col-lg-8">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_121" data-delay="000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_121" data-delay="1000"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-lg-4">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_122" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_122" data-delay="1050"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -186,10 +186,10 @@ function reports_ah_page_content($period_to)
               '</div>';
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12 col-lg-8">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_091" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_091" data-delay="1500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .=   '<div class="col-xs-12 col-lg-4">';
-  $output .=     '<div class="ajax-load" data-func="ah_block_092" data-delay="0"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_092" data-delay="1500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -203,7 +203,7 @@ function reports_ah_page_content($period_to)
   $output .= '<div class="row">';
   $output .=   '<div class="col-xs-12">';
   $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season['from'])) . (date('n', $season['to']) != 3 ?  '-' . helper_month_label_ru(date('n', $season['to'])-2) : '') . '</h5>';
-  $output .=     '<div class="ajax-load" data-func="ah_block_200" data-delay="00"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+  $output .=     '<div class="ajax-load" data-func="ah_block_200" data-delay="1700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
   $output .=   '</div>';
   $output .= '</div>';
 
@@ -1903,7 +1903,7 @@ function reports_ah_manual_bdr_table_output($period)
   ];
 
   $rows = [];
-  if ($plan_income || $fact_income || $plan_outcome || $fact_outcome) {
+  if ($plan_income || $fact_income) {
     $rows[] = [
       'data' => [
         '1. Доходы (итого), в т.ч.:',
@@ -1929,7 +1929,8 @@ function reports_ah_manual_bdr_table_output($period)
         ],
       ];
     }
-
+  }
+  if ($plan_outcome || $fact_outcome) {
     $rows[] = [
       'data' => [
         '2. Расходы (итого), в т.ч.:',

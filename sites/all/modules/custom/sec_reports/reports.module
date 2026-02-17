@@ -6,6 +6,7 @@ include ('includes/td.reports.inc');
 include ('includes/jp.reports.inc');
 include ('includes/ah.reports.inc');
 include ('includes/lb.reports.inc');
+include ('includes/ev.reports.inc');
 
 /**
  * Implementation of hook_menu().
@@ -48,6 +49,16 @@ function reports_menu()
     'page arguments' => ['reports_lb_period_to_form'],
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, LUBRICANTS_RID]],
+    'weight' => 20,
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['reports/ev'] = array(
+    'title' => 'ЭВА',
+    'menu_name' => 'main-menu',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['reports_ev_period_to_form'],
+    'access callback' => 'ext_user_has_roles',
+    'access arguments' => [[ADMIN_RID, EVA_RID]],
     'weight' => 20,
     'type' => MENU_NORMAL_ITEM,
   );
