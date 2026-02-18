@@ -1183,7 +1183,7 @@ function reports_ship_accounts_data_edit_form($form, &$form_state)
   ];
 
   // тип записей, которые доступны пользователю
-  $type_available = $form_state["values"]["type_available"] ?? $_GET["type"] ?? 0;
+  $type_available = $form_state['values']['type_available'] ?? $_GET["type"] ?? 0;
   $form['type_available'] = [
     '#type' => 'hidden',
     '#value' => $type_available,
@@ -1386,6 +1386,13 @@ function reports_cash_income_data_edit_form($form, &$form_state)
     ]]],
   ];
 
+  // тип записей, которые доступны пользователю
+  $type_available = $form_state["values"]["type_available"] ?? $_GET["type"] ?? 0;
+  $form['type_available'] = [
+    '#type' => 'hidden',
+    '#value' => $type_available,
+  ];
+
   $options_m = [0 => ' - Месяц - '];
   for($i = 1; $i <= 12; $i++) {
     $options_m[$i] = helper_month_label_ru($i);
@@ -1418,10 +1425,15 @@ function reports_cash_income_data_edit_form($form, &$form_state)
     ],
   ];
 
+  // где-то может быть доступно занесение только одного типа данных
+  // где-то может быть доступно занесение только одного типа данных
+  $options = [DASH_TYPE_PLAN => 'План', DASH_TYPE_FACT => 'Факт'];
+  if ($type_available == DASH_TYPE_PLAN) $options = [DASH_TYPE_PLAN => 'План'];
+  if ($type_available == DASH_TYPE_FACT) $options = [DASH_TYPE_FACT => 'Факт'];
   $form['type'] = [
     '#type' => 'select',
     '#title' => 'Тип записи',
-    '#options' => [1 => 'План', 2 => 'Факт'],
+    '#options' => $options,
     '#prefix' => '<div class="col-xs-6">',
     '#suffix' => '</div>',
     '#ajax' => [
