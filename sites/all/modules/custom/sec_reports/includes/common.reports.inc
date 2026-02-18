@@ -44,6 +44,7 @@ function reports_debt_debitors_table_output($period, $inn)
     ['data' => date('d.m.Y', $next_month_start), 'align' => 'center'],
   ];
 
+  $rows = [];
   foreach ($data as $key => $row) {
     foreach ($row as $name => $item) {
       if (!empty($item[$prev_year_start]) || !empty($item[$prev_year_next_month_start]) || !empty($item[$year_start]) || !empty($item[$next_month_start])) {

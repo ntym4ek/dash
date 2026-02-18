@@ -1764,36 +1764,36 @@ function reports_ah_debt_credits_loans_column($period)
     );
 
     $chart['xaxis']['#labels'][] = date('Y', $prev_year_start);
-    $chart['start']['#data'][] = $data[$prev_year_start];
-    $chart['current']['#data'][] = $data[$prev_year_next_month_start];
+    $chart['start']['#data'][] = $data[$prev_year_start] ?? 0;
+    $chart['current']['#data'][] = $data[$prev_year_next_month_start] ?? 0;
 
     $chart['start'][] = array(
       '#type' => 'chart_data_item',
       '#raw_options' => [
-        'annotation' => $data[$prev_year_start] ? number_format($data[$prev_year_start], 0, null, ' ') : null,
+        'annotation' => isset($data[$prev_year_start]) ? number_format($data[$prev_year_start], 0, null, ' ') : null,
       ],
     );
     $chart['current'][] = array(
       '#type' => 'chart_data_item',
       '#raw_options' => [
-        'annotation' => $data[$prev_year_next_month_start] ? number_format($data[$prev_year_next_month_start], 0, null, ' ') : null,
+        'annotation' => isset($data[$prev_year_next_month_start]) ? number_format($data[$prev_year_next_month_start], 0, null, ' ') : null,
       ],
     );
 
     $chart['xaxis']['#labels'][] = date('Y', $year_start);
-    $chart['start']['#data'][] = $data[$year_start];
-    $chart['current']['#data'][] = $data[$next_month_start];
+    $chart['start']['#data'][] = $data[$year_start] ?? 0;
+    $chart['current']['#data'][] = $data[$next_month_start] ?? 0;
 
     $chart['start'][] = array(
       '#type' => 'chart_data_item',
       '#raw_options' => [
-        'annotation' => $data[$year_start] ? number_format($data[$year_start], 0, null, ' ') : null,
+        'annotation' => isset($data[$year_start]) ? number_format($data[$year_start], 0, null, ' ') : null,
       ],
     );
     $chart['current'][] = array(
       '#type' => 'chart_data_item',
       '#raw_options' => [
-        'annotation' => $data[$next_month_start] ? number_format($data[$next_month_start], 0, null, ' ') : null,
+        'annotation' => isset($data[$next_month_start]) ? number_format($data[$next_month_start], 0, null, ' ') : null,
       ],
     );
   }
