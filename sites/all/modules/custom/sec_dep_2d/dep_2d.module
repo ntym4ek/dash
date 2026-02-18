@@ -512,9 +512,9 @@ function dash_remains_get_by_nom($conditions)
   if (!isset($result)) {
     $dbr = db_select('eck_remains', 'r');
 
-    $dbr->innerJoin('field_data_field_rm_nomenklatura', 'fn', 'fn.entity_id = r.id');
+    $dbr->innerJoin('field_data_field_rm_nomenclature', 'fn', 'fn.entity_id = r.id');
     $dbr->condition('fn.bundle', 'remains');
-    $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_rm_nomenklatura_tid');
+    $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_rm_nomenclature_tid');
     $dbr->fields('t', ['tid', 'name']);
 
     $dbr->innerJoin('field_data_field_rm_date', 'frd', 'frd.entity_id = r.id');
@@ -603,12 +603,12 @@ function dash_get_remains_by_warehouse($conditions)
   if (!isset($result)) {
     $dbr = db_select('eck_remains', 'r');
 
-    $dbr->innerJoin('field_data_field_rm_nomenklatura', 'fn', 'fn.entity_id = r.id');
+    $dbr->innerJoin('field_data_field_rm_nomenclature', 'fn', 'fn.entity_id = r.id');
     $dbr->condition('fn.bundle', 'remains');
     if (!empty($conditions['nom_tid'])) {
-      $dbr->condition('fn.field_rm_nomenklatura_tid', $conditions['nom_tid']);
+      $dbr->condition('fn.field_rm_nomenclature_tid', $conditions['nom_tid']);
     }
-    $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_rm_nomenklatura_tid');
+    $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_rm_nomenclature_tid');
     $dbr->fields('t', ['tid', 'name']);
 
     $dbr->innerJoin('field_data_field_rm_date', 'frd', 'frd.entity_id = r.id');
@@ -703,9 +703,9 @@ function dep_2d_date_remains_actual()
 function dep_2d_remains_nom_filter_form($form, $form_state, $datetime)
 {
   $dbr = db_select('eck_remains', 'r');
-  $dbr->innerJoin('field_data_field_rm_nomenklatura', 'fn', 'fn.entity_id = r.id');
+  $dbr->innerJoin('field_data_field_rm_nomenclature', 'fn', 'fn.entity_id = r.id');
   $dbr->condition('fn.bundle', 'remains');
-  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_rm_nomenklatura_tid');
+  $dbr->innerJoin('taxonomy_term_data', 't', 't.tid = fn.field_rm_nomenclature_tid');
   $dbr->fields('t', ['tid', 'name']);
   $dbr->orderBy('name');
 
