@@ -2255,3 +2255,33 @@ function dash_manual_production_by_directions_create($params)
   return $manual ?? false;
 }
 
+/**
+ * Создать Остатков готовой продукции и сырья
+ */
+function dash_bank_doc_create($params)
+{
+  $transaction = db_transaction();
+  try {
+    $bank_doc = entity_create('bank_doc', [
+      'type' => 'bank_doc',
+      'created' => $params['created'],
+    ]);
+    entity_save('bank_doc', $bank_doc);
+
+    $bank_doc_wr = entity_metadata_wrapper('bank_doc', $bank_doc);
+    $bank_doc_wr->field_bd_company  = $params['company'];
+    $bank_doc_wr->field_bd_datetime = $params['date_ts'];
+    $bank_doc_wr->field_bd_type     = $params['type'];
+    $bank_doc_wr->field_bd_purpose  = $params['purpose'];
+    $bank_doc_wr->field_bd_income   = $params['income'] ?? 0;
+    $bank_doc_wr->field_bd_outcome  = $params['outcome'] ?? 0;
+    $bank_doc_wr->field_bd_agent    = $params['agent'] ?? '';
+    $bank_doc_wr->save();
+
+  } catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('database', $e);
+  }
+
+  return $bank_doc ?? false;
+}

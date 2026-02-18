@@ -62,6 +62,8 @@ function finance_page()
   return $output;
 }
 
+
+// остаток
 function finance_get_table_output($filter_date = null)
 {
   $timestamp_from = $filter_date ?? gmmktime(0, 0, 0, date('n'), date('j'), date('Y'));
@@ -86,6 +88,7 @@ function finance_get_table_output($filter_date = null)
         $companies_arr['list'][$company] = [
           'label' => $company,
           'cash_start' => 0, 'bank_start' => 0, 'bankd_start' => 0,
+          'cash_end' => 0, 'bank_end' => 0, 'bankd_end' => 0,
           'cash_income' => 0, 'bank_income' => 0, 'bankd_income' => 0,
           'cash_outcome' => 0, 'bank_outcome' => 0, 'bankd_outcome' => 0,
           'list' => []
@@ -94,10 +97,20 @@ function finance_get_table_output($filter_date = null)
       ksort($companies_arr['list']);
 
       if ($doc_wr->field_bd_purpose->value() == 'balance') {
-        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_CASH) $companies_arr['list'][$company]['cash_start'] = $doc_wr->field_bd_income->value();
-        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK) $companies_arr['list'][$company]['bank_start'] = $doc_wr->field_bd_income->value();
-        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK_DEPOSIT) $companies_arr['list'][$company]['bankd_start'] = $doc_wr->field_bd_income->value();
+        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_CASH) {
+          $companies_arr['list'][$company]['cash_start'] = $doc_wr->field_bd_income->value();
+          $companies_arr['list'][$company]['cash_end'] = $doc_wr->field_bd_outcome->value();
+        }
+        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK) {
+          $companies_arr['list'][$company]['bank_start'] = $doc_wr->field_bd_income->value();
+          $companies_arr['list'][$company]['bank_end'] = $doc_wr->field_bd_outcome->value();
+        }
+        if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_BANK_DEPOSIT) {
+          $companies_arr['list'][$company]['bankd_start'] = $doc_wr->field_bd_income->value();
+          $companies_arr['list'][$company]['bankd_end'] = $doc_wr->field_bd_outcome->value();
+        }
         $companies_arr['balance'] += $doc_wr->field_bd_income->value();
+        $companies_arr['balance2'] += $doc_wr->field_bd_outcome->value();
       } else {
         if ($doc_wr->field_bd_type->value() == FINANCE_DOC_TYPE_CASH) {
           $companies_arr['list'][$company]['cash_income'] += $income;
@@ -150,7 +163,7 @@ function finance_get_table_output($filter_date = null)
 
         $subrows = [];
         foreach ($company['docs'] as $doc) {
-          if ($doc['purpose'] != 'balance') {
+          if (!in_array($doc['purpose'], ['balance', 'balance2'])) {
             $subrows[] = [
               'data' => [
                 $doc['purpose'],
@@ -179,7 +192,7 @@ function finance_get_table_output($filter_date = null)
             ['data' => helper_number_format($company['bank_start'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_start']) ? '' : 'zero-value']],
             ['data' => helper_number_format($company['bank_income'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_income']) ? '' : 'zero-value']],
             ['data' => helper_number_format($company['bank_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_outcome']) ? '' : 'zero-value']],
-            ['data' => helper_number_format($company['bank_start'] + $company['bank_income'] - $company['bank_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_start'] + $company['bank_income'] - $company['bank_outcome']) ? '' : 'zero-value']],
+            ['data' => helper_number_format($company['bank_end'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bank_start'] + $company['bank_income'] - $company['bank_outcome']) ? '' : 'zero-value']],
           ],
         ];
         if ((float)$company['bankd_start'] || (float)$company['bankd_income'] || (float)$company['bankd_outcome']) {
@@ -189,7 +202,7 @@ function finance_get_table_output($filter_date = null)
               ['data' => helper_number_format($company['bankd_start'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bankd_start']) ? '' : 'zero-value']],
               ['data' => helper_number_format($company['bankd_income'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bankd_income']) ? '' : 'zero-value']],
               ['data' => helper_number_format($company['bankd_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bankd_outcome']) ? '' : 'zero-value']],
-              ['data' => helper_number_format($company['bankd_start'] + $company['bankd_income'] - $company['bankd_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bankd_start'] + $company['bankd_income'] - $company['bankd_outcome']) ? '' : 'zero-value']],
+              ['data' => helper_number_format($company['bankd_end'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['bankd_start'] + $company['bankd_income'] - $company['bankd_outcome']) ? '' : 'zero-value']],
             ],
           ];
         }
@@ -199,7 +212,7 @@ function finance_get_table_output($filter_date = null)
             ['data' => helper_number_format($company['cash_start'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['cash_start']) ? '' : 'zero-value']],
             ['data' => helper_number_format($company['cash_income'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['cash_income']) ? '' : 'zero-value']],
             ['data' => helper_number_format($company['cash_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['cash_outcome']) ? '' : 'zero-value']],
-            ['data' => helper_number_format($company['cash_start'] + $company['cash_income'] - $company['cash_outcome'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['cash_start'] + $company['cash_income'] - $company['cash_outcome']) ? '' : 'zero-value']],
+            ['data' => helper_number_format($company['cash_end'], 2, ' ', false), 'align' => 'right', 'class' => [(float)($company['cash_start'] + $company['cash_income'] - $company['cash_outcome']) ? '' : 'zero-value']],
           ],
         ];
         $rows[] = [

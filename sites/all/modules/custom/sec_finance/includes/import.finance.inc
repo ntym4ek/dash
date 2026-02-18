@@ -37,52 +37,54 @@ function finance_bank_docs_import($array)
       // удалить старые документы на дату
       finance_bank_docs_delete_by_date($date_ts, $array['company']);
 
-      // создать запись с остатком в кассе на начало дня
-      $bank_doc = entity_create('bank_doc', ['type' => 'bank_doc']);
-      $bank_doc_wr = entity_metadata_wrapper('bank_doc', $bank_doc);
-      $bank_doc_wr->field_bd_company = $array['company'];
-      $bank_doc_wr->field_bd_datetime = $date_ts;
-      $bank_doc_wr->field_bd_type = FINANCE_DOC_TYPE_CASH;
-      $bank_doc_wr->field_bd_income = $array['cash'];
-      $bank_doc_wr->field_bd_purpose = 'balance';
-      $bank_doc_wr->save();
+      // создать записи с остатком в кассе на начало и конец дня
+      $params = [
+        'company' => $array['company'],
+        'date_ts' => $date_ts,
+        'type' => FINANCE_DOC_TYPE_CASH,
+        'purpose' => 'balance',
+        'income' => $array['cash'][0],
+        'outcome' => $array['cash'][1],
+      ];
+      dash_bank_doc_create($params);
 
-      // создать запись с остатком в банке на начало дня
-      $bank_doc = entity_create('bank_doc', ['type' => 'bank_doc']);
-      $bank_doc_wr = entity_metadata_wrapper('bank_doc', $bank_doc);
-      $bank_doc_wr->field_bd_company = $array['company'];
-      $bank_doc_wr->field_bd_datetime = $date_ts;
-      $bank_doc_wr->field_bd_type = FINANCE_DOC_TYPE_BANK;
-      $bank_doc_wr->field_bd_income = $array['bank'];
-      $bank_doc_wr->field_bd_purpose = 'balance';
-      $bank_doc_wr->save();
+      // создать записи с остатком в банке на начало и конец дня
+      $params = [
+        'company' => $array['company'],
+        'date_ts' => $date_ts,
+        'type' => FINANCE_DOC_TYPE_BANK,
+        'purpose' => 'balance',
+        'income' => $array['bank'][0],
+        'outcome' => $array['bank'][1],
+      ];
+      dash_bank_doc_create($params);
 
-      // создать запись с остатком депозитов на начало дня
+      // создать записи с остатком депозитов на начало и конец дня
       if (isset($array['bankd'])) {
-        $bank_doc = entity_create('bank_doc', ['type' => 'bank_doc']);
-        $bank_doc_wr = entity_metadata_wrapper('bank_doc', $bank_doc);
-        $bank_doc_wr->field_bd_company = $array['company'];
-        $bank_doc_wr->field_bd_datetime = $date_ts;
-        $bank_doc_wr->field_bd_type = FINANCE_DOC_TYPE_BANK_DEPOSIT;
-        $bank_doc_wr->field_bd_income = $array['bankd'];
-        $bank_doc_wr->field_bd_purpose = 'balance';
-        $bank_doc_wr->save();
+        $params = [
+          'company' => $array['company'],
+          'date_ts' => $date_ts,
+          'type' => FINANCE_DOC_TYPE_BANK_DEPOSIT,
+          'purpose' => 'balance',
+          'income' => $array['bankd'][0],
+          'outcome' => $array['bankd'][1],
+        ];
+        dash_bank_doc_create($params);
       }
 
       foreach ($array['load'] as $doc) {
         $datetime_ts = helper_datetime_to_timestamp($doc['datetime']);
 
-        $bank_doc = entity_create('bank_doc', ['type' => 'bank_doc']);
-        $bank_doc_wr = entity_metadata_wrapper('bank_doc', $bank_doc);
-
-        $bank_doc_wr->field_bd_company = $array['company'];
-        $bank_doc_wr->field_bd_datetime = $datetime_ts;
-        $bank_doc_wr->field_bd_type = $doc['type'];
-        $bank_doc_wr->field_bd_income = $doc['income'];
-        $bank_doc_wr->field_bd_outcome = $doc['outcome'];
-        $bank_doc_wr->field_bd_purpose = $doc['purpose'];
-        $bank_doc_wr->field_bd_agent = $doc['agent'];
-        $bank_doc_wr->save();
+        $params = [
+          'company' => $array['company'],
+          'date_ts' => $datetime_ts,
+          'type' => $doc['type'],
+          'purpose' => $doc['purpose'],
+          'income' => $doc['income'],
+          'outcome' => $doc['outcome'],
+          'agent' => $doc['agent'],
+        ];
+        dash_bank_doc_create($params);
       }
 
       watchdog('import', 'Банковские выписки за @date импортированы.', ['@date' => $array['date']], WATCHDOG_INFO);
