@@ -2264,7 +2264,7 @@ function dash_bank_doc_create($params)
   try {
     $bank_doc = entity_create('bank_doc', [
       'type' => 'bank_doc',
-      'created' => $params['created'],
+      'created' => REQUEST_TIME,
     ]);
     entity_save('bank_doc', $bank_doc);
 

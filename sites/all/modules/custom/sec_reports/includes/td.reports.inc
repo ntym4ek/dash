@@ -90,7 +90,7 @@ function reports_td_page_content($period_to)
   $output .= '<div class="ajax-load" data-func="td_block_1" data-delay="100"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 2
-  $url = url('/data/ship/ship/edit', ['query' => ['blocks' => ['td_block_2'], 'inn' => DASH_INN_TD]]);
+  $url = url('/data/ship/ship/edit', ['query' => ['blocks' => ['td_block_2'], 'inn' => DASH_INN_TD, 'type' => DASH_TYPE_PLAN]]);
   $output .=  '<div class="section-title">' .
                 '<h3>План-факт отгрузки продукции (в ' . DASH_REV_SUFFIX . ')</h3>' .
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .

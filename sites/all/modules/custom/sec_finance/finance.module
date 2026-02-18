@@ -72,6 +72,7 @@ function finance_get_table_output($filter_date = null)
   // сортировка по компаниям
   $companies_arr = [
     'balance' => 0,
+    'balance2' => 0,
     'income' => 0,
     'outcome' => 0,
     'list' => [],
@@ -230,7 +231,7 @@ function finance_get_table_output($filter_date = null)
           ['data' => helper_number_format($companies_arr['balance'], 2, ' ', false), 'align' => 'right'],
           ['data' => helper_number_format($companies_arr['income'], 2, ' ', false), 'align' => 'right'],
           ['data' => helper_number_format($companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
-          ['data' => helper_number_format($companies_arr['balance'] + $companies_arr['income'] - $companies_arr['outcome'], 2, ' ', false), 'align' => 'right'],
+          ['data' => helper_number_format($companies_arr['balance2'], 2, ' ', false), 'align' => 'right'],
         ], 'class' => ['tfoot'],
       ];
 
