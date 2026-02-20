@@ -10,13 +10,13 @@ include ('includes/manager.dep_2v_2g.inc');
  */
 function dep_2v_2g_menu()
 {
-  $items['td/department-2v-2g/head/compare'] = array(
-    'title' => 'Управления 2В и 2Г',
-    'page callback' => 'dep_2v_2g_head_compare_page',
-    'access callback' => 'ext_user_has_roles',
-    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_2V2G_USER_RID]],
-    'type' => MENU_CALLBACK,
-  );
+//  $items['td/department-2v-2g/head/compare'] = array(
+//    'title' => 'Управления 2В и 2Г',
+//    'page callback' => 'dep_2v_2g_head_compare_page',
+//    'access callback' => 'ext_user_has_roles',
+//    'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, DEP_2V2G_USER_RID]],
+//    'type' => MENU_CALLBACK,
+//  );
   $items['td/department-2v-2g/head/period'] = array(
     'title' => 'Управления 2В и 2Г',
     'menu_name' => 'main-menu',
@@ -1048,12 +1048,15 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
     // подготовить к сортировке по сумме
     $sort_p = $sort_f = $sort_d = [];
     foreach ($plan_fact as $item) {
-      if (isset($item['plan'])) {
-        $sort_p[$item['plan']] = $item['tid'];
-      } elseif (isset($item['fact'])) {
-        $sort_f[$item['fact']] = $item['tid'];
-      } elseif (isset($item['deal'])) {
-        $sort_d[$item['deal']] = $item['tid'];
+      if (!empty($item['plan'])) {
+        $key = str_pad($item['plan'], 10, '0', STR_PAD_LEFT) . str_pad($item['tid'], 7, '0', STR_PAD_LEFT);
+        $sort_p[$key] = $item['tid'];
+      } elseif (!empty($item['fact'])) {
+        $key = str_pad($item['fact'], 10, '0', STR_PAD_LEFT) . str_pad($item['tid'], 7, '0', STR_PAD_LEFT);
+        $sort_f[$key] = $item['tid'];
+      } elseif (!empty($item['deal'])) {
+        $key = str_pad($item['deal'], 10, '0', STR_PAD_LEFT) . str_pad($item['tid'], 7, '0', STR_PAD_LEFT);
+        $sort_d[$key] = $item['tid'];
       }
     }
 
@@ -1112,12 +1115,16 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
         '#title' => 'План',
         '#data' => [],
       ],
-      'remains' => [
+
+    );
+
+    if ($remains) {
+      $chart['remains'] = [
         '#type' => 'chart_data',
         '#title' => 'Остатки на ' . date('d.m.Y', $remains_last_ts),
         '#data' => [],
-      ],
-    );
+      ];
+    }
 
     $index = 0;
     foreach ($sort as $tid) {
@@ -1127,24 +1134,24 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
           $qty_p = (float)$plan_fact[$tid]['plan'];
           $qty_d = (float)$plan_fact[$tid]['deal'];
           $qty_f = (float)$plan_fact[$tid]['fact'];
-          $qty_r = (float)$plan_fact[$tid]['remains'];
+          if ($remains) $qty_r = (float)$plan_fact[$tid]['remains'];
 
           $chart['fact']['#data'][] = $qty_f;
           $chart['deal']['#data'][] = $qty_d;
           $chart['plan']['#data'][] = max($qty_p - $qty_d - $qty_f, 0);
-          $chart['remains']['#data'][] = $qty_r > 0 ? $qty_r : null;
+          if ($remains) $chart['remains']['#data'][] = $qty_r > 0 ? $qty_r : 0;
 
           $delta = '';
           if ($qty_p) {
             $delta = ($qty_f > $qty_p ? '(+' : '(') . number_format(($qty_f / $qty_p * 100) - 100, 0, null, ' ') . '%)';
           }
 
-          $tooltip = '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-            '<div><div style="display:inline-block; width: 180px;">План:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_p, 0, ',', ' ') . '</b></div></div>' .
-            '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_d, 0, ',', ' ') . '</b></div></div>' .
-            '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_f, 0, ',', ' ') . '</b></div></div>' .
-            '<div><div style="display:inline-block; width: 180px;">Остатки на ' . date('d.m.Y', $remains_last_ts) . ':</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_r, 0, ',', ' ') . '</b></div></div>' .
-            '</div>';
+          $tooltip =  '<div style="font-family: Montserrat; padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+                        '<div><div style="display:inline-block; width: 180px;">План:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_p, 0, ',', ' ') . '</b></div></div>' .
+                        '<div><div style="display:inline-block; width: 180px;">Неотгруженные контракты:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_d, 0, ',', ' ') . '</b></div></div>' .
+                        '<div><div style="display:inline-block; width: 180px;">Факт:</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_f, 0, ',', ' ') . '</b></div></div>' .
+                        ($remains ? '<div><div style="display:inline-block; width: 180px;">Остатки на ' . date('d.m.Y', $remains_last_ts) . ':</div><div style="display:inline-block; text-align: right; width: 60px;"><b>' . number_format($qty_r, 0, ',', ' ') . '</b></div></div>' : '') .
+                      '</div>';
           $chart['plan'][] = array(
             '#type' => 'chart_data_item',
             '#title' => $tooltip,
@@ -1153,10 +1160,11 @@ function dep_2v_2g_column_ship_plan_fact_by_nom($period, $options = [])
             '#type' => 'chart_data_item',
             '#title' => $tooltip,
           );
-          $chart['remains'][] = array(
-            '#type' => 'chart_data_item',
-            '#title' => $tooltip,
-          );
+          if ($remains)
+            $chart['remains'][] = array(
+              '#type' => 'chart_data_item',
+              '#title' => $tooltip,
+            );
           $chart['fact'][] = array(
             '#type' => 'chart_data_item',
             '#title' => $tooltip,
