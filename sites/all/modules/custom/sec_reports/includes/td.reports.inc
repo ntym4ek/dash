@@ -445,37 +445,42 @@ function reports_td_column_production_plan_fact($period)
       ],
     );
 
+    $max = 0;
     foreach ($plan_fact_by_month as $month) {
-        $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
+      $chart['xaxis']['#labels'][] = helper_month_label_ru(date('n', $month['start']));
 
-        $plan = $month['plan_output'] / DASH_PROD_DIVIDER;
-        $fact = $month['fact_output'] / DASH_PROD_DIVIDER;
+      $plan = $month['plan_output'] / DASH_PROD_DIVIDER;
+      $fact = $month['fact_output'] / DASH_PROD_DIVIDER;
 
-        $chart['plan']['#data'][] = $plan;
-        $chart['fact']['#data'][] = $fact;
+      $chart['plan']['#data'][] = $plan;
+      $chart['fact']['#data'][] = $fact;
 
-        $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-                    '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
-                    '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
-                    '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
-                    '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
-                    '</div>';
+      $max = max($max, $plan, $fact);
 
-        $chart['fact'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-          '#raw_options' => [
-            'annotation' => $fact ? number_format($fact, 0, null, ' ') : null,
-          ],
-        );
-        $chart['plan'][] = array(
-          '#type' => 'chart_data_item',
-          '#title' => $tooltip,
-          '#raw_options' => [
-            'annotation' => $plan ? number_format($plan, 0, null, ' ') : null,
-          ],
-        );
+      $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
+                  '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
+                  '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
+                  '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact, 2, ',', ' ') . '</b>&nbsp;' . DASH_PROD_SUFFIX . '</div></div>' .
+                  '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan ? number_format($fact/$plan*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .
+                  '</div>';
+
+      $chart['fact'][] = array(
+        '#type' => 'chart_data_item',
+        '#title' => $tooltip,
+        '#raw_options' => [
+          'annotation' => $fact ? number_format($fact, 0, null, ' ') : null,
+        ],
+      );
+      $chart['plan'][] = array(
+        '#type' => 'chart_data_item',
+        '#title' => $tooltip,
+        '#raw_options' => [
+          'annotation' => $plan ? number_format($plan, 0, null, ' ') : null,
+        ],
+      );
     }
+
+    $chart['yaxis']['#max'] = $max * 1.2;
   }
 
   return $chart;

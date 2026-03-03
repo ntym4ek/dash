@@ -552,7 +552,7 @@ function reports_prod_prod_data_edit_form_submit($form, $form_state)
   dash_production_production_create([
     'created' => REQUEST_TIME,
     'company_id' => $form_state['values']['company_id'],
-    'month_ts' => $month_start,
+    'date_ts' => $month_start,
     'type' => $form_state['values']['type'],
     'volume' => $form_state['values']['volume'],
     'manual' => 1,
