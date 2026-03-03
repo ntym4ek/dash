@@ -73,7 +73,7 @@ function dash_menu()
   $items['ajax-load'] = array(
     'page callback' => 'dash_ajax_load',
     'access callback' => 'ext_user_has_roles',  // todo доступ нужно проверять на уровне функции, иначе роли из списка могут получить данные друг друга
-    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID, FINANCE_USER_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID, DEP_2A_USER_RID, DEP_2V2G_USER_RID, DEP_4_USER_RID, DEP_7_USER_RID]],
+    'access arguments' => [[ADMIN_RID, AGROHIMIKAT_USER_RID, FINANCE_USER_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID, EVA_RID, DEP_2A_USER_RID, DEP_2V2G_USER_RID, DEP_4_USER_RID, DEP_7_USER_RID]],
     'type' => MENU_CALLBACK,
   );
 
