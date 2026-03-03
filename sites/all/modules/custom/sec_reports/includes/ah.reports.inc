@@ -150,17 +150,17 @@ function reports_ah_page_content($period_to)
   $output .=   '</div>';
   $output .= '</div>';
 
-  // слайд 5
-  $output .=  '<div class="section-title">' .
-                '<h3>План-факт. Бюджет движения денежных средств (в тыс. руб. с НДС)</h3>' .
-                '<div class="underline"></div>' .
-              '</div>';
-  $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12">';
-  $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $season['to'])-1) . '</h5>';
-  $output .=     '<div class="ajax-load" data-func="ah_block_5" data-delay="500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-  $output .=   '</div>';
-  $output .= '</div>';
+  // слайд 5 (Петухова 03.03, убрать)
+//  $output .=  '<div class="section-title">' .
+//                '<h3>План-факт. Бюджет движения денежных средств (в тыс. руб. с НДС)</h3>' .
+//                '<div class="underline"></div>' .
+//              '</div>';
+//  $output .= '<div class="row">';
+//  $output .=   '<div class="col-xs-12">';
+//  $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $season['to'])-1) . '</h5>';
+//  $output .=     '<div class="ajax-load" data-func="ah_block_5" data-delay="500"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+//  $output .=   '</div>';
+//  $output .= '</div>';
 
   // слайд 7
   $url = url('/data/ship/ship/edit', ['query' => ['blocks' => ['ah_block_070'], 'inn' => DASH_INN_AH, 'type' => DASH_TYPE_PLAN]]);

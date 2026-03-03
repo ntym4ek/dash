@@ -120,17 +120,17 @@ function reports_ev_page_content($period_to)
   $output .=   '</div>';
   $output .= '</div>';
 
-  // слайд 7
-  $output .=  '<div class="section-title">' .
-                '<h3>План-факт. Бюджет движения денежных средств (в тыс. руб. с НДС)</h3>' .
-                '<div class="underline"></div>' .
-              '</div>';
-  $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12">';
-  $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $season['to'])-1) . '</h5>';
-  $output .=     '<div class="ajax-load" data-func="ev_block_7" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-  $output .=   '</div>';
-  $output .= '</div>';
+  // слайд 7 (Петухова 03.03, убрать)
+//  $output .=  '<div class="section-title">' .
+//                '<h3>План-факт. Бюджет движения денежных средств (в тыс. руб. с НДС)</h3>' .
+//                '<div class="underline"></div>' .
+//              '</div>';
+//  $output .= '<div class="row">';
+//  $output .=   '<div class="col-xs-12">';
+//  $output .=     '<h5 class="chart-title">На ' . helper_month_label_ru(date('n', $season['to'])-1) . '</h5>';
+//  $output .=     '<div class="ajax-load" data-func="ev_block_7" data-delay="700"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+//  $output .=   '</div>';
+//  $output .= '</div>';
 
   // слайд 8
   $output .=  '<div class="section-title">' .
