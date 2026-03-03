@@ -112,7 +112,7 @@ function reports_menu()
   $items['data/debt/edit'] = [
     'title' => 'Редактирование данных',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['reports_debt_credits_data_edit_form'],
+    'page arguments' => ['reports_debt_data_edit_form'],
     'access callback' => 'ext_user_has_roles',
     'access arguments' => [[ADMIN_RID, TRADE_HOUSE_USER_RID, LUBRICANTS_RID]],
     'type' => MENU_NORMAL_ITEM,
@@ -768,7 +768,7 @@ function reports_manual_production_by_directions_data_edit_form_submit($form, $f
   drupal_exit();
 }
 
-function reports_debt_credits_data_edit_form($form, &$form_state)
+function reports_debt_data_edit_form($form, &$form_state)
 {
   // сохраняем блоки, которые нужно обновить
   if (!empty($_GET["blocks"])) {
@@ -776,9 +776,9 @@ function reports_debt_credits_data_edit_form($form, &$form_state)
   }
 
   // определяем ID компании, для которой заполняется форма
+  $company_id = 0;
   if (empty($form_state["values"]['company_id'])) {
-    $company_id = $_GET["inn"] ?? null;
-    if (isset($company_id)) {
+    if (isset($_GET["inn"])) {
       $company = dash_term_get_by_1c_id('companies', $_GET["inn"]);
       $company_id = $company->tid;
     }

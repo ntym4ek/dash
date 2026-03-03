@@ -1721,12 +1721,12 @@ function reports_ah_ship_accounts_fact_table_html($period)
       $row = [$direction_name];
       // проходим по колонкам Итого, так как в самих Группах могут быть пропущены месяцы (нет данных)
       foreach ($data['Итого']['month'] as $key_m => $aux) {
-        $row[] = ['data' => helper_number_format($item_d['month'][$key_m] / DASH_REV_DIVIDER, 2, ' ', false), 'align' => 'right'];
+        $row[] = ['data' => helper_number_format(($item_d['month'][$key_m] ?? 0) / DASH_REV_DIVIDER, 2, ' ', false), 'align' => 'right'];
       }
       if (date('n', $month_start) != 1) {
         // проходим по колонкам Итого, так как в самих Группах может не быть периодов (нет данных по ним)
         foreach ($data['Итого']['period'] as $key_p => $aux) {
-          $row[] = ['data' => helper_number_format($item_d['period'][$key_p] / DASH_REV_DIVIDER, 2, ' ', false), 'align' => 'right'];
+          $row[] = ['data' => helper_number_format(($item_d['period'][$key_p] ?? 0) / DASH_REV_DIVIDER, 2, ' ', false), 'align' => 'right'];
         }
       }
       if ($direction_name == 'Итого') {
