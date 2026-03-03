@@ -1312,10 +1312,14 @@ function reports_td_line_debt_credits_plan_fact($period)
     'company_id' => $company->tid, 'period' => ['from' => $period['from'], 'to' => $period['end']],
     'type' => DASH_TYPE_PLAN, 'kinds' => [DASH_DEBT_KIND_CREDIT], 'manual' => 1
   ]);
+
+  // Факт выводим на первое число текущего месяца, а не выбранного.
+  // Например: в марте в форме задан Февраль, а в отчёты выводим данные по 1 марта включительно
+  $fact_period_to = gmmktime(0, 0, 0, date('n', $period['to'])+1, 1, date('Y', $period['from']));
+
   // Если отчёт составлен на Январь,
   // то, так как для Плана на 31.12 Факт - это состояние на начало следующего года,
   // нужно выбрать Факт включая Январь, то есть по 01.02
-  $fact_period_to = $period['to'];
   if (date('n', $period['to']) == 2) { // todo 1й или 2й месяц?
     $fact_period_to = gmmktime(0, 0, 0, 2, 1, date('Y', $period['from']) + 1);
   }
@@ -1401,9 +1405,9 @@ function reports_td_line_debt_credits_plan_fact($period)
 
       $plan_amount = -1 * $month['plan_amount'] / DASH_REV_DIVIDER;
       $fact_amount = -1 * $month['fact_amount'] / DASH_REV_DIVIDER;
-      // если это текущий период,
-      // то считаем и выводим факт только до месяца предстоящего текущему месяцу
-      $fact_amount = ($date <= gmmktime(0, 0, 0, date('n', $period['to'])-1, 1, date('Y', $period['to']))) ? $fact_amount : null;
+
+      // в данном графике выводим факт по первое число текущего месяца (а не до предыдущего месяца, как везде)
+      $fact_amount = ($date <= gmmktime(0, 0, 0, date('n', $period['to']), 1, date('Y', $period['to']))) ? $fact_amount : null;
 
       $chart['plan']['#data'][] = $plan_amount;
       $chart['fact']['#data'][] = $fact_amount;
