@@ -98,8 +98,10 @@ function reports_ev_page_content($period_to)
   $output .= '<div class="ajax-load" data-func="ev_block_21" data-delay="200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
 
   // слайд 31
+  $url = url('/data/cash-income/edit', ['query' => ['blocks' => ['ev_block_31'], 'inn' => DASH_INN_EV, 'type' => DASH_TYPE_PLAN]]);
   $output .=  '<div class="section-title">' .
                 '<h3>План-факт поступления денежных средств за собственную продукцию (в ' . DASH_REV_SUFFIX . ')</h3>' .
+                '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
               '</div>';
   $output .= '<div class="ajax-load" data-func="ev_block_31" data-delay="400"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
@@ -166,28 +168,28 @@ function reports_ev_page_content($period_to)
   $output .= '</div>';
 
   // слайд 12
-  $output .=  '<div class="section-title">' .
-                '<h3>Динамика готовой продукции и сырья (в ' . DASH_REV_SUFFIX . ' без НДС)</h3>' .
-                '<div class="underline"></div>' .
-              '</div>';
-  $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12">';
-  $output .=     '<div class="ajax-load" data-func="ev_block_12" data-delay="1200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-  $output .=   '</div>';
-  $output .= '</div>';
+//  $output .=  '<div class="section-title">' .
+//                '<h3>Динамика готовой продукции и сырья (в ' . DASH_REV_SUFFIX . ' без НДС)</h3>' .
+//                '<div class="underline"></div>' .
+//              '</div>';
+//  $output .= '<div class="row">';
+//  $output .=   '<div class="col-xs-12">';
+//  $output .=     '<div class="ajax-load" data-func="ev_block_12" data-delay="1200"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+//  $output .=   '</div>';
+//  $output .= '</div>';
 
   // слайд 13
-  $url = url('/data/manual-bdr/edit', ['query' => ['blocks' => ['ev_block_13'], 'inn' => DASH_INN_EV]]);
-  $output .=  '<div class="section-title">' .
-                '<h3>План-факт. Бюджет доходов и расходов (в ' . DASH_REV_SUFFIX . ' без НДС)</h3>' .
-                '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
-                '<div class="underline"></div>' .
-              '</div>';
-  $output .= '<div class="row">';
-  $output .=   '<div class="col-xs-12">';
-  $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season['from'])) . (date('n', $season['to']) != 3 ?  '-' . helper_month_label_ru(date('n', $season['to'])-2) : '') . '</h5>';  $output .=     '<div class="ajax-load" data-func="ev_block_13" data-delay="1300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
-  $output .=   '</div>';
-  $output .= '</div>';
+//  $url = url('/data/manual-bdr/edit', ['query' => ['blocks' => ['ev_block_13'], 'inn' => DASH_INN_EV]]);
+//  $output .=  '<div class="section-title">' .
+//                '<h3>План-факт. Бюджет доходов и расходов (в ' . DASH_REV_SUFFIX . ' без НДС)</h3>' .
+//                '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
+//                '<div class="underline"></div>' .
+//              '</div>';
+//  $output .= '<div class="row">';
+//  $output .=   '<div class="col-xs-12">';
+//  $output .=     '<h5 class="chart-title">За ' . helper_month_label_ru(date('n', $season['from'])) . (date('n', $season['to']) != 3 ?  '-' . helper_month_label_ru(date('n', $season['to'])-2) : '') . '</h5>';  $output .=     '<div class="ajax-load" data-func="ev_block_13" data-delay="1300"><div class="ajax-progress ajax-progress-throbber"><div class="throbber">&nbsp;</div><div class="message">Пожалуйста, подождите...</div></div></div>';
+//  $output .=   '</div>';
+//  $output .= '</div>';
 
   return '<div class="charts" data-module="reports" data-period-from="' . $season['from'] . '" data-period-to="' . $season['to'] . '" data-period-end="' . $season['end'] . '">' . $output . '</div>';
 }
@@ -571,7 +573,8 @@ function reports_ev_line_revenue_own_plan_fact($period)
   // собрать все записи за период
   $company = dash_term_get_by_1c_id('companies', DASH_INN_EV);
 
-  $plan = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'manual' => 0]);
+  // (Петухова 05.03 попросила сделать ввод плана ручным)
+  $plan = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_PLAN, 'period' => $plan_bounds, 'manual' => 1]);
   $fact = dash_cash_income_get_by_conditions(['company_id' => $company->tid, 'type' => DASH_TYPE_FACT, 'period' => $period, 'manual' => 0]);
 
   if ($plan || $fact) {
@@ -588,11 +591,11 @@ function reports_ev_line_revenue_own_plan_fact($period)
       foreach ($plan as $record) {
         if ($record->date >= $month['start'] && $record->date < $month['end']) {
 
-          // получить группу клиента
-          $client = entity_metadata_wrapper('taxonomy_term', $record->client);
-          if ($client->field_client_group->value() != 'ТОЛЛЕРЫ') {
+          // получить группу клиента (Петухова 05.03 попросила сделать ввод плана ручным)
+//          $client = entity_metadata_wrapper('taxonomy_term', $record->client);
+//          if ($client->field_client_group->value() != 'ТОЛЛЕРЫ') {
             $plan_fact_by_month[$month['start']]['plan_amount'] += $record->amount;
-          }
+//          }
         }
       }
       foreach ($fact as $record) {
