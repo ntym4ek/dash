@@ -368,7 +368,7 @@ function reports_manual_bdr_table_output($period, $inn)
             $label,
             ['data' => helper_number_format($item['plan_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
             ['data' => helper_number_format($item['fact_period'] ?? 0, 0, ' ', false), 'align' => 'right'],
-            ['data' => ($item['plan_period'] ? helper_number_format($item['fact_period'] / $item['plan_period'] * 100, 0, ' ', false) . ' %' : '-'), 'align' => 'right'],
+            ['data' => (!empty($item['plan_period']) ? helper_number_format(($item['fact_period'] / $item['plan_period']) * 100, 0, ' ', false) . ' %' : '-'), 'align' => 'right'],
           ],
         ];
       }

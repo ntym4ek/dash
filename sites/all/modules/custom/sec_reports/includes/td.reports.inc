@@ -1427,7 +1427,7 @@ function reports_td_line_debt_credits_plan_fact($period)
       }
 
       $tooltip = '<div style="padding: 8px 12px; min-width:140px;white-space: nowrap;">' .
-                   '<div><div style="display:inline-block; font-weight: 700;">' . helper_month_label_ru(date('n', $month['start'])) . '</div></div>' .
+                   '<div><div style="display:inline-block; font-weight: 700;">' . date('d.m.Y', $date) . '</div></div>' .
                     '<div><div style="display:inline-block; width: 210px;">План:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($plan_amount, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
                     '<div><div style="display:inline-block; width: 210px;">Факт:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . number_format($fact_amount, 2, ',', ' ') . '</b>&nbsp;млн.</div></div>' .
                     '<div><div style="display:inline-block; width: 210px;">Выполнение:</div><div style="display:inline-block; text-align: right; width: 110px;"><b>' . ($plan_amount ? number_format($fact_amount/$plan_amount*100, 0, ',', ' ') : '-') . '</b>&nbsp;%</div></div>' .

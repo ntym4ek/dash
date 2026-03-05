@@ -179,7 +179,7 @@ function reports_lb_page_content($period_to)
   // слайд 13
   $url = url('/data/manual-bdr/edit', ['query' => ['blocks' => ['lb_block_13'], 'inn' => DASH_INN_LB]]);
   $output .=  '<div class="section-title">' .
-                '<h3>План-факт. Бюджет доходов и расходов (в ' . DASH_REV_SUFFIX . ' без НДС)</h3>' .
+                '<h3>План-факт. Бюджет доходов и расходов (в тыс. руб. без НДС)</h3>' . // (Петухова 05.03 попросила изменить с млн на тыс)
                 '<a class="edit-link autodialog" data-dialog-width="550" href="' . $url . '">Редактировать данные</a>' .
                 '<div class="underline"></div>' .
               '</div>';
